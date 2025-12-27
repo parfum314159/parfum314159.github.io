@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Spicy Library Pi</title>
+<title>Spicy Library</title>
 
 <!-- Pi SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
@@ -21,273 +21,87 @@ body{
   padding:20px;
   text-align:center;
 }
-button, input, textarea{
-  padding:10px;
-  font-size:14px;
+button{
+  padding:10px 20px;
   border:none;
   border-radius:6px;
-  margin:5px 0;
-}
-button{
+  cursor:pointer;
   background:#ff4500;
   color:white;
-  cursor:pointer;
-}
-button:disabled{
-  background:#555;
-  cursor:not-allowed;
+  margin:5px;
 }
 .hidden{display:none;}
-.books-container{
+.books{
   display:flex;
   flex-wrap:wrap;
   justify-content:center;
-  margin-top:20px;
 }
 .book{
-  border:1px solid #333;
-  margin:15px;
-  padding:15px;
-  border-radius:8px;
   background:#1c1c1c;
+  border:1px solid #333;
+  border-radius:8px;
+  padding:15px;
+  margin:10px;
   width:220px;
 }
 .book img{
   width:200px;
-  height:auto;
-  margin-bottom:10px;
 }
-#userLibrary, #addBookSection{
-  margin-top:20px;
-  border:1px solid #333;
-  padding:10px;
-  border-radius:8px;
-  max-width:400px;
-  margin-left:auto;
-  margin-right:auto;
-  text-align:left;
+input,textarea{
+  width:90%;
+  padding:8px;
+  margin:5px;
 }
 </style>
 </head>
+
 <body>
 
-<!-- شاشة تسجيل الدخول -->
+<!-- LOGIN -->
 <div id="loginScreen">
   <h1>🌶️ Spicy Library</h1>
   <p>Login with Pi Network</p>
   <button id="loginBtn">Login with Pi</button>
 </div>
 
-<!-- شاشة التطبيق بعد تسجيل الدخول -->
+<!-- APP -->
 <div id="appScreen" class="hidden">
   <h2 id="welcome"></h2>
+
+  <button onclick="toggleAddBook()">➕ Add Book</button>
   <button onclick="logout()">Logout</button>
-  <button id="showAddBookBtn">Add Your Book</button>
 
-  <!-- قسم إضافة كتاب -->
-  <div id="addBookSection" class="hidden">
-    <h3>Add Book</h3>
-    <form id="addBookForm">
-      <label>Title:</label><br>
-      <input type="text" id="bookTitle" required><br>
-      <label>Description:</label><br>
-      <textarea id="bookDesc" rows="3" required></textarea><br>
-      <label>Price (Pi):</label><br>
-      <input type="number" id="bookPrice" required><br>
-      <label>Cover Image:</label><br>
-      <input type="file" id="bookCover" accept="image/*" required><br>
-      <label>Book PDF:</label><br>
-      <input type="file" id="bookPDF" accept="application/pdf" required><br>
-      <input type="checkbox" id="agreeRights" required> I accept full copyright responsibility<br>
-      <button type="submit">Upload Book</button>
-      <button type="button" id="cancelAddBook">Cancel</button>
-    </form>
+  <!-- ADD BOOK -->
+  <div id="addBook" class="hidden">
+    <h3>Add Your Book</h3>
+    <input id="title" placeholder="Book title">
+    <input id="price" type="number" placeholder="Price (Pi)">
+    <input type="file" id="cover">
+    <input type="file" id="pdf">
+    <textarea id="desc" placeholder="Description"></textarea>
+    <br>
+    <label>
+      <input type="checkbox" id="rights">
+      I confirm I own the rights to this book
+    </label><br>
+    <button onclick="uploadBook()">Upload Book</button>
   </div>
 
-  <h3>All Books</h3>
-  <div class="books-container" id="booksContainer"></div>
-
-  <div id="userLibrary">
-    <h3>Your Library</h3>
-    <div id="myBooks"></div>
-  </div>
+  <h3>Books</h3>
+  <div class="books" id="books"></div>
 </div>
 
 <script>
-// =================== Firebase Config ===================
-const firebaseConfig = {
-  apiKey: "AIzaSyBwfwugnPYvdsL4wApe1QF5IM6QTwZwbms",
-  authDomain: "spicy-f2a1b.firebaseapp.com",
-  projectId: "spicy-f2a1b",
-  storageBucket: "spicy-f2a1b.appspot.com",
-  messagingSenderId: "393201465836",
-  appId: "1:393201465836:web:70e0ee76581d16bed868c9",
-  measurementId: "G-NJ66KF296Z"
-};
-firebase.initializeApp(firebaseConfig);
+// ================= Firebase =================
+firebase.initializeApp({
+  apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
+  authDomain: "spicy-97f54.firebaseapp.com",
+  projectId: "spicy-97f54",
+  storageBucket: "spicy-97f54.firebasestorage.app",
+  messagingSenderId: "15493400338",
+  appId: "1:15493400338:web:0551a61592e3c4642455cb"
+});
 const db = firebase.firestore();
 const storage = firebase.storage();
 
-let currentUser = null;
-
-// =================== Pi SDK ===================
-Pi.init({ version:"2.0", sandbox:true });
-
-// =================== تسجيل الدخول ===================
-document.getElementById("loginBtn").addEventListener("click", async function(){
-  this.disabled = true;
-  this.innerText = "Please wait...";
-  try {
-    const auth = await Pi.authenticate(["username","payments"]);
-    currentUser = auth.user;
-    showApp();
-  } catch(err){
-    alert("Login failed");
-    console.error(err);
-    this.disabled = false;
-    this.innerText = "Login with Pi";
-  }
-});
-
-// =================== عرض التطبيق ===================
-function showApp(){
-  document.getElementById("loginScreen").classList.add("hidden");
-  document.getElementById("appScreen").classList.remove("hidden");
-  document.getElementById("welcome").innerText = "Welcome " + currentUser.username;
-
-  loadBooks();
-  loadUserLibrary();
-}
-
-// =================== زر إظهار قسم إضافة كتاب ===================
-document.getElementById("showAddBookBtn").addEventListener("click", function(){
-  document.getElementById("addBookSection").classList.remove("hidden");
-});
-document.getElementById("cancelAddBook").addEventListener("click", function(){
-  document.getElementById("addBookSection").classList.add("hidden");
-});
-
-// =================== رفع كتاب جديد ===================
-document.getElementById("addBookForm").addEventListener("submit", async function(e){
-  e.preventDefault();
-  console.log("Form submitted");
-  if(!currentUser) return alert("Login required");
-  if(!document.getElementById("agreeRights").checked){
-    return alert("You must accept full copyright responsibility!");
-  }
-
-  const title = document.getElementById("bookTitle").value;
-  const desc = document.getElementById("bookDesc").value;
-  const price = Number(document.getElementById("bookPrice").value);
-  const coverFile = document.getElementById("bookCover").files[0];
-  const pdfFile = document.getElementById("bookPDF").files[0];
-
-  console.log("Files:", coverFile, pdfFile);
-
-  if(!coverFile || !pdfFile) return alert("Select both cover and PDF files");
-
-  try {
-    const coverRef = storage.ref("covers/"+Date.now()+"_"+coverFile.name);
-    const coverSnapshot = await coverRef.put(coverFile);
-    const coverUrl = await coverSnapshot.ref.getDownloadURL();
-    console.log("Cover uploaded", coverUrl);
-
-    const pdfRef = storage.ref("booksPDF/"+Date.now()+"_"+pdfFile.name);
-    const pdfSnapshot = await pdfRef.put(pdfFile);
-    const pdfUrl = await pdfSnapshot.ref.getDownloadURL();
-    console.log("PDF uploaded", pdfUrl);
-
-    await db.collection("books").add({
-      title, description: desc, pricePi: price, cover: coverUrl, pdf: pdfUrl, author: currentUser.username, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    alert("Book uploaded successfully!");
-    this.reset();
-    document.getElementById("addBookSection").classList.add("hidden");
-    loadBooks();
-  } catch(err){
-    console.error("Upload error:", err);
-    alert("Error uploading book, check console");
-  }
-});
-
-// =================== تحميل وعرض جميع الكتب ===================
-async function loadBooks(){
-  const container = document.getElementById("booksContainer");
-  container.innerHTML = "";
-  const snapshot = await db.collection("books").orderBy("timestamp","desc").get();
-  snapshot.forEach(doc => {
-    const b = doc.data();
-    const bookDiv = document.createElement("div");
-    bookDiv.className = "book";
-    bookDiv.innerHTML = `
-      <img src="${b.cover}" alt="${b.title}">
-      <h3>${b.title}</h3>
-      <p>Author: ${b.author}</p>
-      <p>Price: ${b.pricePi} Pi</p>
-      <button onclick="buyBook('${doc.id}', ${b.pricePi})">Buy with Pi</button>
-      <a href="${b.pdf}" target="_blank" style="display:block;color:#0f0;margin-top:5px;">View PDF</a>
-    `;
-    container.appendChild(bookDiv);
-  });
-}
-
-// =================== شراء كتاب ===================
-async function buyBook(bookId, price){
-  if(!currentUser) return alert("Login required");
-
-  try {
-    await Pi.createPayment({
-      amount: price,
-      currency: "Pi",
-      memo: "Buy Book " + bookId
-    },{
-      onReadyForServerCompletion: async function(paymentId, txId){
-        alert("Payment successful!");
-        const userRef = db.collection("users").doc(currentUser.username);
-        await userRef.set({
-          books: firebase.firestore.FieldValue.arrayUnion(bookId)
-        }, { merge: true });
-        loadUserLibrary();
-      },
-      onCancel: function(){ alert("Payment canceled"); },
-      onError: function(err){ alert("Payment error"); console.error(err); }
-    });
-  } catch(err){
-    console.error(err);
-    alert("Payment failed");
-  }
-}
-
-// =================== مكتبة المستخدم ===================
-async function loadUserLibrary(){
-  if(!currentUser) return;
-  const userRef = db.collection("users").doc(currentUser.username);
-  const docSnap = await userRef.get();
-  const div = document.getElementById("myBooks");
-  if(docSnap.exists){
-    const bookIds = docSnap.data().books || [];
-    if(bookIds.length===0){
-      div.innerHTML="<p>You have no books yet.</p>";
-    } else {
-      const promises = bookIds.map(id => db.collection("books").doc(id).get());
-      const snapshots = await Promise.all(promises);
-      div.innerHTML="<ul>" + snapshots.map(s => `<li>${s.exists ? s.data().title : "Unknown Book"}</li>`).join("") + "</ul>";
-    }
-  } else {
-    div.innerHTML="<p>You have no books yet.</p>";
-  }
-}
-
-// =================== تسجيل الخروج ===================
-function logout(){
-  currentUser = null;
-  document.getElementById("appScreen").classList.add("hidden");
-  document.getElementById("loginScreen").classList.remove("hidden");
-  document.getElementById("loginBtn").disabled = false;
-  document.getElementById("loginBtn").innerText = "Login with Pi";
-}
-</script>
-
-</body>
-</html>
+// ================= Pi
