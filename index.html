@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Spicy Library Pi</title>
 
-<!-- Pi SDK الرسمي -->
+<!-- Pi SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
 <style>
@@ -34,6 +34,7 @@ button:disabled{
   display:flex;
   flex-wrap:wrap;
   justify-content:center;
+  margin-top:20px;
 }
 .book{
   border:1px solid #333;
@@ -59,8 +60,8 @@ button:disabled{
   <button id="loginBtn">Login with Pi</button>
 </div>
 
-<!-- الشاشة الرئيسية بعد تسجيل الدخول -->
-<div id="appScreen" class="hidden">
+<!-- شاشة الكتب بعد تسجيل الدخول -->
+<div id="booksScreen" class="hidden">
   <h2 id="welcome"></h2>
   <div class="books-container" id="booksContainer"></div>
   <button onclick="logout()">Logout</button>
@@ -86,7 +87,7 @@ document.getElementById("loginBtn").addEventListener("click", async function(){
   try {
     const auth = await Pi.authenticate(["username","payments"]);
     currentUser = auth.user;
-    showApp();
+    showBooksScreen();
   } catch(err){
     alert("Login failed");
     console.error(err);
@@ -95,10 +96,10 @@ document.getElementById("loginBtn").addEventListener("click", async function(){
   }
 });
 
-// =================== عرض التطبيق بعد الدخول ===================
-function showApp(){
+// =================== عرض شاشة الكتب ===================
+function showBooksScreen(){
   document.getElementById("loginScreen").classList.add("hidden");
-  document.getElementById("appScreen").classList.remove("hidden");
+  document.getElementById("booksScreen").classList.remove("hidden");
   document.getElementById("welcome").innerText = "Welcome " + currentUser.username;
 
   renderBooks();
@@ -130,18 +131,28 @@ async function buyBook(index){
   }
   const book = books[index];
   try {
+    // الدفع عبر Pi Wallet
     await Pi.createPayment({
       amount: book.pricePi,
       currency: "Pi",
       memo: "Buy " + book.title,
       metadata: { book: book.title }
     },{
-      onReadyForServerApproval: function(id){},
-      onReadyForServerCompletion: function(id,txid){
-        alert("Payment successful (Sandbox)");
+      // عند إرسال الدفع للموافقة
+      onReadyForServerApproval: function(paymentId){
+        console.log("Ready for approval:", paymentId);
       },
-      onCancel: function(){ alert("Payment canceled"); },
-      onError: function(err){ alert("Payment error"); console.error(err); }
+      // عند اكتمال الدفع
+      onReadyForServerCompletion: function(paymentId, txId){
+        alert("Payment successful! 📦 You bought '" + book.title + "' (Sandbox)");
+      },
+      onCancel: function(){
+        alert("Payment canceled ❌");
+      },
+      onError: function(err){
+        alert("Payment error ⚠️");
+        console.error(err);
+      }
     });
   } catch(err){
     console.error(err);
@@ -152,12 +163,12 @@ async function buyBook(index){
 // =================== تسجيل الخروج ===================
 function logout(){
   currentUser = null;
-  document.getElementById("appScreen").classList.add("hidden");
+  document.getElementById("booksScreen").classList.add("hidden");
   document.getElementById("loginScreen").classList.remove("hidden");
   document.getElementById("loginBtn").disabled = false;
   document.getElementById("loginBtn").innerText = "Login with Pi";
 }
-
 </script>
+
 </body>
 </html>
