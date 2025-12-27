@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Spicy Library</title>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<style>
+body{
+  background:#111;
+  color:#fff;
+  font-family:Arial;
+  padding:20px;
+}
+h1{ color:#ff4500; }
+.book{
+  background:#1c1c1c;
+  padding:15px;
+  border-radius:8px;
+  margin-bottom:15px;
+}
+button{
+  padding:8px 15px;
+  border:none;
+  border-radius:5px;
+  background:#00b300;
+  color:white;
+}
+</style>
+</head>
+
+<body>
+
+<h1>?? Spicy Library</h1>
+<p id="welcome"></p>
+
+<div class="book">
+  <h3>Love Story</h3>
+  <p>Price: 5 Pi</p>
+  <button onclick="pay()">Buy</button>
+</div>
+
+<script>
+Pi.init({
+  version: "2.0",
+  sandbox: true
+});
+
+// ????? ??? ???????? ?? ??????
+const params = new URLSearchParams(window.location.search);
+const username = params.get("user");
+
+if(!username){
+  window.location.href = "index.html";
+}else{
+  document.getElementById("welcome").innerText =
+    "Welcome " + username;
+}
+
+function pay(){
+  alert("Sandbox payment demo");
+}
+</script>
+
+</body>
+</html>
