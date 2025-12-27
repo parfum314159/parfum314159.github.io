@@ -57,7 +57,7 @@ button:disabled{
   height:auto;
   margin-bottom:10px;
 }
-#userLibrary, #addBookForm{
+#userLibrary, #addBookSection{
   margin-top:20px;
   border:1px solid #333;
   padding:10px;
@@ -82,20 +82,27 @@ button:disabled{
 <div id="appScreen" class="hidden">
   <h2 id="welcome"></h2>
   <button onclick="logout()">Logout</button>
+  <button id="showAddBookBtn">Add Your Book</button>
 
-  <h3>Add Your Book</h3>
-  <form id="addBookForm">
-    <label>Title:</label><br>
-    <input type="text" id="bookTitle" required><br>
-    <label>Description:</label><br>
-    <textarea id="bookDesc" rows="3" required></textarea><br>
-    <label>Price (Pi):</label><br>
-    <input type="number" id="bookPrice" required><br>
-    <label>Cover Image:</label><br>
-    <input type="file" id="bookCover" accept="image/*" required><br>
-    <input type="checkbox" id="agreeRights" required> I accept full responsibility for copyrights<br>
-    <button type="submit">Upload Book</button>
-  </form>
+  <!-- قسم إضافة كتاب -->
+  <div id="addBookSection" class="hidden">
+    <h3>Add Book</h3>
+    <form id="addBookForm">
+      <label>Title:</label><br>
+      <input type="text" id="bookTitle" required><br>
+      <label>Description:</label><br>
+      <textarea id="bookDesc" rows="3" required></textarea><br>
+      <label>Price (Pi):</label><br>
+      <input type="number" id="bookPrice" required><br>
+      <label>Cover Image:</label><br>
+      <input type="file" id="bookCover" accept="image/*" required><br>
+      <label>Book PDF:</label><br>
+      <input type="file" id="bookPDF" accept="application/pdf" required><br>
+      <input type="checkbox" id="agreeRights" required> I accept full copyright responsibility<br>
+      <button type="submit">Upload Book</button>
+      <button type="button" id="cancelAddBook">Cancel</button>
+    </form>
+  </div>
 
   <h3>All Books</h3>
   <div class="books-container" id="booksContainer"></div>
@@ -152,6 +159,14 @@ function showApp(){
   loadUserLibrary();
 }
 
+// =================== زر إظهار قسم إضافة كتاب ===================
+document.getElementById("showAddBookBtn").addEventListener("click", function(){
+  document.getElementById("addBookSection").classList.remove("hidden");
+});
+document.getElementById("cancelAddBook").addEventListener("click", function(){
+  document.getElementById("addBookSection").classList.add("hidden");
+});
+
 // =================== رفع كتاب جديد ===================
 document.getElementById("addBookForm").addEventListener("submit", async function(e){
   e.preventDefault();
@@ -163,22 +178,29 @@ document.getElementById("addBookForm").addEventListener("submit", async function
   const title = document.getElementById("bookTitle").value;
   const desc = document.getElementById("bookDesc").value;
   const price = Number(document.getElementById("bookPrice").value);
-  const file = document.getElementById("bookCover").files[0];
+  const coverFile = document.getElementById("bookCover").files[0];
+  const pdfFile = document.getElementById("bookPDF").files[0];
 
-  if(!file) return alert("Select cover image");
+  if(!coverFile || !pdfFile) return alert("Select both cover and PDF files");
 
-  // رفع الصورة إلى Firebase Storage
-  const storageRef = storage.ref("covers/"+Date.now()+"_"+file.name);
-  const snapshot = await storageRef.put(file);
-  const coverUrl = await snapshot.ref.getDownloadURL();
+  // رفع الغلاف
+  const coverRef = storage.ref("covers/"+Date.now()+"_"+coverFile.name);
+  const coverSnapshot = await coverRef.put(coverFile);
+  const coverUrl = await coverSnapshot.ref.getDownloadURL();
+
+  // رفع PDF
+  const pdfRef = storage.ref("booksPDF/"+Date.now()+"_"+pdfFile.name);
+  const pdfSnapshot = await pdfRef.put(pdfFile);
+  const pdfUrl = await pdfSnapshot.ref.getDownloadURL();
 
   // حفظ الكتاب في Firestore
   await db.collection("books").add({
-    title, description: desc, pricePi: price, cover: coverUrl, author: currentUser.username, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    title, description: desc, pricePi: price, cover: coverUrl, pdf: pdfUrl, author: currentUser.username, timestamp: firebase.firestore.FieldValue.serverTimestamp()
   });
 
   alert("Book uploaded successfully!");
   this.reset();
+  document.getElementById("addBookSection").classList.add("hidden");
   loadBooks();
 });
 
@@ -197,6 +219,7 @@ async function loadBooks(){
       <p>Author: ${b.author}</p>
       <p>Price: ${b.pricePi} Pi</p>
       <button onclick="buyBook('${doc.id}', ${b.pricePi})">Buy with Pi</button>
+      <a href="${b.pdf}" target="_blank" style="display:block;color:#0f0;margin-top:5px;">View PDF</a>
     `;
     container.appendChild(bookDiv);
   });
@@ -243,7 +266,6 @@ async function loadUserLibrary(){
     if(bookIds.length===0){
       div.innerHTML="<p>You have no books yet.</p>";
     } else {
-      // تحميل بيانات الكتب المشتراة
       const promises = bookIds.map(id => db.collection("books").doc(id).get());
       const snapshots = await Promise.all(promises);
       div.innerHTML="<ul>" + snapshots.map(s => `<li>${s.exists ? s.data().title : "Unknown Book"}</li>`).join("") + "</ul>";
