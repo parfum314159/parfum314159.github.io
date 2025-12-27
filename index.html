@@ -7,7 +7,7 @@
 <!-- Pi SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
-<!-- Firebase (Firestore فقط) -->
+<!-- Firebase Firestore -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
@@ -129,8 +129,6 @@ function toggleAdd(){
 }
 
 async function uploadBook(){
-  alert("Upload function started");
-
   if(!document.getElementById("rights").checked){
     alert("Confirm rights");
     return;
@@ -162,7 +160,7 @@ async function uploadBook(){
     created: Date.now()
   });
 
-  alert("Book uploaded successfully");
+  alert("Book uploaded");
   toggleAdd();
   loadBooks();
 }
@@ -183,17 +181,36 @@ async function loadBooks(){
   });
 }
 
-// ================= Payment =================
-async function buy(title,price){
-  await Pi.createPayment({
-    amount: price,
-    currency: "Pi",
-    memo: "Buy " + title
-  },{
-    onReadyForServerCompletion(){
-      alert("Payment successful");
-    }
-  });
+// ================= Payment (FIXED) =================
+async function buy(title, price){
+  try{
+    await Pi.createPayment(
+      {
+        amount: price,
+        memo: "Buy " + title,
+        metadata: { book: title }
+      },
+      {
+        onReadyForServerApproval: function(id){
+          console.log("Approved:", id);
+        },
+        onReadyForServerCompletion: function(id, txid){
+          alert("Payment successful!");
+          console.log("TXID:", txid);
+        },
+        onCancel: function(){
+          alert("Payment cancelled");
+        },
+        onError: function(err){
+          alert("Payment error");
+          console.error(err);
+        }
+      }
+    );
+  }catch(e){
+    alert("Payment failed");
+    console.error(e);
+  }
 }
 </script>
 
