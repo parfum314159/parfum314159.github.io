@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Spicy Library</title>
+<title>Spicy Login</title>
 
-<!-- Pi SDK (OFFICIAL) -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
 <style>
@@ -13,66 +12,51 @@ body{
   color:#fff;
   font-family:Arial;
   text-align:center;
-  padding-top:100px;
+  padding-top:120px;
 }
 button{
-  padding:14px 30px;
-  font-size:16px;
+  padding:15px 30px;
+  font-size:18px;
   border:none;
-  border-radius:6px;
+  border-radius:8px;
   cursor:pointer;
   background:#ff4500;
   color:white;
 }
-.hidden{display:none;}
 </style>
 </head>
 
 <body>
 
-<div id="login">
-  <h1>🌶️ Spicy Library</h1>
-  <p>Login with Pi Network</p>
-  <button id="loginBtn">Login with Pi</button>
-</div>
+<h1>🌶️ Spicy Library</h1>
+<p>Login with Pi Network</p>
 
-<div id="app" class="hidden">
-  <h2 id="welcome"></h2>
-  <p>📚 Welcome to Spicy Library</p>
-</div>
+<button id="loginBtn">Login with Pi</button>
 
 <script>
-/* انتظر تحميل الصفحة + SDK */
 window.onload = function(){
 
-  if (typeof Pi === "undefined") {
-    alert("Pi SDK not loaded ❌\nOpen this site inside Pi Browser only");
+  if (!window.Pi) {
+    alert("Pi SDK not detected. Open in Pi Browser.");
     return;
   }
 
-  Pi.init({
-    version: "2.0",
-    sandbox: true
-  });
+  Pi.init({ version: "2.0", sandbox: false });
 
-  document.getElementById("loginBtn").addEventListener("click", function(){
+  document.getElementById("loginBtn").onclick = function(){
 
     Pi.authenticate(
-      ["username","payments"],
+      ["username"],
       function(auth){
-        document.getElementById("login").classList.add("hidden");
-        document.getElementById("app").classList.remove("hidden");
-        document.getElementById("welcome").innerText =
-          "Welcome " + auth.user.username;
+        alert("Welcome " + auth.user.username);
       },
       function(err){
-        alert("Login failed");
+        alert("Auth failed");
         console.error(err);
       }
     );
 
-  });
-
+  };
 };
 </script>
 
