@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Spicy Library Pi</title>
 
-<!-- Pi SDK -->
+<!-- Pi SDK الرسمي -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
 <style>
@@ -34,7 +34,6 @@ button:disabled{
   display:flex;
   flex-wrap:wrap;
   justify-content:center;
-  margin-top:20px;
 }
 .book{
   border:1px solid #333;
@@ -60,8 +59,8 @@ button:disabled{
   <button id="loginBtn">Login with Pi</button>
 </div>
 
-<!-- شاشة الكتب بعد تسجيل الدخول -->
-<div id="booksScreen" class="hidden">
+<!-- الشاشة الرئيسية بعد تسجيل الدخول -->
+<div id="appScreen" class="hidden">
   <h2 id="welcome"></h2>
   <div class="books-container" id="booksContainer"></div>
   <button onclick="logout()">Logout</button>
@@ -76,7 +75,7 @@ const books = [
 ];
 
 // =================== تهيئة Pi SDK ===================
-Pi.init({ version:"2.0", sandbox:true });
+Pi.init({ version:"2.0", sandbox:true }); // لاحقًا يمكن تغيير sandbox=false
 
 let currentUser = null;
 
@@ -84,11 +83,10 @@ let currentUser = null;
 document.getElementById("loginBtn").addEventListener("click", async function(){
   this.disabled = true;
   this.innerText = "Please wait...";
-
   try {
     const auth = await Pi.authenticate(["username","payments"]);
     currentUser = auth.user;
-    showBooksScreen();
+    showApp();
   } catch(err){
     alert("Login failed");
     console.error(err);
@@ -97,10 +95,10 @@ document.getElementById("loginBtn").addEventListener("click", async function(){
   }
 });
 
-// =================== عرض شاشة الكتب ===================
-function showBooksScreen(){
+// =================== عرض التطبيق بعد الدخول ===================
+function showApp(){
   document.getElementById("loginScreen").classList.add("hidden");
-  document.getElementById("booksScreen").classList.remove("hidden");
+  document.getElementById("appScreen").classList.remove("hidden");
   document.getElementById("welcome").innerText = "Welcome " + currentUser.username;
 
   renderBooks();
@@ -154,12 +152,12 @@ async function buyBook(index){
 // =================== تسجيل الخروج ===================
 function logout(){
   currentUser = null;
-  document.getElementById("booksScreen").classList.add("hidden");
+  document.getElementById("appScreen").classList.add("hidden");
   document.getElementById("loginScreen").classList.remove("hidden");
   document.getElementById("loginBtn").disabled = false;
   document.getElementById("loginBtn").innerText = "Login with Pi";
 }
-</script>
 
+</script>
 </body>
 </html>
