@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Spicy Library</title>
+<title>Spicy Library Pi</title>
 
+<!-- Pi SDK الرسمي -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
 <style>
@@ -11,14 +12,15 @@ body{
   background:#111;
   color:#fff;
   font-family:Arial;
+  margin:0;
+  padding:20px;
   text-align:center;
-  padding-top:100px;
 }
 button{
-  padding:14px 30px;
+  padding:10px 20px;
   font-size:16px;
   border:none;
-  border-radius:8px;
+  border-radius:6px;
   cursor:pointer;
   background:#ff4500;
   color:white;
@@ -28,63 +30,134 @@ button:disabled{
   cursor:not-allowed;
 }
 .hidden{display:none;}
+.books-container{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.book{
+  border:1px solid #333;
+  margin:15px;
+  padding:15px;
+  border-radius:8px;
+  background:#1c1c1c;
+  width:220px;
+}
+.book img{
+  width:200px;
+  height:auto;
+  margin-bottom:10px;
+}
 </style>
 </head>
-
 <body>
 
-<!-- LOGIN -->
-<div id="login">
+<!-- شاشة تسجيل الدخول -->
+<div id="loginScreen">
   <h1>🌶️ Spicy Library</h1>
   <p>Login with Pi Network</p>
   <button id="loginBtn">Login with Pi</button>
 </div>
 
-<!-- APP -->
-<div id="app" class="hidden">
+<!-- الشاشة الرئيسية بعد تسجيل الدخول -->
+<div id="appScreen" class="hidden">
   <h2 id="welcome"></h2>
-  <p>📚 You are now inside the app</p>
+  <div class="books-container" id="booksContainer"></div>
+  <button onclick="logout()">Logout</button>
 </div>
 
 <script>
-Pi.init({ version:"2.0", sandbox:false });
+// =================== بيانات الكتب ===================
+const books = [
+  { title: "Love Story", author: "Asmanour", pricePi: 5, cover: "cover1.jpg", description: "A hidden childhood love grows into an eternal romance after many trials and tears." },
+  { title: "Adventure Tales", author: "John Doe", pricePi: 3, cover: "cover2.jpg", description: "Exciting adventures full of mystery, courage, and unforgettable journeys." },
+  { title: "Tech & Web3", author: "Jane Smith", pricePi: 7, cover: "cover3.jpg", description: "Discover the future of blockchain, cryptocurrencies, and decentralized technology." }
+];
 
-const loginBtn = document.getElementById("loginBtn");
-const loginDiv = document.getElementById("login");
-const appDiv   = document.getElementById("app");
-const welcome  = document.getElementById("welcome");
+// =================== تهيئة Pi SDK ===================
+Pi.init({ version:"2.0", sandbox:true }); // لاحقًا يمكن تغيير sandbox=false
 
-let authInProgress = false;
+let currentUser = null;
 
-loginBtn.addEventListener("click", function(){
-
-  if (authInProgress) return;
-
-  authInProgress = true;
-  loginBtn.disabled = true;
-  loginBtn.innerText = "Please wait...";
-
-  Pi.authenticate(
-    ["username"],
-    function(auth){
-      // تأخير بسيط مهم جدًا
-      setTimeout(function(){
-        loginDiv.classList.add("hidden");
-        appDiv.classList.remove("hidden");
-        welcome.innerText = "Welcome " + auth.user.username;
-      }, 300);
-    },
-    function(err){
-      authInProgress = false;
-      loginBtn.disabled = false;
-      loginBtn.innerText = "Login with Pi";
-      alert("Login failed");
-      console.error(err);
-    }
-  );
-
+// =================== وظيفة الدخول ===================
+document.getElementById("loginBtn").addEventListener("click", async function(){
+  this.disabled = true;
+  this.innerText = "Please wait...";
+  try {
+    const auth = await Pi.authenticate(["username","payments"]);
+    currentUser = auth.user;
+    showApp();
+  } catch(err){
+    alert("Login failed");
+    console.error(err);
+    this.disabled = false;
+    this.innerText = "Login with Pi";
+  }
 });
-</script>
 
+// =================== عرض التطبيق بعد الدخول ===================
+function showApp(){
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("appScreen").classList.remove("hidden");
+  document.getElementById("welcome").innerText = "Welcome " + currentUser.username;
+
+  renderBooks();
+}
+
+// =================== عرض الكتب ===================
+function renderBooks(){
+  const container = document.getElementById("booksContainer");
+  container.innerHTML = "";
+  books.forEach((book,index)=>{
+    const bookDiv = document.createElement("div");
+    bookDiv.className = "book";
+    bookDiv.innerHTML = `
+      <img src="${book.cover}" alt="${book.title}">
+      <h3>${book.title}</h3>
+      <p>Author: ${book.author}</p>
+      <p>Price: ${book.pricePi} Pi</p>
+      <button onclick="buyBook(${index})">Buy with Pi</button>
+    `;
+    container.appendChild(bookDiv);
+  });
+}
+
+// =================== الدفع ===================
+async function buyBook(index){
+  if(!currentUser){
+    alert("You must login first");
+    return;
+  }
+  const book = books[index];
+  try {
+    await Pi.createPayment({
+      amount: book.pricePi,
+      currency: "Pi",
+      memo: "Buy " + book.title,
+      metadata: { book: book.title }
+    },{
+      onReadyForServerApproval: function(id){},
+      onReadyForServerCompletion: function(id,txid){
+        alert("Payment successful (Sandbox)");
+      },
+      onCancel: function(){ alert("Payment canceled"); },
+      onError: function(err){ alert("Payment error"); console.error(err); }
+    });
+  } catch(err){
+    console.error(err);
+    alert("Payment failed");
+  }
+}
+
+// =================== تسجيل الخروج ===================
+function logout(){
+  currentUser = null;
+  document.getElementById("appScreen").classList.add("hidden");
+  document.getElementById("loginScreen").classList.remove("hidden");
+  document.getElementById("loginBtn").disabled = false;
+  document.getElementById("loginBtn").innerText = "Login with Pi";
+}
+
+</script>
 </body>
 </html>
