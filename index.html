@@ -73,7 +73,7 @@ button:disabled{
 
 <!-- شاشة تسجيل الدخول -->
 <div id="loginScreen">
-  <h1> 📖 Spicy Library</h1>
+  <h1>🌶️ Spicy Library</h1>
   <p>Login with Pi Network</p>
   <button id="loginBtn">Login with Pi</button>
 </div>
@@ -170,6 +170,7 @@ document.getElementById("cancelAddBook").addEventListener("click", function(){
 // =================== رفع كتاب جديد ===================
 document.getElementById("addBookForm").addEventListener("submit", async function(e){
   e.preventDefault();
+  console.log("Form submitted");
   if(!currentUser) return alert("Login required");
   if(!document.getElementById("agreeRights").checked){
     return alert("You must accept full copyright responsibility!");
@@ -181,27 +182,33 @@ document.getElementById("addBookForm").addEventListener("submit", async function
   const coverFile = document.getElementById("bookCover").files[0];
   const pdfFile = document.getElementById("bookPDF").files[0];
 
+  console.log("Files:", coverFile, pdfFile);
+
   if(!coverFile || !pdfFile) return alert("Select both cover and PDF files");
 
-  // رفع الغلاف
-  const coverRef = storage.ref("covers/"+Date.now()+"_"+coverFile.name);
-  const coverSnapshot = await coverRef.put(coverFile);
-  const coverUrl = await coverSnapshot.ref.getDownloadURL();
+  try {
+    const coverRef = storage.ref("covers/"+Date.now()+"_"+coverFile.name);
+    const coverSnapshot = await coverRef.put(coverFile);
+    const coverUrl = await coverSnapshot.ref.getDownloadURL();
+    console.log("Cover uploaded", coverUrl);
 
-  // رفع PDF
-  const pdfRef = storage.ref("booksPDF/"+Date.now()+"_"+pdfFile.name);
-  const pdfSnapshot = await pdfRef.put(pdfFile);
-  const pdfUrl = await pdfSnapshot.ref.getDownloadURL();
+    const pdfRef = storage.ref("booksPDF/"+Date.now()+"_"+pdfFile.name);
+    const pdfSnapshot = await pdfRef.put(pdfFile);
+    const pdfUrl = await pdfSnapshot.ref.getDownloadURL();
+    console.log("PDF uploaded", pdfUrl);
 
-  // حفظ الكتاب في Firestore
-  await db.collection("books").add({
-    title, description: desc, pricePi: price, cover: coverUrl, pdf: pdfUrl, author: currentUser.username, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-  });
+    await db.collection("books").add({
+      title, description: desc, pricePi: price, cover: coverUrl, pdf: pdfUrl, author: currentUser.username, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
-  alert("Book uploaded successfully!");
-  this.reset();
-  document.getElementById("addBookSection").classList.add("hidden");
-  loadBooks();
+    alert("Book uploaded successfully!");
+    this.reset();
+    document.getElementById("addBookSection").classList.add("hidden");
+    loadBooks();
+  } catch(err){
+    console.error("Upload error:", err);
+    alert("Error uploading book, check console");
+  }
 });
 
 // =================== تحميل وعرض جميع الكتب ===================
@@ -237,13 +244,10 @@ async function buyBook(bookId, price){
     },{
       onReadyForServerCompletion: async function(paymentId, txId){
         alert("Payment successful!");
-
-        // إضافة الكتاب إلى مكتبة المستخدم
         const userRef = db.collection("users").doc(currentUser.username);
         await userRef.set({
           books: firebase.firestore.FieldValue.arrayUnion(bookId)
         }, { merge: true });
-
         loadUserLibrary();
       },
       onCancel: function(){ alert("Payment canceled"); },
