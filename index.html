@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>📖 Spicy Library</title>
+<title>🌶️ Spicy Library</title>
 
 <!-- Pi SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
-<!-- Firebase Firestore -->
+<!-- Firebase compat -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
@@ -16,66 +16,80 @@ body{
   background:#111;
   color:#fff;
   font-family:Arial;
-  text-align:center;
+  margin:0;
   padding:20px;
+  text-align:center;
 }
 button{
-  background:#ff4500;
-  color:white;
-  border:none;
   padding:10px 20px;
-  margin:5px;
+  border:none;
   border-radius:6px;
   cursor:pointer;
+  background:#ff4500;
+  color:white;
+  margin:5px;
 }
 .hidden{display:none;}
-input,textarea{width:90%;padding:8px;margin:5px;}
-.books{display:flex;flex-wrap:wrap;justify-content:center;}
+.books{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+}
 .book{
   background:#1c1c1c;
   border:1px solid #333;
   border-radius:8px;
   padding:15px;
   margin:10px;
-  width:220px;
+  width:230px;
 }
-.book img{width:200px;}
+input,textarea{
+  width:90%;
+  padding:8px;
+  margin:5px;
+}
 </style>
 </head>
 
 <body>
 
 <!-- LOGIN -->
-<div id="login">
-  <h1>📖 Spicy Library</h1>
-  <button onclick="login()">Login with Pi</button>
+<div id="loginScreen">
+  <h1>🌶️ Spicy Library</h1>
+  <p>Login with Pi Network</p>
+  <button id="loginBtn">Login with Pi</button>
 </div>
 
 <!-- APP -->
-<div id="app" class="hidden">
+<div id="appScreen" class="hidden">
   <h2 id="welcome"></h2>
-  <button onclick="toggleAdd()">➕ Add Book</button>
+  <button onclick="toggleAddBook()">➕ Add Book</button>
   <button onclick="logout()">Logout</button>
 
-  <div id="add" class="hidden">
-    <h3>Add Book</h3>
-    <input id="title" placeholder="Title">
+  <!-- ADD BOOK -->
+  <div id="addBook" class="hidden">
+    <h3>Add Your Book</h3>
+    <input id="title" placeholder="Book title">
     <input id="price" type="number" placeholder="Price (Pi)">
-    <input type="file" id="cover" accept="image/*">
-    <input type="file" id="pdf" accept="application/pdf">
+    <input id="cover" placeholder="Cover Image URL">
+    <input id="pdf" placeholder="PDF URL (protected)">
     <textarea id="desc" placeholder="Description"></textarea>
     <label>
       <input type="checkbox" id="rights">
-      I own the rights of this book
+      I confirm I own the rights
     </label><br>
     <button onclick="uploadBook()">Upload Book</button>
   </div>
 
-  <h3>Books</h3>
+  <h3>📚 Books</h3>
   <div class="books" id="books"></div>
 </div>
 
 <script>
+// ================= CONFIG =================
+const PLATFORM_WALLET = "spicy_platform";
+const PLATFORM_FEE_PERCENT = 20; // 20%
+
 // ================= Firebase =================
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
@@ -85,47 +99,62 @@ firebase.initializeApp({
 const db = firebase.firestore();
 
 // ================= Pi =================
-Pi.init({version:"2.0", sandbox:true});
+Pi.init({ version:"2.0", sandbox:true }); // ← غيّر إلى false بعد Mainnet
+
 let user = null;
 
-// ================= Cloudinary =================
-const CLOUD_NAME = "dkb0phegf";
-const UPLOAD_PRESET = "spicy1998";
-
-async function uploadToCloudinary(file, folder){
-  const form = new FormData();
-  form.append("file", file);
-  form.append("upload_preset", UPLOAD_PRESET);
-  form.append("folder", folder);
-
-  const res = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
-    { method:"POST", body: form }
-  );
-
-  const data = await res.json();
-  return data.secure_url;
-}
-
-// ================= Login =================
-async function login(){
+// ================= LOGIN =================
+document.getElementById("loginBtn").onclick = async ()=>{
   try{
     const auth = await Pi.authenticate(["username","payments"]);
     user = auth.user;
-    document.getElementById("login").classList.add("hidden");
-    document.getElementById("app").classList.remove("hidden");
+    document.getElementById("loginScreen").classList.add("hidden");
+    document.getElementById("appScreen").classList.remove("hidden");
     document.getElementById("welcome").innerText = "Welcome " + user.username;
     loadBooks();
   }catch(e){
     alert("Login failed");
   }
-}
+};
 
 function logout(){ location.reload(); }
 
-// ================= Books =================
-function toggleAdd(){
-  document.getElementById("add").classList.toggle("hidden");
+// ================= BOOKS =================
+async function loadBooks(){
+  const booksSnap = await db.collection("books").get();
+  const purchasesSnap = await db.collection("purchases")
+    .where("buyer","==",user.username).get();
+
+  const owned = purchasesSnap.docs.map(d=>d.data().bookId);
+
+  const box = document.getElementById("books");
+  box.innerHTML="";
+
+  booksSnap.forEach(doc=>{
+    const b = doc.data();
+    const isOwner = owned.includes(doc.id);
+
+    box.innerHTML += `
+      <div class="book">
+        <img src="${b.cover}" width="200"><br>
+        <h4>${b.title}</h4>
+        <p>${b.price} Pi</p>
+        ${
+          isOwner
+          ? `<a href="${b.pdf}" target="_blank">
+               <button>⬇ Download</button>
+             </a>`
+          : `<button onclick="buy('${doc.id}','${b.title}',${b.price},'${b.owner}')">
+               Buy
+             </button>`
+        }
+      </div>`;
+  });
+}
+
+// ================= ADD BOOK =================
+function toggleAddBook(){
+  document.getElementById("addBook").classList.toggle("hidden");
 }
 
 async function uploadBook(){
@@ -134,85 +163,52 @@ async function uploadBook(){
     return;
   }
 
-  const titleVal = document.getElementById("title").value;
-  const priceVal = Number(document.getElementById("price").value);
-  const descVal = document.getElementById("desc").value;
-  const coverFile = document.getElementById("cover").files[0];
-  const pdfFile = document.getElementById("pdf").files[0];
-
-  if(!titleVal || !priceVal || !coverFile || !pdfFile){
-    alert("Fill all fields");
-    return;
-  }
-
-  alert("Uploading... please wait");
-
-  const coverURL = await uploadToCloudinary(coverFile,"covers");
-  const pdfURL = await uploadToCloudinary(pdfFile,"pdfs");
-
   await db.collection("books").add({
-    title: titleVal,
-    price: priceVal,
-    desc: descVal,
-    cover: coverURL,
-    pdf: pdfURL,
-    owner: user.username,
-    created: Date.now()
+    title: title.value,
+    price: Number(price.value),
+    desc: desc.value,
+    cover: cover.value,
+    pdf: pdf.value,
+    owner: user.username
   });
 
-  alert("Book uploaded");
-  toggleAdd();
+  alert("Book added");
+  toggleAddBook();
   loadBooks();
 }
 
-async function loadBooks(){
-  const box = document.getElementById("books");
-  box.innerHTML="";
-  const snap = await db.collection("books").orderBy("created","desc").get();
-  snap.forEach(doc=>{
-    const b = doc.data();
-    box.innerHTML += `
-      <div class="book">
-        <img src="${b.cover}">
-        <h4>${b.title}</h4>
-        <p>${b.price} Pi</p>
-        <button onclick="buy('${b.title}',${b.price})">Buy</button>
-      </div>`;
+// ================= PAYMENT =================
+async function buy(bookId,title,price,seller){
+  const fee = price * PLATFORM_FEE_PERCENT / 100;
+  const sellerAmount = price - fee;
+
+  await Pi.createPayment({
+    amount: price,
+    currency: "Pi",
+    memo: "Buy " + title,
+    metadata: { bookId }
+  },{
+    onReadyForServerCompletion: async ()=>{
+      await db.collection("purchases").add({
+        bookId,
+        buyer: user.username,
+        paid: true,
+        created: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      await db.collection("earnings").add({
+        seller,
+        bookId,
+        amount: sellerAmount,
+        fee,
+        paidOut: false
+      });
+
+      alert("Payment successful");
+      loadBooks();
+    }
   });
 }
-
-// ================= Payment (FIXED) =================
-async function buy(title, price){
-  try{
-    await Pi.createPayment(
-      {
-        amount: price,
-        memo: "Buy " + title,
-        metadata: { book: title }
-      },
-      {
-        onReadyForServerApproval: function(id){
-          console.log("Approved:", id);
-        },
-        onReadyForServerCompletion: function(id, txid){
-          alert("Payment successful!");
-          console.log("TXID:", txid);
-        },
-        onCancel: function(){
-          alert("Payment cancelled");
-        },
-        onError: function(err){
-          alert("Payment error");
-          console.error(err);
-        }
-      }
-    );
-  }catch(e){
-    alert("Payment failed");
-    console.error(e);
-  }
-}
 </script>
-
 </body>
 </html>
