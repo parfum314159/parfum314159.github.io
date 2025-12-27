@@ -10,6 +10,7 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <style>
 body{
@@ -20,14 +21,17 @@ body{
   padding:20px;
   text-align:center;
 }
-button{
-  padding:10px 20px;
-  font-size:16px;
+button, input, textarea{
+  padding:10px;
+  font-size:14px;
   border:none;
   border-radius:6px;
-  cursor:pointer;
+  margin:5px 0;
+}
+button{
   background:#ff4500;
   color:white;
+  cursor:pointer;
 }
 button:disabled{
   background:#555;
@@ -53,7 +57,7 @@ button:disabled{
   height:auto;
   margin-bottom:10px;
 }
-#userLibrary{
+#userLibrary, #addBookForm{
   margin-top:20px;
   border:1px solid #333;
   padding:10px;
@@ -61,6 +65,7 @@ button:disabled{
   max-width:400px;
   margin-left:auto;
   margin-right:auto;
+  text-align:left;
 }
 </style>
 </head>
@@ -68,16 +73,32 @@ button:disabled{
 
 <!-- شاشة تسجيل الدخول -->
 <div id="loginScreen">
-  <h1> Spicy Library</h1>
+  <h1>🌶️ Spicy Library</h1>
   <p>Login with Pi Network</p>
   <button id="loginBtn">Login with Pi</button>
 </div>
 
-<!-- شاشة الكتب بعد تسجيل الدخول -->
-<div id="booksScreen" class="hidden">
+<!-- شاشة التطبيق بعد تسجيل الدخول -->
+<div id="appScreen" class="hidden">
   <h2 id="welcome"></h2>
-  <div class="books-container" id="booksContainer"></div>
   <button onclick="logout()">Logout</button>
+
+  <h3>Add Your Book</h3>
+  <form id="addBookForm">
+    <label>Title:</label><br>
+    <input type="text" id="bookTitle" required><br>
+    <label>Description:</label><br>
+    <textarea id="bookDesc" rows="3" required></textarea><br>
+    <label>Price (Pi):</label><br>
+    <input type="number" id="bookPrice" required><br>
+    <label>Cover Image:</label><br>
+    <input type="file" id="bookCover" accept="image/*" required><br>
+    <input type="checkbox" id="agreeRights" required> I accept full responsibility for copyrights<br>
+    <button type="submit">Upload Book</button>
+  </form>
+
+  <h3>All Books</h3>
+  <div class="books-container" id="booksContainer"></div>
 
   <div id="userLibrary">
     <h3>Your Library</h3>
@@ -86,39 +107,33 @@ button:disabled{
 </div>
 
 <script>
-// =================== بيانات الكتب ===================
-const books = [
-  { title: "Love Story", author: "Asmanour", pricePi: 5, cover: "cover1.jpg", description: "A hidden childhood love grows into an eternal romance after many trials and tears." },
-  { title: "Adventure Tales", author: "John Doe", pricePi: 3, cover: "cover2.jpg", description: "Exciting adventures full of mystery, courage, and unforgettable journeys." },
-  { title: "Tech & Web3", author: "Jane Smith", pricePi: 7, cover: "cover3.jpg", description: "Discover the future of blockchain, cryptocurrencies, and decentralized technology." }
-];
-
-// =================== تهيئة Pi SDK ===================
-Pi.init({ version:"2.0", sandbox:true });
-
-// =================== تهيئة Firebase ===================
+// =================== Firebase Config ===================
 const firebaseConfig = {
   apiKey: "AIzaSyBwfwugnPYvdsL4wApe1QF5IM6QTwZwbms",
   authDomain: "spicy-f2a1b.firebaseapp.com",
   projectId: "spicy-f2a1b",
-  storageBucket: "spicy-f2a1b.firebasestorage.app",
+  storageBucket: "spicy-f2a1b.appspot.com",
   messagingSenderId: "393201465836",
   appId: "1:393201465836:web:70e0ee76581d16bed868c9",
   measurementId: "G-NJ66KF296Z"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const storage = firebase.storage();
 
 let currentUser = null;
 
-// =================== وظيفة الدخول ===================
+// =================== Pi SDK ===================
+Pi.init({ version:"2.0", sandbox:true });
+
+// =================== تسجيل الدخول ===================
 document.getElementById("loginBtn").addEventListener("click", async function(){
   this.disabled = true;
   this.innerText = "Please wait...";
   try {
     const auth = await Pi.authenticate(["username","payments"]);
     currentUser = auth.user;
-    showBooksScreen();
+    showApp();
   } catch(err){
     alert("Login failed");
     console.error(err);
@@ -127,63 +142,89 @@ document.getElementById("loginBtn").addEventListener("click", async function(){
   }
 });
 
-// =================== عرض شاشة الكتب ===================
-function showBooksScreen(){
+// =================== عرض التطبيق ===================
+function showApp(){
   document.getElementById("loginScreen").classList.add("hidden");
-  document.getElementById("booksScreen").classList.remove("hidden");
+  document.getElementById("appScreen").classList.remove("hidden");
   document.getElementById("welcome").innerText = "Welcome " + currentUser.username;
 
-  renderBooks();
+  loadBooks();
   loadUserLibrary();
 }
 
-// =================== عرض الكتب ===================
-function renderBooks(){
+// =================== رفع كتاب جديد ===================
+document.getElementById("addBookForm").addEventListener("submit", async function(e){
+  e.preventDefault();
+  if(!currentUser) return alert("Login required");
+  if(!document.getElementById("agreeRights").checked){
+    return alert("You must accept full copyright responsibility!");
+  }
+
+  const title = document.getElementById("bookTitle").value;
+  const desc = document.getElementById("bookDesc").value;
+  const price = Number(document.getElementById("bookPrice").value);
+  const file = document.getElementById("bookCover").files[0];
+
+  if(!file) return alert("Select cover image");
+
+  // رفع الصورة إلى Firebase Storage
+  const storageRef = storage.ref("covers/"+Date.now()+"_"+file.name);
+  const snapshot = await storageRef.put(file);
+  const coverUrl = await snapshot.ref.getDownloadURL();
+
+  // حفظ الكتاب في Firestore
+  await db.collection("books").add({
+    title, description: desc, pricePi: price, cover: coverUrl, author: currentUser.username, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  alert("Book uploaded successfully!");
+  this.reset();
+  loadBooks();
+});
+
+// =================== تحميل وعرض جميع الكتب ===================
+async function loadBooks(){
   const container = document.getElementById("booksContainer");
   container.innerHTML = "";
-  books.forEach((book,index)=>{
+  const snapshot = await db.collection("books").orderBy("timestamp","desc").get();
+  snapshot.forEach(doc => {
+    const b = doc.data();
     const bookDiv = document.createElement("div");
     bookDiv.className = "book";
     bookDiv.innerHTML = `
-      <img src="${book.cover}" alt="${book.title}">
-      <h3>${book.title}</h3>
-      <p>Author: ${book.author}</p>
-      <p>Price: ${book.pricePi} Pi</p>
-      <button onclick="buyBook(${index})">Buy with Pi</button>
+      <img src="${b.cover}" alt="${b.title}">
+      <h3>${b.title}</h3>
+      <p>Author: ${b.author}</p>
+      <p>Price: ${b.pricePi} Pi</p>
+      <button onclick="buyBook('${doc.id}', ${b.pricePi})">Buy with Pi</button>
     `;
     container.appendChild(bookDiv);
   });
 }
 
-// =================== الدفع ===================
-async function buyBook(index){
-  if(!currentUser){
-    alert("You must login first");
-    return;
-  }
-  const book = books[index];
+// =================== شراء كتاب ===================
+async function buyBook(bookId, price){
+  if(!currentUser) return alert("Login required");
+
   try {
     await Pi.createPayment({
-      amount: book.pricePi,
+      amount: price,
       currency: "Pi",
-      memo: "Buy " + book.title,
-      metadata: { book: book.title }
+      memo: "Buy Book " + bookId
     },{
-      onReadyForServerApproval: function(paymentId){},
       onReadyForServerCompletion: async function(paymentId, txId){
-        alert("Payment successful! 📦 You bought '" + book.title + "' (Sandbox)");
+        alert("Payment successful!");
 
-        // حفظ الكتاب في مكتبة المستخدم في Firebase
+        // إضافة الكتاب إلى مكتبة المستخدم
         const userRef = db.collection("users").doc(currentUser.username);
         await userRef.set({
-          books: firebase.firestore.FieldValue.arrayUnion(book.title)
+          books: firebase.firestore.FieldValue.arrayUnion(bookId)
         }, { merge: true });
 
-        // تحديث المكتبة المعروضة
         loadUserLibrary();
       },
-      onCancel: function(){ alert("Payment canceled ❌"); },
-      onError: function(err){ alert("Payment error ⚠️"); console.error(err); }
+      onCancel: function(){ alert("Payment canceled"); },
+      onError: function(err){ alert("Payment error"); console.error(err); }
     });
   } catch(err){
     console.error(err);
@@ -191,27 +232,31 @@ async function buyBook(index){
   }
 }
 
-// =================== تحميل مكتبة المستخدم ===================
+// =================== مكتبة المستخدم ===================
 async function loadUserLibrary(){
   if(!currentUser) return;
   const userRef = db.collection("users").doc(currentUser.username);
   const docSnap = await userRef.get();
-  let myBooks = [];
+  const div = document.getElementById("myBooks");
   if(docSnap.exists){
-    myBooks = docSnap.data().books || [];
-  }
-  const myBooksDiv = document.getElementById("myBooks");
-  if(myBooks.length===0){
-    myBooksDiv.innerHTML = "<p>You have no books yet.</p>";
+    const bookIds = docSnap.data().books || [];
+    if(bookIds.length===0){
+      div.innerHTML="<p>You have no books yet.</p>";
+    } else {
+      // تحميل بيانات الكتب المشتراة
+      const promises = bookIds.map(id => db.collection("books").doc(id).get());
+      const snapshots = await Promise.all(promises);
+      div.innerHTML="<ul>" + snapshots.map(s => `<li>${s.exists ? s.data().title : "Unknown Book"}</li>`).join("") + "</ul>";
+    }
   } else {
-    myBooksDiv.innerHTML = "<ul>" + myBooks.map(b => "<li>"+b+"</li>").join("") + "</ul>";
+    div.innerHTML="<p>You have no books yet.</p>";
   }
 }
 
 // =================== تسجيل الخروج ===================
 function logout(){
   currentUser = null;
-  document.getElementById("booksScreen").classList.add("hidden");
+  document.getElementById("appScreen").classList.add("hidden");
   document.getElementById("loginScreen").classList.remove("hidden");
   document.getElementById("loginBtn").disabled = false;
   document.getElementById("loginBtn").innerText = "Login with Pi";
