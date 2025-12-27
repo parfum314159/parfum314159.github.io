@@ -23,65 +23,67 @@ button{
   background:#ff4500;
   color:white;
 }
+button:disabled{
+  background:#555;
+  cursor:not-allowed;
+}
 .hidden{display:none;}
 </style>
 </head>
 
 <body>
 
+<!-- LOGIN -->
 <div id="login">
-  <h1> Spicy Library</h1>
+  <h1>🌶️ Spicy Library</h1>
   <p>Login with Pi Network</p>
   <button id="loginBtn">Login with Pi</button>
 </div>
 
+<!-- APP -->
 <div id="app" class="hidden">
   <h2 id="welcome"></h2>
-  <p>📚 Welcome to Spicy Library</p>
-  <button onclick="logout()">Logout</button>
+  <p>📚 You are now inside the app</p>
 </div>
 
 <script>
 Pi.init({ version:"2.0", sandbox:false });
 
-let authenticated = false;
+const loginBtn = document.getElementById("loginBtn");
+const loginDiv = document.getElementById("login");
+const appDiv   = document.getElementById("app");
+const welcome  = document.getElementById("welcome");
 
-/* زر الدخول */
-document.getElementById("loginBtn").onclick = function(){
+let authInProgress = false;
 
-  if(authenticated){
-    showApp();
-    return;
-  }
+loginBtn.addEventListener("click", function(){
+
+  if (authInProgress) return;
+
+  authInProgress = true;
+  loginBtn.disabled = true;
+  loginBtn.innerText = "Please wait...";
 
   Pi.authenticate(
     ["username"],
     function(auth){
-      authenticated = true;
-      window.piUser = auth.user;
-      showApp();
+      // تأخير بسيط مهم جدًا
+      setTimeout(function(){
+        loginDiv.classList.add("hidden");
+        appDiv.classList.remove("hidden");
+        welcome.innerText = "Welcome " + auth.user.username;
+      }, 300);
     },
     function(err){
-      alert("Authentication failed");
+      authInProgress = false;
+      loginBtn.disabled = false;
+      loginBtn.innerText = "Login with Pi";
+      alert("Login failed");
       console.error(err);
     }
   );
-};
 
-/* إظهار التطبيق */
-function showApp(){
-  document.getElementById("login").classList.add("hidden");
-  document.getElementById("app").classList.remove("hidden");
-  document.getElementById("welcome").innerText =
-    "Welcome " + window.piUser.username;
-}
-
-/* تسجيل الخروج (محلي فقط) */
-function logout(){
-  authenticated = false;
-  document.getElementById("app").classList.add("hidden");
-  document.getElementById("login").classList.remove("hidden");
-}
+});
 </script>
 
 </body>
