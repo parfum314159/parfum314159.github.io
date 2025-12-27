@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Spicy Library</title>
+
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<style>
+body{
+  background:#111;
+  color:#fff;
+  font-family:Arial;
+  padding:20px;
+}
+h1{ color:#ff4500; }
+.book{
+  border:1px solid #333;
+  padding:15px;
+  border-radius:8px;
+  margin:10px 0;
+  background:#1c1c1c;
+}
+button{
+  padding:8px 15px;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
+  background:#00b300;
+  color:white;
+}
+button.logout{
+  background:#ff4500;
+}
+</style>
+</head>
+
+<body>
+
+<h1>?? Spicy Library</h1>
+<p id="welcome"></p>
+
+<div class="book">
+  <h3>Love Story</h3>
+  <p>Author: Asmanour</p>
+  <p>Price: 5 Pi</p>
+  <button onclick="pay('Love Story',5)">Buy with Pi</button>
+</div>
+
+<div class="book">
+  <h3>Adventure Tales</h3>
+  <p>Author: John Doe</p>
+  <p>Price: 3 Pi</p>
+  <button onclick="pay('Adventure Tales',3)">Buy with Pi</button>
+</div>
+
+<div class="book">
+  <h3>Tech & Web3</h3>
+  <p>Author: Jane Smith</p>
+  <p>Price: 7 Pi</p>
+  <button onclick="pay('Tech & Web3',7)">Buy with Pi</button>
+</div>
+
+<br>
+<button class="logout" onclick="logout()">Logout</button>
+
+<script>
+Pi.init({
+  version: "2.0",
+  sandbox: true
+});
+
+const user = JSON.parse(localStorage.getItem("piUser"));
+
+if(!user){
+  window.location.href = "index.html";
+}else{
+  document.getElementById("welcome").innerText =
+    "Welcome " + user.user.username;
+}
+
+function logout(){
+  localStorage.removeItem("piUser");
+  window.location.href = "index.html";
+}
+
+function pay(title, amount){
+  Pi.createPayment({
+    amount: amount,
+    memo: "Buy " + title,
+    metadata: { book: title }
+  },{
+    onReadyForServerApproval: function(paymentId){},
+    onReadyForServerCompletion: function(paymentId, txid){
+      alert("Payment successful (Sandbox)");
+    },
+    onCancel: function(){ alert("Payment canceled"); },
+    onError: function(err){
+      console.error(err);
+      alert("Payment error");
+    }
+  });
+}
+</script>
+
+</body>
+</html>

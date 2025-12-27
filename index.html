@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Spicy – Login</title>
+
+<!-- Pi SDK -->
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<style>
+body{
+  background:#111;
+  color:#fff;
+  font-family:Arial;
+  text-align:center;
+  padding-top:100px;
+}
+button{
+  padding:12px 25px;
+  font-size:16px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  background:#ff4500;
+  color:white;
+}
+</style>
+</head>
+
+<body>
+
+<h1>??? Spicy Library</h1>
+<p>Login with Pi Network to continue</p>
+
+<button onclick="loginWithPi()">Login with Pi</button>
+
+<script>
+/* Initialize Pi SDK (Sandbox ON) */
+Pi.init({
+  version: "2.0",
+  sandbox: true
+});
+
+function loginWithPi(){
+  Pi.authenticate(
+    ["username","payments"],
+    function(auth){
+      localStorage.setItem("piUser", JSON.stringify(auth));
+      window.location.href = "app.html";
+    },
+    function(error){
+      alert("Pi login failed");
+      console.error(error);
+    }
+  );
+}
+</script>
+
+</body>
+</html>
