@@ -7,6 +7,10 @@
 <!-- Pi SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
 <style>
 body{
   background:#111;
@@ -49,13 +53,22 @@ button:disabled{
   height:auto;
   margin-bottom:10px;
 }
+#userLibrary{
+  margin-top:20px;
+  border:1px solid #333;
+  padding:10px;
+  border-radius:8px;
+  max-width:400px;
+  margin-left:auto;
+  margin-right:auto;
+}
 </style>
 </head>
 <body>
 
 <!-- شاشة تسجيل الدخول -->
 <div id="loginScreen">
-  <h1>🌶️ Spicy Library</h1>
+  <h1> Spicy Library</h1>
   <p>Login with Pi Network</p>
   <button id="loginBtn">Login with Pi</button>
 </div>
@@ -65,6 +78,11 @@ button:disabled{
   <h2 id="welcome"></h2>
   <div class="books-container" id="booksContainer"></div>
   <button onclick="logout()">Logout</button>
+
+  <div id="userLibrary">
+    <h3>Your Library</h3>
+    <div id="myBooks"></div>
+  </div>
 </div>
 
 <script>
@@ -76,7 +94,20 @@ const books = [
 ];
 
 // =================== تهيئة Pi SDK ===================
-Pi.init({ version:"2.0", sandbox:true }); // لاحقًا يمكن تغيير sandbox=false
+Pi.init({ version:"2.0", sandbox:true });
+
+// =================== تهيئة Firebase ===================
+const firebaseConfig = {
+  apiKey: "AIzaSyBwfwugnPYvdsL4wApe1QF5IM6QTwZwbms",
+  authDomain: "spicy-f2a1b.firebaseapp.com",
+  projectId: "spicy-f2a1b",
+  storageBucket: "spicy-f2a1b.firebasestorage.app",
+  messagingSenderId: "393201465836",
+  appId: "1:393201465836:web:70e0ee76581d16bed868c9",
+  measurementId: "G-NJ66KF296Z"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
 let currentUser = null;
 
@@ -103,6 +134,7 @@ function showBooksScreen(){
   document.getElementById("welcome").innerText = "Welcome " + currentUser.username;
 
   renderBooks();
+  loadUserLibrary();
 }
 
 // =================== عرض الكتب ===================
@@ -131,32 +163,48 @@ async function buyBook(index){
   }
   const book = books[index];
   try {
-    // الدفع عبر Pi Wallet
     await Pi.createPayment({
       amount: book.pricePi,
       currency: "Pi",
       memo: "Buy " + book.title,
       metadata: { book: book.title }
     },{
-      // عند إرسال الدفع للموافقة
-      onReadyForServerApproval: function(paymentId){
-        console.log("Ready for approval:", paymentId);
-      },
-      // عند اكتمال الدفع
-      onReadyForServerCompletion: function(paymentId, txId){
+      onReadyForServerApproval: function(paymentId){},
+      onReadyForServerCompletion: async function(paymentId, txId){
         alert("Payment successful! 📦 You bought '" + book.title + "' (Sandbox)");
+
+        // حفظ الكتاب في مكتبة المستخدم في Firebase
+        const userRef = db.collection("users").doc(currentUser.username);
+        await userRef.set({
+          books: firebase.firestore.FieldValue.arrayUnion(book.title)
+        }, { merge: true });
+
+        // تحديث المكتبة المعروضة
+        loadUserLibrary();
       },
-      onCancel: function(){
-        alert("Payment canceled ❌");
-      },
-      onError: function(err){
-        alert("Payment error ⚠️");
-        console.error(err);
-      }
+      onCancel: function(){ alert("Payment canceled ❌"); },
+      onError: function(err){ alert("Payment error ⚠️"); console.error(err); }
     });
   } catch(err){
     console.error(err);
     alert("Payment failed");
+  }
+}
+
+// =================== تحميل مكتبة المستخدم ===================
+async function loadUserLibrary(){
+  if(!currentUser) return;
+  const userRef = db.collection("users").doc(currentUser.username);
+  const docSnap = await userRef.get();
+  let myBooks = [];
+  if(docSnap.exists){
+    myBooks = docSnap.data().books || [];
+  }
+  const myBooksDiv = document.getElementById("myBooks");
+  if(myBooks.length===0){
+    myBooksDiv.innerHTML = "<p>You have no books yet.</p>";
+  } else {
+    myBooksDiv.innerHTML = "<ul>" + myBooks.map(b => "<li>"+b+"</li>").join("") + "</ul>";
   }
 }
 
