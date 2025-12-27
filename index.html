@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Spicy � Login</title>
+<title>Spicy Library</title>
 
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
@@ -11,48 +11,128 @@ body{
   background:#111;
   color:#fff;
   font-family:Arial;
+  margin:0;
+  padding:0;
+}
+.center{
   text-align:center;
-  padding-top:120px;
+  padding-top:100px;
 }
 button{
-  padding:14px 30px;
-  font-size:17px;
+  padding:12px 25px;
+  font-size:16px;
   border:none;
-  border-radius:7px;
+  border-radius:6px;
   cursor:pointer;
   background:#ff4500;
   color:white;
+}
+.hidden{ display:none; }
+.book{
+  border:1px solid #333;
+  margin:15px;
+  padding:15px;
+  border-radius:8px;
+  background:#1c1c1c;
 }
 </style>
 </head>
 
 <body>
 
-<h1>??? Spicy Library</h1>
-<p>Login with Pi Network</p>
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="center">
+  <h1>🌶️ Spicy Library</h1>
+  <p>Login with Pi Network</p>
+  <button onclick="login()">Login with Pi</button>
+</div>
 
-<button onclick="loginWithPi()">Login with Pi</button>
+<!-- APP SCREEN -->
+<div id="appScreen" class="hidden">
+  <div class="center" style="padding-top:20px;">
+    <h1>📚 Spicy Library</h1>
+    <p id="welcome"></p>
+  </div>
+
+  <div class="book">
+    <h3>Love Story</h3>
+    <p>Author: Asmanour</p>
+    <p>Price: 5 Pi</p>
+    <button onclick="pay('Love Story',5)">Buy</button>
+  </div>
+
+  <div class="book">
+    <h3>Adventure Tales</h3>
+    <p>Author: John Doe</p>
+    <p>Price: 3 Pi</p>
+    <button onclick="pay('Adventure Tales',3)">Buy</button>
+  </div>
+
+  <div class="book">
+    <h3>Tech & Web3</h3>
+    <p>Author: Jane Smith</p>
+    <p>Price: 7 Pi</p>
+    <button onclick="pay('Tech & Web3',7)">Buy</button>
+  </div>
+
+  <div class="center">
+    <button onclick="logout()">Logout</button>
+  </div>
+</div>
 
 <script>
+/* INIT PI SDK */
 Pi.init({
-  version: "2.0",
-  sandbox: true
+  version:"2.0",
+  sandbox:true
 });
 
-function loginWithPi(){
+let currentUser = null;
+
+/* LOGIN */
+function login(){
   Pi.authenticate(
     ["username","payments"],
     function(auth){
-      alert("Login success! Welcome " + auth.user.username);
-
-      // ???????? ?????? ???? ?? ?????
-      window.location.href = "app.html?user=" + auth.user.username;
+      currentUser = auth.user;
+      document.getElementById("loginScreen").classList.add("hidden");
+      document.getElementById("appScreen").classList.remove("hidden");
+      document.getElementById("welcome").innerText =
+        "Welcome " + currentUser.username;
     },
     function(error){
       alert("Login failed");
       console.error(error);
     }
   );
+}
+
+/* LOGOUT */
+function logout(){
+  currentUser = null;
+  document.getElementById("appScreen").classList.add("hidden");
+  document.getElementById("loginScreen").classList.remove("hidden");
+}
+
+/* PAYMENT (SANDBOX) */
+function pay(title, amount){
+  Pi.createPayment({
+    amount: amount,
+    memo: "Buy " + title,
+    metadata: { book:title }
+  },{
+    onReadyForServerApproval: function(id){},
+    onReadyForServerCompletion: function(id, txid){
+      alert("Payment successful (Sandbox)");
+    },
+    onCancel: function(){
+      alert("Payment canceled");
+    },
+    onError: function(err){
+      alert("Payment error");
+      console.error(err);
+    }
+  });
 }
 </script>
 
