@@ -76,7 +76,7 @@ input,textarea{width:90%;padding:8px;margin:5px;}
 </div>
 
 <script>
-// ---------------- Firebase ----------------
+// ================= Firebase =================
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
   authDomain: "spicy-97f54.firebaseapp.com",
@@ -84,11 +84,11 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 
-// ---------------- Pi ----------------
+// ================= Pi =================
 Pi.init({version:"2.0", sandbox:true});
 let user = null;
 
-// ---------------- Cloudinary ----------------
+// ================= Cloudinary =================
 const CLOUD_NAME = "dkb0phegf";
 const UPLOAD_PRESET = "spicy1998";
 
@@ -102,11 +102,12 @@ async function uploadToCloudinary(file, folder){
     `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
     { method:"POST", body: form }
   );
+
   const data = await res.json();
   return data.secure_url;
 }
 
-// ---------------- Login ----------------
+// ================= Login =================
 async function login(){
   try{
     const auth = await Pi.authenticate(["username","payments"]);
@@ -115,31 +116,33 @@ async function login(){
     document.getElementById("app").classList.remove("hidden");
     document.getElementById("welcome").innerText = "Welcome " + user.username;
     loadBooks();
-  }catch{
+  }catch(e){
     alert("Login failed");
   }
 }
 
 function logout(){ location.reload(); }
 
-// ---------------- Books ----------------
+// ================= Books =================
 function toggleAdd(){
   document.getElementById("add").classList.toggle("hidden");
 }
 
 async function uploadBook(){
+  alert("Upload function started");
+
   if(!document.getElementById("rights").checked){
     alert("Confirm rights");
     return;
   }
 
-  const title = title.value;
-  const price = Number(price.value);
-  const desc = desc.value;
-  const coverFile = cover.files[0];
-  const pdfFile = pdf.files[0];
+  const titleVal = document.getElementById("title").value;
+  const priceVal = Number(document.getElementById("price").value);
+  const descVal = document.getElementById("desc").value;
+  const coverFile = document.getElementById("cover").files[0];
+  const pdfFile = document.getElementById("pdf").files[0];
 
-  if(!title || !price || !coverFile || !pdfFile){
+  if(!titleVal || !priceVal || !coverFile || !pdfFile){
     alert("Fill all fields");
     return;
   }
@@ -150,14 +153,16 @@ async function uploadBook(){
   const pdfURL = await uploadToCloudinary(pdfFile,"pdfs");
 
   await db.collection("books").add({
-    title, price, desc,
+    title: titleVal,
+    price: priceVal,
+    desc: descVal,
     cover: coverURL,
     pdf: pdfURL,
     owner: user.username,
     created: Date.now()
   });
 
-  alert("Book uploaded");
+  alert("Book uploaded successfully");
   toggleAdd();
   loadBooks();
 }
@@ -166,8 +171,8 @@ async function loadBooks(){
   const box = document.getElementById("books");
   box.innerHTML="";
   const snap = await db.collection("books").orderBy("created","desc").get();
-  snap.forEach(d=>{
-    const b = d.data();
+  snap.forEach(doc=>{
+    const b = doc.data();
     box.innerHTML += `
       <div class="book">
         <img src="${b.cover}">
@@ -178,14 +183,16 @@ async function loadBooks(){
   });
 }
 
-// ---------------- Payment ----------------
+// ================= Payment =================
 async function buy(title,price){
   await Pi.createPayment({
     amount: price,
     currency: "Pi",
     memo: "Buy " + title
   },{
-    onReadyForServerCompletion(){ alert("Payment successful"); }
+    onReadyForServerCompletion(){
+      alert("Payment successful");
+    }
   });
 }
 </script>
