@@ -3,37 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <title>🌶️ Spicy Library</title>
+<!-- Pi SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<!-- Firebase compat -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
-/* نفس الـCSS السابق */
-body{background:#111;color:#fff;font-family:Arial;text-align:center;margin:0;padding:20px;}
-button{padding:10px 20px;border:none;border-radius:6px;background:#ff4500;color:#fff;cursor:pointer;margin:5px;}
-button:disabled{background:#555;cursor:not-allowed;}
-input{padding:8px;margin:5px;width:90%;}
+body{
+  background:#111;
+  color:#fff;
+  font-family:Arial;
+  text-align:center;
+  margin:0;
+  padding:20px;
+}
+button{
+  padding:10px 20px;
+  border:none;
+  border-radius:6px;
+  background:#ff4500;
+  color:#fff;
+  cursor:pointer;
+  margin:5px;
+}
+button:disabled{
+  background:#555;
+  cursor:not-allowed;
+}
+input{
+  padding:8px;
+  margin:5px;
+  width:90%;
+}
 .hidden{display:none}
-.books{display:flex;flex-wrap:wrap;justify-content:center}
-.book{background:#1c1c1c;border:1px solid #333;border-radius:8px;padding:15px;margin:10px;width:220px}
+.books{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center
+}
+.book{
+  background:#1c1c1c;
+  border:1px solid #333;
+  border-radius:8px;
+  padding:15px;
+  margin:10px;
+  width:220px
+}
 .book img{width:200px}
-.notice{font-size:14px;color:#ccc;}
+.notice{
+  font-size:14px;
+  color:#ccc;
+}
 </style>
 </head>
 <body>
-<!-- نفس الـHTML السابق -->
+<!-- LOGIN -->
 <div id="login">
   <h1>🌶️ Spicy Library</h1>
   <p class="notice">Login using Pi Network</p>
+  <p class="notice">يجب فتح الصفحة داخل <strong>Pi Browser</strong></p>
   <button id="loginBtn">Login with Pi</button>
 </div>
+<!-- APP -->
 <div id="app" class="hidden">
   <h3 id="welcome"></h3>
   <button onclick="toggleAdd()">➕ Add Book</button>
   <button onclick="logout()">Logout</button>
+  <!-- ADD BOOK -->
   <div id="addBook" class="hidden">
     <h3>Add Book</h3>
     <input id="title" placeholder="Book title">
-    <input id="price" type="number" placeholder="Price (Pi)">
+    <input id="price" type="number" step="0.01" placeholder="Price (Pi)">
     <p>📷 Book Cover (image)</p>
     <input type="file" id="cover" accept="image/*">
     <p>📄 Book File (PDF)</p>
@@ -44,78 +84,174 @@ input{padding:8px;margin:5px;width:90%;}
     </label><br><br>
     <button id="uploadBtn" onclick="uploadBook()">Upload Book</button>
   </div>
-  <h3>Books</h3>
+  <h3>Available Books</h3>
   <div class="books" id="books"></div>
 </div>
 <script>
+/* ================= FIREBASE ================= */
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
   authDomain: "spicy-97f54.firebaseapp.com",
   projectId: "spicy-97f54"
 });
 const db = firebase.firestore();
-Pi.init({version:"2.0", sandbox:false}); // Mainnet - دفع حقيقي
+
+/* ================= PI SDK INITIALIZATION ================= */
+Pi.init({ version: "2.0", sandbox: false }); // Mainnet - دفع حقيقي بعملة Pi
+
 let user = null;
 
-// رابط Cloud Function لتسجيل العمولة (سننشئه لاحقًا)
-const COMMISSION_URL = "https://us-central1-spicy-97f54.cloudfunctions.net/recordCommission";
+/* ================= CLOUDINARY ================= */
+const CLOUD_NAME = "dkb0phegf";
+const UPLOAD_PRESET = "spicy1998";
 
-async function uploadCloudinary(file, folder){
+async function uploadCloudinary(file, folder) {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("upload_preset", UPLOAD_PRESET);
   fd.append("folder", folder);
-  const r = await fetch(`https://api.cloudinary.com/v1_1/dkb0phegf/auto/upload`, {method:"POST", body:fd});
+  const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
+    method: "POST",
+    body: fd
+  });
+  if (!r.ok) throw new Error("Upload failed");
   const d = await r.json();
   return d.secure_url;
 }
 
-/* نفس دوال login, logout, loadBooks, toggleAdd, uploadBook كما هي */
+/* ================= LOGIN ================= */
+loginBtn.onclick = async () => {
+  if (!window.Pi) {
+    alert("خطأ: يجب فتح هذه الصفحة داخل Pi Browser فقط!");
+    return;
+  }
 
-/* دالة الشراء مع أخذ عمولة */
-async function buy(bookId, price){
-  if (!confirm(`سعر الكتاب ${price} Pi. المنصة تأخذ 20% عمولة. موافق؟`)) return;
+  try {
+    const scopes = ["username", "payments"];
+    const authResult = await Pi.authenticate(scopes);
 
-  try{
+    user = authResult.user;
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+    document.getElementById("welcome").innerText = `Welcome ${user.username}`;
+    loadBooks();
+  } catch (err) {
+    console.error(err);
+    alert("فشل تسجيل الدخول: " + (err.message || "تأكد من Pi Browser وتسجيل التطبيق في Pi Developer Portal"));
+  }
+};
+
+/* ================= LOGOUT ================= */
+function logout() {
+  location.reload();
+}
+
+/* ================= LOAD BOOKS ================= */
+async function loadBooks() {
+  const box = document.getElementById("books");
+  box.innerHTML = "<p>Loading books...</p>";
+  try {
+    const snap = await db.collection("books").orderBy("createdAt", "desc").get();
+    box.innerHTML = "";
+    if (snap.empty) {
+      box.innerHTML = "<p>No books available yet.</p>";
+      return;
+    }
+    snap.forEach(doc => {
+      const b = doc.data();
+      box.innerHTML += `
+        <div class="book">
+          <img src="${b.cover || 'https://via.placeholder.com/200x300?text=No+Cover'}">
+          <h4>${b.title}</h4>
+          <p>${b.price} Pi</p>
+          <p><small>by @${b.owner}</small></p>
+          <button onclick="buy('${doc.id}', ${b.price})">
+            Buy with Pi
+          </button>
+        </div>`;
+    });
+  } catch (e) {
+    box.innerHTML = "<p>Error loading books.</p>";
+    console.error(e);
+  }
+}
+
+function toggleAdd() {
+  addBook.classList.toggle("hidden");
+}
+
+/* ================= UPLOAD ================= */
+async function uploadBook() {
+  if (!rights.checked) {
+    alert("You must confirm book ownership");
+    return;
+  }
+  const titleVal = title.value.trim();
+  const priceVal = Number(price.value);
+  const coverFile = cover.files[0];
+  const pdfFile = pdf.files[0];
+
+  if (!titleVal || !priceVal || !coverFile || !pdfFile) {
+    alert("Please fill all fields");
+    return;
+  }
+
+  uploadBtn.disabled = true;
+  uploadBtn.innerText = "Uploading...";
+
+  try {
+    const coverURL = await uploadCloudinary(coverFile, "covers");
+    const pdfURL = await uploadCloudinary(pdfFile, "pdfs");
+
+    await db.collection("books").add({
+      title: titleVal,
+      price: priceVal,
+      cover: coverURL,
+      pdf: pdfURL,
+      owner: user.username,
+      createdAt: Date.now()
+    });
+
+    alert("✅ Book uploaded successfully!");
+    addBook.classList.add("hidden");
+    title.value = price.value = "";
+    cover.value = pdf.value = "";
+    rights.checked = false;
+    loadBooks();
+  } catch (e) {
+    console.error(e);
+    alert("Upload failed: " + e.message);
+  } finally {
+    uploadBtn.disabled = false;
+    uploadBtn.innerText = "Upload Book";
+  }
+}
+
+/* ================= BUY ================= */
+async function buy(bookId, price) {
+  if (!confirm(`هل تريد شراء هذا الكتاب بـ ${price} Pi حقيقي؟`)) {
+    return;
+  }
+
+  try {
     await Pi.createPayment({
       amount: price,
       currency: "Pi",
-      memo: "Buy book from Spicy Library",
+      memo: "Purchase from Spicy Library",
       metadata: { bookId }
-    },{
-      onReadyForServerApproval: function(paymentId){},
-      onReadyForServerCompletion: async function(paymentId, txid){
-        // بعد نجاح الدفع، نسجل العمولة في الـbackend
-        const commission = price * 0.20; // 20% عمولة المنصة
-        const ownerEarning = price - commission;
-
-        try {
-          await fetch(COMMISSION_URL, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-              bookId,
-              price,
-              commission,
-              ownerEarning,
-              buyer: user.username,
-              txid
-            })
-          });
-          alert(`✅ Payment successful! العمولة ${commission} Pi مسجلة للمنصة`);
-        } catch (err) {
-          console.error(err);
-          alert("Payment successful but commission recording failed");
-        }
-
+    }, {
+      onReadyForServerApproval: (paymentId) => console.log("Approved:", paymentId),
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        alert("✅ Payment Successful!\nTransaction ID: " + txid);
         const doc = await db.collection("books").doc(bookId).get();
         window.open(doc.data().pdf, "_blank");
       },
-      onCancel: function(){ alert("Payment cancelled"); },
-      onError: function(err){ alert("Payment error: " + err.message); }
+      onCancel: () => alert("Payment cancelled"),
+      onError: (err) => alert("Payment error: " + (err.message || "Unknown"))
     });
-  }catch(e){
-    alert("Payment failed");
+  } catch (err) {
+    console.error(err);
+    alert("Payment failed to start: " + err.message);
   }
 }
 </script>
