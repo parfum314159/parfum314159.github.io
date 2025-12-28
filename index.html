@@ -61,7 +61,6 @@ input{
 <div id="login">
   <h1>🌶️ Spicy Library</h1>
   <p class="notice">Login using Pi Network</p>
-  <p class="notice">يجب فتح الصفحة داخل <strong>Pi Browser</strong></p>
   <button id="loginBtn">Login with Pi</button>
 </div>
 <!-- APP -->
@@ -88,7 +87,7 @@ input{
   <div class="books" id="books"></div>
 </div>
 <script>
-/* ================= FIREBASE ================= */
+/* ================= FIREBASE CONFIGURATION ================= */
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
   authDomain: "spicy-97f54.firebaseapp.com",
@@ -96,12 +95,12 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 
-/* ================= PI SDK INITIALIZATION ================= */
-Pi.init({ version: "2.0", sandbox: false }); // Mainnet - دفع حقيقي بعملة Pi
+/* ================= PI SDK - MAINNET ================= */
+Pi.init({ version: "2.0", sandbox: false }); // Mainnet - real Pi payments
 
 let user = null;
 
-/* ================= CLOUDINARY ================= */
+/* ================= CLOUDINARY UPLOAD ================= */
 const CLOUD_NAME = "dkb0phegf";
 const UPLOAD_PRESET = "spicy1998";
 
@@ -110,34 +109,33 @@ async function uploadCloudinary(file, folder) {
   fd.append("file", file);
   fd.append("upload_preset", UPLOAD_PRESET);
   fd.append("folder", folder);
-  const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
     method: "POST",
     body: fd
   });
-  if (!r.ok) throw new Error("Upload failed");
-  const d = await r.json();
-  return d.secure_url;
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Cloudinary upload failed: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.secure_url;
 }
 
 /* ================= LOGIN ================= */
 loginBtn.onclick = async () => {
-  if (!window.Pi) {
-    alert("خطأ: يجب فتح هذه الصفحة داخل Pi Browser فقط!");
-    return;
-  }
-
   try {
-    const scopes = ["username", "payments"];
-    const authResult = await Pi.authenticate(scopes);
-
+    const authResult = await Pi.authenticate(["username", "payments"]);
     user = authResult.user;
+
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
     document.getElementById("welcome").innerText = `Welcome ${user.username}`;
     loadBooks();
   } catch (err) {
-    console.error(err);
-    alert("فشل تسجيل الدخول: " + (err.message || "تأكد من Pi Browser وتسجيل التطبيق في Pi Developer Portal"));
+    console.error("Login error:", err);
+    alert("Login failed. Please try again in Pi Browser.");
   }
 };
 
@@ -150,13 +148,16 @@ function logout() {
 async function loadBooks() {
   const box = document.getElementById("books");
   box.innerHTML = "<p>Loading books...</p>";
+
   try {
     const snap = await db.collection("books").orderBy("createdAt", "desc").get();
     box.innerHTML = "";
+
     if (snap.empty) {
       box.innerHTML = "<p>No books available yet.</p>";
       return;
     }
+
     snap.forEach(doc => {
       const b = doc.data();
       box.innerHTML += `
@@ -165,14 +166,12 @@ async function loadBooks() {
           <h4>${b.title}</h4>
           <p>${b.price} Pi</p>
           <p><small>by @${b.owner}</small></p>
-          <button onclick="buy('${doc.id}', ${b.price})">
-            Buy with Pi
-          </button>
+          <button onclick="buy('${doc.id}', ${b.price})">Buy with Pi</button>
         </div>`;
     });
   } catch (e) {
+    console.error("Load books error:", e);
     box.innerHTML = "<p>Error loading books.</p>";
-    console.error(e);
   }
 }
 
@@ -180,19 +179,20 @@ function toggleAdd() {
   addBook.classList.toggle("hidden");
 }
 
-/* ================= UPLOAD ================= */
+/* ================= UPLOAD BOOK ================= */
 async function uploadBook() {
   if (!rights.checked) {
-    alert("You must confirm book ownership");
+    alert("You must confirm that you own the rights to this book.");
     return;
   }
+
   const titleVal = title.value.trim();
   const priceVal = Number(price.value);
   const coverFile = cover.files[0];
   const pdfFile = pdf.files[0];
 
   if (!titleVal || !priceVal || !coverFile || !pdfFile) {
-    alert("Please fill all fields");
+    alert("Please fill all fields.");
     return;
   }
 
@@ -212,14 +212,14 @@ async function uploadBook() {
       createdAt: Date.now()
     });
 
-    alert("✅ Book uploaded successfully!");
+    alert("Book uploaded successfully!");
     addBook.classList.add("hidden");
     title.value = price.value = "";
     cover.value = pdf.value = "";
     rights.checked = false;
     loadBooks();
   } catch (e) {
-    console.error(e);
+    console.error("Upload error:", e);
     alert("Upload failed: " + e.message);
   } finally {
     uploadBtn.disabled = false;
@@ -227,9 +227,9 @@ async function uploadBook() {
   }
 }
 
-/* ================= BUY ================= */
+/* ================= BUY BOOK ================= */
 async function buy(bookId, price) {
-  if (!confirm(`هل تريد شراء هذا الكتاب بـ ${price} Pi حقيقي؟`)) {
+  if (!confirm(`Buy this book for ${price} Pi?`)) {
     return;
   }
 
@@ -240,18 +240,18 @@ async function buy(bookId, price) {
       memo: "Purchase from Spicy Library",
       metadata: { bookId }
     }, {
-      onReadyForServerApproval: (paymentId) => console.log("Approved:", paymentId),
+      onReadyForServerApproval: (paymentId) => console.log("Payment approved:", paymentId),
       onReadyForServerCompletion: async (paymentId, txid) => {
-        alert("✅ Payment Successful!\nTransaction ID: " + txid);
+        alert("Payment successful! Opening book...");
         const doc = await db.collection("books").doc(bookId).get();
         window.open(doc.data().pdf, "_blank");
       },
       onCancel: () => alert("Payment cancelled"),
-      onError: (err) => alert("Payment error: " + (err.message || "Unknown"))
+      onError: (err) => alert("Payment error: " + (err.message || "Unknown error"))
     });
   } catch (err) {
-    console.error(err);
-    alert("Payment failed to start: " + err.message);
+    console.error("Payment error:", err);
+    alert("Failed to start payment: " + err.message);
   }
 }
 </script>
