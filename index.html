@@ -54,7 +54,6 @@ input{
   font-size:14px;
   color:#ccc;
 }
-#loader { font-size: 18px; color: #ff4500; }
 </style>
 </head>
 <body>
@@ -85,13 +84,10 @@ input{
     <button id="uploadBtn" onclick="uploadBook()">Upload Book</button>
   </div>
   <h3>Books</h3>
-  <div id="loader" class="hidden">Loading...</div>
   <div class="books" id="books"></div>
-  <button id="loadMore" onclick="loadBooks(lastVisible)">Load More</button>
 </div>
 <script>
 /* ================= FIREBASE ================= */
-// استخدم متغيرات بيئية أو خادم خلفي لإخفاء المفاتيح
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
   authDomain: "spicy-97f54.firebaseapp.com",
@@ -101,7 +97,6 @@ const db = firebase.firestore();
 /* ================= PI ================= */
 Pi.init({version:"2.0", sandbox:true}); // sandbox=false في Mainnet
 let user = null;
-let lastVisible = null;
 /* ================= CLOUDINARY ================= */
 const CLOUD_NAME = "dkb0phegf";
 const UPLOAD_PRESET = "spicy1998";
@@ -134,17 +129,10 @@ function logout(){
   location.reload();
 }
 /* ================= BOOKS ================= */
-async function loadBooks(startAfter = null){
+async function loadBooks(){
   const box = document.getElementById("books");
-  const loader = document.getElementById("loader");
-  loader.classList.remove("hidden");
-  if (!startAfter) {
-    box.innerHTML = "";
-    lastVisible = null;
-  }
-  let query = db.collection("books").orderBy("createdAt", "desc").limit(10);
-  if (startAfter) query = query.startAfter(startAfter);
-  const snap = await query.get();
+  box.innerHTML = "";
+  const snap = await db.collection("books").get();
   snap.forEach(doc=>{
     const b = doc.data();
     box.innerHTML += `
@@ -157,17 +145,7 @@ async function loadBooks(startAfter = null){
         </button>
       </div>`;
   });
-  if (snap.docs.length > 0) {
-    lastVisible = snap.docs[snap.docs.length - 1];
-    loadMore.disabled = false;
-    loadMore.innerText = "Load More";
-  } else {
-    loadMore.disabled = true;
-    loadMore.innerText = "No more books";
-  }
-  loader.classList.add("hidden");
 }
-/* ================= TOGGLE ADD ================= */
 function toggleAdd(){
   addBook.classList.toggle("hidden");
 }
@@ -175,9 +153,6 @@ function toggleAdd(){
 async function uploadBook(){
   if(!rights.checked){
     alert("You must confirm book ownership");
-    return;
-  }
-  if (!confirm("Are you sure you own the rights? Uploading copyrighted material is illegal.")) {
     return;
   }
   const titleVal = title.value.trim();
@@ -188,18 +163,8 @@ async function uploadBook(){
     alert("Please fill all fields");
     return;
   }
-  if (coverFile.size > 1024 * 1024 * 2 || pdfFile.size > 1024 * 1024 * 5) { // 2MB للصورة، 5MB للـPDF
-    alert("File too large. Cover max 2MB, PDF max 5MB.");
-    return;
-  }
-  if (!coverFile.type.startsWith('image/') || pdfFile.type !== 'application/pdf') {
-    alert("Invalid file type.");
-    return;
-  }
   uploadBtn.disabled = true;
   uploadBtn.innerText = "Uploading...";
-  const loader = document.getElementById("loader");
-  loader.classList.remove("hidden");
   try{
     const coverURL = await uploadCloudinary(coverFile, "covers");
     const pdfURL = await uploadCloudinary(pdfFile, "pdfs");
@@ -220,7 +185,6 @@ async function uploadBook(){
   }
   uploadBtn.disabled = false;
   uploadBtn.innerText = "Upload Book";
-  loader.classList.add("hidden");
 }
 /* ================= BUY ================= */
 async function buy(bookId, price){
@@ -231,33 +195,10 @@ async function buy(bookId, price){
       memo: "Buy book",
       metadata: { bookId }
     },{
-      onReadyForServerApproval: async function(paymentId) {
-        // أرسل إلى خادمك للموافقة
-        try {
-          await fetch('https://your-firebase-function-url/approvePayment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ paymentId, bookId, user: user.username })
-          });
-        } catch (e) {
-          console.error(e);
-          alert("Approval failed");
-        }
-      },
-      onReadyForServerCompletion: async function(paymentId, txid) {
-        // أرسل إلى خادمك للإكمال
-        try {
-          await fetch('https://your-firebase-function-url/completePayment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ paymentId, txid, bookId })
-          });
-          const doc = await db.collection("books").doc(bookId).get();
-          window.open(doc.data().pdf, "_blank");
-        } catch (e) {
-          console.error(e);
-          alert("Completion failed");
-        }
+      onReadyForServerApproval: function(){},
+      onReadyForServerCompletion: async function(){
+        const doc = await db.collection("books").doc(bookId).get();
+        window.open(doc.data().pdf, "_blank");
       },
       onCancel: function(){
         alert("Payment cancelled by user");
