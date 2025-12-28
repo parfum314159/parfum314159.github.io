@@ -13,20 +13,50 @@
 
 <style>
 body{
-  background:#111;color:#fff;font-family:Arial;text-align:center;
+  background:#111;
+  color:#fff;
+  font-family:Arial;
+  text-align:center;
+  margin:0;
+  padding:20px;
 }
 button{
-  padding:10px 20px;border:none;border-radius:6px;
-  background:#ff4500;color:#fff;cursor:pointer;margin:5px;
+  padding:10px 20px;
+  border:none;
+  border-radius:6px;
+  background:#ff4500;
+  color:#fff;
+  cursor:pointer;
+  margin:5px;
 }
-input{padding:8px;margin:5px;width:90%}
+button:disabled{
+  background:#555;
+  cursor:not-allowed;
+}
+input{
+  padding:8px;
+  margin:5px;
+  width:90%;
+}
 .hidden{display:none}
-.books{display:flex;flex-wrap:wrap;justify-content:center}
+.books{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center
+}
 .book{
-  background:#1c1c1c;border:1px solid #333;border-radius:8px;
-  padding:15px;margin:10px;width:220px
+  background:#1c1c1c;
+  border:1px solid #333;
+  border-radius:8px;
+  padding:15px;
+  margin:10px;
+  width:220px
 }
 .book img{width:200px}
+.notice{
+  font-size:14px;
+  color:#ccc;
+}
 </style>
 </head>
 
@@ -34,29 +64,37 @@ input{padding:8px;margin:5px;width:90%}
 
 <!-- LOGIN -->
 <div id="login">
-  <h1> Spicy Library</h1>
+  <h1>🌶️ Spicy Library</h1>
+  <p class="notice">Login using Pi Network</p>
   <button id="loginBtn">Login with Pi</button>
 </div>
 
 <!-- APP -->
 <div id="app" class="hidden">
   <h3 id="welcome"></h3>
+
   <button onclick="toggleAdd()">➕ Add Book</button>
   <button onclick="logout()">Logout</button>
 
   <!-- ADD BOOK -->
   <div id="addBook" class="hidden">
     <h3>Add Book</h3>
+
     <input id="title" placeholder="Book title">
     <input id="price" type="number" placeholder="Price (Pi)">
-    <p>📷 Cover</p>
+
+    <p>📷 Book Cover (image)</p>
     <input type="file" id="cover" accept="image/*">
-    <p>📄 PDF</p>
+
+    <p>📄 Book File (PDF)</p>
     <input type="file" id="pdf" accept="application/pdf"><br><br>
-    <label>
-      <input type="checkbox" id="rights"> I own the rights
+
+    <label class="notice">
+      <input type="checkbox" id="rights">
+      I confirm that I fully own the rights to this book
     </label><br><br>
-    <button onclick="uploadBook()">Upload Book</button>
+
+    <button id="uploadBtn" onclick="uploadBook()">Upload Book</button>
   </div>
 
   <h3>Books</h3>
@@ -73,53 +111,63 @@ firebase.initializeApp({
 const db = firebase.firestore();
 
 /* ================= PI ================= */
-Pi.init({version:"2.0", sandbox:true}); // sandbox=false عند Mainnet
-let user=null;
+Pi.init({version:"2.0", sandbox:true}); // sandbox=false في Mainnet
+let user = null;
 
 /* ================= CLOUDINARY ================= */
-const CLOUD_NAME="dkb0phegf";
-const UPLOAD_PRESET="spicy1998";
+const CLOUD_NAME = "dkb0phegf";
+const UPLOAD_PRESET = "spicy1998";
 
-async function uploadCloudinary(file,folder){
-  const fd=new FormData();
-  fd.append("file",file);
-  fd.append("upload_preset",UPLOAD_PRESET);
-  fd.append("folder",folder);
-  const r=await fetch(
+async function uploadCloudinary(file, folder){
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("upload_preset", UPLOAD_PRESET);
+  fd.append("folder", folder);
+
+  const r = await fetch(
     `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
-    {method:"POST",body:fd}
+    { method:"POST", body:fd }
   );
-  const d=await r.json();
+  const d = await r.json();
   return d.secure_url;
 }
 
 /* ================= LOGIN ================= */
-loginBtn.onclick=async()=>{
+loginBtn.onclick = async ()=>{
   try{
-    const auth=await Pi.authenticate(["username","payments"]);
-    user=auth.user;
+    const auth = await Pi.authenticate(["username","payments"]);
+    user = auth.user;
+
     login.classList.add("hidden");
     app.classList.remove("hidden");
-    welcome.innerText="Welcome "+user.username;
-    loadBooks();
-  }catch(e){alert("Login failed")}
-}
+    welcome.innerText = "Welcome " + user.username;
 
-function logout(){location.reload()}
+    loadBooks();
+  }catch(e){
+    alert("Login failed. Please use Pi Browser.");
+  }
+};
+
+function logout(){
+  location.reload();
+}
 
 /* ================= BOOKS ================= */
 async function loadBooks(){
-  const box=document.getElementById("books");
-  box.innerHTML="";
-  const snap=await db.collection("books").get();
+  const box = document.getElementById("books");
+  box.innerHTML = "";
+
+  const snap = await db.collection("books").get();
   snap.forEach(doc=>{
-    const b=doc.data();
-    box.innerHTML+=`
+    const b = doc.data();
+    box.innerHTML += `
       <div class="book">
         <img src="${b.cover}">
         <h4>${b.title}</h4>
         <p>${b.price} Pi</p>
-        <button onclick="buy('${doc.id}',${b.price})">Buy</button>
+        <button onclick="buy('${doc.id}', ${b.price})">
+          Buy with Pi
+        </button>
       </div>`;
   });
 }
@@ -130,47 +178,75 @@ function toggleAdd(){
 
 /* ================= UPLOAD ================= */
 async function uploadBook(){
-  if(!rights.checked){alert("Confirm rights");return;}
-  const titleVal=title.value;
-  const priceVal=Number(price.value);
-  const coverFile=cover.files[0];
-  const pdfFile=pdf.files[0];
-  if(!titleVal||!priceVal||!coverFile||!pdfFile){
-    alert("Fill all fields");return;
+  if(!rights.checked){
+    alert("You must confirm book ownership");
+    return;
   }
 
-  alert("Uploading...");
-  const coverURL=await uploadCloudinary(coverFile,"covers");
-  const pdfURL=await uploadCloudinary(pdfFile,"pdfs");
+  const titleVal = title.value.trim();
+  const priceVal = Number(price.value);
+  const coverFile = cover.files[0];
+  const pdfFile = pdf.files[0];
 
-  await db.collection("books").add({
-    title:titleVal,
-    price:priceVal,
-    cover:coverURL,
-    pdf:pdfURL,
-    owner:user.username
-  });
+  if(!titleVal || !priceVal || !coverFile || !pdfFile){
+    alert("Please fill all fields");
+    return;
+  }
 
-  alert("Book added");
-  addBook.classList.add("hidden");
-  loadBooks();
+  uploadBtn.disabled = true;
+  uploadBtn.innerText = "Uploading...";
+
+  try{
+    const coverURL = await uploadCloudinary(coverFile, "covers");
+    const pdfURL = await uploadCloudinary(pdfFile, "pdfs");
+
+    await db.collection("books").add({
+      title: titleVal,
+      price: priceVal,
+      cover: coverURL,
+      pdf: pdfURL,
+      owner: user.username,
+      createdAt: Date.now()
+    });
+
+    alert("✅ Book uploaded successfully");
+    addBook.classList.add("hidden");
+    loadBooks();
+
+  }catch(e){
+    console.error(e);
+    alert("Upload failed");
+  }
+
+  uploadBtn.disabled = false;
+  uploadBtn.innerText = "Upload Book";
 }
 
 /* ================= BUY ================= */
-async function buy(bookId,price){
+async function buy(bookId, price){
   try{
     await Pi.createPayment({
-      amount:price,
-      currency:"Pi",
-      memo:"Buy book"
+      amount: price,
+      currency: "Pi",
+      memo: "Buy book",
+      metadata: { bookId }
     },{
-      onReadyForServerCompletion:async()=>{
-        const doc=await db.collection("books").doc(bookId).get();
-        window.open(doc.data().pdf,"_blank");
+      onReadyForServerApproval: function(){},
+      onReadyForServerCompletion: async function(){
+        const doc = await db.collection("books").doc(bookId).get();
+        window.open(doc.data().pdf, "_blank");
+      },
+      onCancel: function(){
+        alert("Payment cancelled by user");
+      },
+      onError: function(err){
+        console.error(err);
+        alert("Payment error");
       }
     });
   }catch(e){
-    alert("Payment cancelled");
+    console.error(e);
+    alert("Payment failed");
   }
 }
 </script>
