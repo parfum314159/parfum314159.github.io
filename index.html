@@ -1,37 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Spicy Library</title>
+<title>🌶️ Spicy Library</title>
 
+<!-- Pi SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<!-- Firebase compat -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <style>
-body{background:#111;color:#fff;font-family:Arial;text-align:center}
-button{background:#ff4500;color:#fff;border:none;padding:10px;border-radius:6px}
+body{
+  background:#111;color:#fff;font-family:Arial;text-align:center;
+}
+button{
+  padding:10px 20px;border:none;border-radius:6px;
+  background:#ff4500;color:#fff;cursor:pointer;margin:5px;
+}
+input{padding:8px;margin:5px;width:90%}
 .hidden{display:none}
-.book{background:#1c1c1c;padding:10px;margin:10px;border-radius:8px;width:220px}
-.book img{width:200px}
 .books{display:flex;flex-wrap:wrap;justify-content:center}
+.book{
+  background:#1c1c1c;border:1px solid #333;border-radius:8px;
+  padding:15px;margin:10px;width:220px
+}
+.book img{width:200px}
 </style>
 </head>
 
 <body>
 
-<div id="loginScreen">
+<!-- LOGIN -->
+<div id="login">
   <h1>🌶️ Spicy Library</h1>
-  <button onclick="login()">Login with Pi</button>
+  <button id="loginBtn">Login with Pi</button>
 </div>
 
+<!-- APP -->
 <div id="app" class="hidden">
-  <h2 id="welcome"></h2>
+  <h3 id="welcome"></h3>
+  <button onclick="toggleAdd()">➕ Add Book</button>
+  <button onclick="logout()">Logout</button>
+
+  <!-- ADD BOOK -->
+  <div id="addBook" class="hidden">
+    <h3>Add Book</h3>
+    <input id="title" placeholder="Book title">
+    <input id="price" type="number" placeholder="Price (Pi)">
+    <p>📷 Cover</p>
+    <input type="file" id="cover" accept="image/*">
+    <p>📄 PDF</p>
+    <input type="file" id="pdf" accept="application/pdf"><br><br>
+    <label>
+      <input type="checkbox" id="rights"> I own the rights
+    </label><br><br>
+    <button onclick="uploadBook()">Upload Book</button>
+  </div>
+
+  <h3>Books</h3>
   <div class="books" id="books"></div>
 </div>
 
 <script>
-// Firebase
+/* ================= FIREBASE ================= */
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
   authDomain: "spicy-97f54.firebaseapp.com",
@@ -39,72 +72,106 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 
-// Pi
-Pi.init({version:"2.0",sandbox:true});
+/* ================= PI ================= */
+Pi.init({version:"2.0", sandbox:true}); // sandbox=false عند Mainnet
 let user=null;
 
-// Login
-async function login(){
-  const auth = await Pi.authenticate(["username","payments"]);
-  user = auth.user;
-  loginScreen.classList.add("hidden");
-  app.classList.remove("hidden");
-  welcome.innerText="Welcome "+user.username;
-  loadBooks();
+/* ================= CLOUDINARY ================= */
+const CLOUD_NAME="dkb0phegf";
+const UPLOAD_PRESET="spicy1998";
+
+async function uploadCloudinary(file,folder){
+  const fd=new FormData();
+  fd.append("file",file);
+  fd.append("upload_preset",UPLOAD_PRESET);
+  fd.append("folder",folder);
+  const r=await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
+    {method:"POST",body:fd}
+  );
+  const d=await r.json();
+  return d.secure_url;
 }
 
-// Load Books
+/* ================= LOGIN ================= */
+loginBtn.onclick=async()=>{
+  try{
+    const auth=await Pi.authenticate(["username","payments"]);
+    user=auth.user;
+    login.classList.add("hidden");
+    app.classList.remove("hidden");
+    welcome.innerText="Welcome "+user.username;
+    loadBooks();
+  }catch(e){alert("Login failed")}
+}
+
+function logout(){location.reload()}
+
+/* ================= BOOKS ================= */
 async function loadBooks(){
-  books.innerHTML="";
-  const snap = await db.collection("books").get();
-
-  for(const doc of snap.docs){
-    const b = doc.data();
-    const purchased = await hasPurchased(doc.id);
-
-    books.innerHTML += `
+  const box=document.getElementById("books");
+  box.innerHTML="";
+  const snap=await db.collection("books").get();
+  snap.forEach(doc=>{
+    const b=doc.data();
+    box.innerHTML+=`
       <div class="book">
         <img src="${b.cover}">
         <h4>${b.title}</h4>
         <p>${b.price} Pi</p>
-        ${
-          purchased
-          ? `<a href="${b.pdf}" target="_blank"><button>Download</button></a>`
-          : `<button onclick="buy('${doc.id}',${b.price})">Buy</button>`
-        }
-      </div>
-    `;
-  }
-}
-
-// Check purchase
-async function hasPurchased(bookId){
-  const q = await db.collection("purchases")
-    .where("bookId","==",bookId)
-    .where("buyer","==",user.username)
-    .get();
-  return !q.empty;
-}
-
-// Buy book
-async function buy(bookId,price){
-  Pi.createPayment({
-    amount: price,
-    currency: "Pi",
-    memo: "Book purchase",
-    metadata:{bookId}
-  },{
-    onReadyForServerCompletion: async ()=>{
-      await db.collection("purchases").add({
-        bookId,
-        buyer:user.username,
-        paid:true,
-        date:Date.now()
-      });
-      alert("Payment successful!");
-      loadBooks();
-    }
+        <button onclick="buy('${doc.id}',${b.price})">Buy</button>
+      </div>`;
   });
+}
+
+function toggleAdd(){
+  addBook.classList.toggle("hidden");
+}
+
+/* ================= UPLOAD ================= */
+async function uploadBook(){
+  if(!rights.checked){alert("Confirm rights");return;}
+  const titleVal=title.value;
+  const priceVal=Number(price.value);
+  const coverFile=cover.files[0];
+  const pdfFile=pdf.files[0];
+  if(!titleVal||!priceVal||!coverFile||!pdfFile){
+    alert("Fill all fields");return;
+  }
+
+  alert("Uploading...");
+  const coverURL=await uploadCloudinary(coverFile,"covers");
+  const pdfURL=await uploadCloudinary(pdfFile,"pdfs");
+
+  await db.collection("books").add({
+    title:titleVal,
+    price:priceVal,
+    cover:coverURL,
+    pdf:pdfURL,
+    owner:user.username
+  });
+
+  alert("Book added");
+  addBook.classList.add("hidden");
+  loadBooks();
+}
+
+/* ================= BUY ================= */
+async function buy(bookId,price){
+  try{
+    await Pi.createPayment({
+      amount:price,
+      currency:"Pi",
+      memo:"Buy book"
+    },{
+      onReadyForServerCompletion:async()=>{
+        const doc=await db.collection("books").doc(bookId).get();
+        window.open(doc.data().pdf,"_blank");
+      }
+    });
+  }catch(e){
+    alert("Payment cancelled");
+  }
 }
 </script>
 
