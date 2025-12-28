@@ -1,90 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>Spicy Library</title>
 
-<!-- Pi SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-
-<!-- Firebase (Firestore فقط) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <style>
-body{
-  background:#111;
-  color:#fff;
-  font-family:Arial;
-  text-align:center;
-  padding:20px;
-}
-button{
-  background:#ff4500;
-  color:#fff;
-  border:none;
-  padding:10px 20px;
-  border-radius:6px;
-  margin:5px;
-}
-input,textarea{
-  width:90%;
-  padding:8px;
-  margin:5px;
-}
-.hidden{display:none;}
-.books{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-}
-.book{
-  background:#1c1c1c;
-  border:1px solid #333;
-  padding:15px;
-  margin:10px;
-  width:220px;
-  border-radius:8px;
-}
-.book img{width:200px;}
+body{background:#111;color:#fff;font-family:Arial;text-align:center}
+button{background:#ff4500;color:#fff;border:none;padding:10px;border-radius:6px}
+.hidden{display:none}
+.book{background:#1c1c1c;padding:10px;margin:10px;border-radius:8px;width:220px}
+.book img{width:200px}
+.books{display:flex;flex-wrap:wrap;justify-content:center}
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
 <div id="loginScreen">
   <h1>🌶️ Spicy Library</h1>
-  <button id="loginBtn">Login with Pi</button>
+  <button onclick="login()">Login with Pi</button>
 </div>
 
-<!-- APP -->
-<div id="appScreen" class="hidden">
+<div id="app" class="hidden">
   <h2 id="welcome"></h2>
-  <button onclick="toggleAdd()">➕ Add Book</button>
-  <button onclick="logout()">Logout</button>
-
-  <!-- ADD BOOK -->
-  <div id="addBook" class="hidden">
-    <h3>Add Book</h3>
-    <input id="title" placeholder="Book title">
-    <input id="price" type="number" placeholder="Price (Pi)">
-    <input type="file" id="cover">
-    <input type="file" id="pdf">
-    <textarea id="desc" placeholder="Description"></textarea>
-    <label>
-      <input type="checkbox" id="rights"> I own the rights
-    </label><br><br>
-    <button onclick="uploadBook()">Upload Book</button>
-    <p id="status"></p>
-  </div>
-
-  <h3>📚 Books</h3>
   <div class="books" id="books"></div>
 </div>
 
 <script>
-// ================= Firebase =================
+// Firebase
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
   authDomain: "spicy-97f54.firebaseapp.com",
@@ -92,103 +39,71 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 
-// ================= Pi =================
-Pi.init({ version:"2.0", sandbox:true });
-
+// Pi
+Pi.init({version:"2.0",sandbox:true});
 let user=null;
 
-// LOGIN
-loginBtn.onclick = async ()=>{
-  try{
-    const auth = await Pi.authenticate(["username","payments"]);
-    user = auth.user;
-    loginScreen.classList.add("hidden");
-    appScreen.classList.remove("hidden");
-    welcome.innerText = "Welcome " + user.username;
-    loadBooks();
-  }catch(e){ alert("Login failed"); }
-};
-
-function logout(){ location.reload(); }
-
-// ================= UI =================
-function toggleAdd(){
-  addBook.classList.toggle("hidden");
+// Login
+async function login(){
+  const auth = await Pi.authenticate(["username","payments"]);
+  user = auth.user;
+  loginScreen.classList.add("hidden");
+  app.classList.remove("hidden");
+  welcome.innerText="Welcome "+user.username;
+  loadBooks();
 }
 
-// ================= Cloudinary Upload =================
-async function uploadToCloudinary(file){
-  const form = new FormData();
-  form.append("file", file);
-  form.append("upload_preset", "spicy1998");
-
-  const res = await fetch(
-    "https://api.cloudinary.com/v1_1/dkb0phegf/auto/upload",
-    { method:"POST", body:form }
-  );
-
-  const data = await res.json();
-  return data.secure_url;
-}
-
-// ================= Upload Book =================
-async function uploadBook(){
-  if(!rights.checked){
-    alert("Confirm rights");
-    return;
-  }
-
-  status.innerText = "Uploading...";
-
-  try{
-    const coverURL = await uploadToCloudinary(cover.files[0]);
-    const pdfURL   = await uploadToCloudinary(pdf.files[0]);
-
-    await db.collection("books").add({
-      title: title.value,
-      price: Number(price.value),
-      desc: desc.value,
-      cover: coverURL,
-      pdf: pdfURL,
-      owner: user.username,
-      created: Date.now()
-    });
-
-    status.innerText = "Book uploaded ✔";
-    addBook.classList.add("hidden");
-    loadBooks();
-  }catch(e){
-    console.error(e);
-    status.innerText = "Upload failed ❌";
-  }
-}
-
-// ================= Load Books =================
+// Load Books
 async function loadBooks(){
   books.innerHTML="";
-  const snap = await db.collection("books").orderBy("created","desc").get();
-  snap.forEach(doc=>{
+  const snap = await db.collection("books").get();
+
+  for(const doc of snap.docs){
     const b = doc.data();
+    const purchased = await hasPurchased(doc.id);
+
     books.innerHTML += `
       <div class="book">
         <img src="${b.cover}">
         <h4>${b.title}</h4>
         <p>${b.price} Pi</p>
-        <button onclick="buy('${doc.id}',${b.price})">Buy</button>
+        ${
+          purchased
+          ? `<a href="${b.pdf}" target="_blank"><button>Download</button></a>`
+          : `<button onclick="buy('${doc.id}',${b.price})">Buy</button>`
+        }
       </div>
     `;
-  });
+  }
 }
 
-// ================= Pay =================
+// Check purchase
+async function hasPurchased(bookId){
+  const q = await db.collection("purchases")
+    .where("bookId","==",bookId)
+    .where("buyer","==",user.username)
+    .get();
+  return !q.empty;
+}
+
+// Buy book
 async function buy(bookId,price){
-  await Pi.createPayment({
+  Pi.createPayment({
     amount: price,
     currency: "Pi",
     memo: "Book purchase",
-    metadata:{ bookId }
+    metadata:{bookId}
   },{
-    onReadyForServerCompletion(){ alert("Payment success"); }
+    onReadyForServerCompletion: async ()=>{
+      await db.collection("purchases").add({
+        bookId,
+        buyer:user.username,
+        paid:true,
+        date:Date.now()
+      });
+      alert("Payment successful!");
+      loadBooks();
+    }
   });
 }
 </script>
