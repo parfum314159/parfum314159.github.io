@@ -95,7 +95,7 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 /* ================= PI ================= */
-Pi.init({version:"2.0", sandbox:false}); // الآن في Mainnet - دفع حقيقي
+Pi.init({version:"2.0", sandbox:true}); // وضع الاختبار (Testnet) - دفع تجريبي بدون Pi حقيقي
 let user = null;
 /* ================= CLOUDINARY ================= */
 const CLOUD_NAME = "dkb0phegf";
@@ -119,16 +119,17 @@ loginBtn.onclick = async ()=>{
     user = auth.user;
     login.classList.add("hidden");
     app.classList.remove("hidden");
-    welcome.innerText = "Welcome " + user.username;
+    welcome.innerText = "Welcome " + user.username + " (Test Mode)";
     loadBooks();
   }catch(e){
     alert("Login failed. Please use Pi Browser.");
   }
 };
+/* ================= LOGOUT ================= */
 function logout(){
   location.reload();
 }
-/* ================= BOOKS ================= */
+/* ================= LOAD BOOKS ================= */
 async function loadBooks(){
   const box = document.getElementById("books");
   box.innerHTML = "";
@@ -139,9 +140,9 @@ async function loadBooks(){
       <div class="book">
         <img src="${b.cover}">
         <h4>${b.title}</h4>
-        <p>${b.price} Pi</p>
+        <p>${b.price} Pi (Test)</p>
         <button onclick="buy('${doc.id}', ${b.price})">
-          Buy with Pi
+          Buy with Test Pi
         </button>
       </div>`;
   });
@@ -188,32 +189,35 @@ async function uploadBook(){
 }
 /* ================= BUY ================= */
 async function buy(bookId, price){
+  if (!confirm("هذا دفع تجريبي (Test Pi). سيفتح المحفظة التجريبية. اضغط OK ثم Confirm في المحفظة بسرعة.")) {
+    return;
+  }
   try{
     await Pi.createPayment({
       amount: price,
       currency: "Pi",
-      memo: "Buy book from Spicy Library",
+      memo: "Test purchase - Spicy Library",
       metadata: { bookId }
     },{
       onReadyForServerApproval: function(paymentId) {
-        // في المستقبل: تحقق من الدفع على الخادم هنا
+        console.log("Payment approved by server (test mode)");
       },
       onReadyForServerCompletion: async function(paymentId, txid) {
-        alert("Payment successful! Opening book...");
+        alert("✅ Test Payment Successful! Opening book...");
         const doc = await db.collection("books").doc(bookId).get();
         window.open(doc.data().pdf, "_blank");
       },
       onCancel: function(){
-        alert("Payment cancelled by user");
+        alert("Payment cancelled");
       },
       onError: function(err){
         console.error(err);
-        alert("Payment error: " + err.message);
+        alert("Payment error: " + (err.message || "Unknown error"));
       }
     });
   }catch(e){
     console.error(e);
-    alert("Payment failed");
+    alert("Payment initiation failed");
   }
 }
 </script>
