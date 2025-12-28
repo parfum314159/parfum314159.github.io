@@ -95,7 +95,7 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 /* ================= PI ================= */
-Pi.init({version:"2.0", sandbox:true}); // sandbox=false في Mainnet
+Pi.init({version:"2.0", sandbox:false}); // الآن في Mainnet - دفع حقيقي
 let user = null;
 /* ================= CLOUDINARY ================= */
 const CLOUD_NAME = "dkb0phegf";
@@ -192,11 +192,14 @@ async function buy(bookId, price){
     await Pi.createPayment({
       amount: price,
       currency: "Pi",
-      memo: "Buy book",
+      memo: "Buy book from Spicy Library",
       metadata: { bookId }
     },{
-      onReadyForServerApproval: function(){},
-      onReadyForServerCompletion: async function(){
+      onReadyForServerApproval: function(paymentId) {
+        // في المستقبل: تحقق من الدفع على الخادم هنا
+      },
+      onReadyForServerCompletion: async function(paymentId, txid) {
+        alert("Payment successful! Opening book...");
         const doc = await db.collection("books").doc(bookId).get();
         window.open(doc.data().pdf, "_blank");
       },
@@ -205,7 +208,7 @@ async function buy(bookId, price){
       },
       onError: function(err){
         console.error(err);
-        alert("Payment error");
+        alert("Payment error: " + err.message);
       }
     });
   }catch(e){
