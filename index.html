@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>🌶️ Spicy Library</title>
+<title>📘 Book Library</title>
 
 <!-- Pi SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
@@ -24,14 +24,13 @@ button{
   padding:10px 20px;
   border:none;
   border-radius:6px;
-  background:#ff4500;
+  background:#3b82f6;
   color:#fff;
   cursor:pointer;
   margin:5px;
 }
 button:disabled{
   background:#555;
-  cursor:not-allowed;
 }
 input{
   padding:8px;
@@ -64,7 +63,7 @@ input{
 
 <!-- LOGIN -->
 <div id="login">
-  <h1>🌶️ Spicy Library</h1>
+  <h1>📘 Book Library</h1>
   <p class="notice">Login using Pi Network</p>
   <button id="loginBtn">Login with Pi</button>
 </div>
@@ -87,7 +86,7 @@ input{
 
     <label class="notice">
       <input type="checkbox" id="rights">
-      I confirm that I fully own the rights to this book
+      I confirm that I own full rights to this book
     </label><br><br>
 
     <button id="uploadBtn" onclick="uploadBook()">Upload Book</button>
@@ -98,6 +97,11 @@ input{
 </div>
 
 <script>
+/* ================= INIT PI (IMPORTANT) ================= */
+window.addEventListener("load", () => {
+  Pi.init({ version: "2.0", sandbox: false });
+});
+
 /* ================= FIREBASE ================= */
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
@@ -105,9 +109,6 @@ firebase.initializeApp({
   projectId: "spicy-97f54"
 });
 const db = firebase.firestore();
-
-/* ================= PI MAINNET ================= */
-Pi.init({ version: "2.0", sandbox: false });
 
 let user = null;
 
@@ -132,16 +133,24 @@ async function uploadCloudinary(file, folder){
 /* ================= LOGIN ================= */
 loginBtn.onclick = async ()=>{
   try{
-    const auth = await Pi.authenticate(["username","payments"]);
+    const auth = await Pi.authenticate(
+      ["payments"],
+      onIncompletePaymentFound
+    );
     user = auth.user;
     login.classList.add("hidden");
     app.classList.remove("hidden");
     welcome.innerText = "Welcome " + user.username;
     loadBooks();
   }catch(e){
-    alert("Login failed. Use Pi Browser.");
+    alert("Login failed. Open from Pi Browser.");
+    console.error(e);
   }
 };
+
+function onIncompletePaymentFound(payment){
+  console.log("Incomplete payment:", payment);
+}
 
 function logout(){
   location.reload();
@@ -216,30 +225,27 @@ async function uploadBook(){
   uploadBtn.innerText = "Upload Book";
 }
 
-/* ================= BUY (STATIC – WORKING) ================= */
+/* ================= BUY (OPENS WALLET) ================= */
 function buy(bookId, price){
-  if(!confirm(`Buy this book for ${price} Pi?`)) return;
-
   Pi.createPayment(
     {
       amount: price,
-      memo: "Purchase from Spicy Library",
+      memo: "Book purchase",
       metadata: { bookId }
     },
     {
-      onSuccess: async function(payment){
-        console.log("Payment success:", payment);
-        alert("✅ Payment successful!");
-
-        const doc = await db.collection("books").doc(bookId).get();
-        if(doc.exists){
-          window.open(doc.data().pdf, "_blank");
-        }
+      onSuccess(payment){
+        alert("✅ Payment successful");
+        db.collection("books").doc(bookId).get().then(doc=>{
+          if(doc.exists){
+            window.open(doc.data().pdf, "_blank");
+          }
+        });
       },
-      onCancel: function(){
+      onCancel(){
         alert("Payment cancelled");
       },
-      onError: function(err){
+      onError(err){
         console.error(err);
         alert("Payment error");
       }
