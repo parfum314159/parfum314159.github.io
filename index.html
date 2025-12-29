@@ -59,7 +59,6 @@ input{
 }
 </style>
 </head>
-
 <body>
 
 <!-- LOGIN -->
@@ -75,11 +74,12 @@ input{
   <button onclick="toggleAdd()">➕ Add Book</button>
   <button onclick="logout()">Logout</button>
 
+  <!-- ADD BOOK -->
   <div id="addBook" class="hidden">
     <h3>Add Book</h3>
     <input id="title" placeholder="Book title">
     <input id="price" type="number" placeholder="Price (Pi)">
-    <p>📷 Book Cover</p>
+    <p>📷 Book Cover (image)</p>
     <input type="file" id="cover" accept="image/*">
     <p>📄 Book File (PDF)</p>
     <input type="file" id="pdf" accept="application/pdf"><br><br>
@@ -98,9 +98,7 @@ input{
 
 <script>
 /* ================= INIT PI ================= */
-window.addEventListener("load", () => {
-  Pi.init({ version: "2.0", sandbox: false });
-});
+Pi.init({version:"2.0", sandbox:false}); // Mainnet
 
 /* ================= FIREBASE ================= */
 firebase.initializeApp({
@@ -112,27 +110,40 @@ const db = firebase.firestore();
 
 let user = null;
 
+/* ================= BACKEND ================= */
+const PI_BACKEND_URL = "https://pi-backend-c8nz.onrender.com";
+
+/* ================= CLOUDINARY ================= */
+const CLOUD_NAME = "dkb0phegf";
+const UPLOAD_PRESET = "spicy1998";
+
+async function uploadCloudinary(file, folder){
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("upload_preset", UPLOAD_PRESET);
+  fd.append("folder", folder);
+
+  const r = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
+    { method:"POST", body:fd }
+  );
+  const d = await r.json();
+  return d.secure_url;
+}
+
 /* ================= LOGIN ================= */
 loginBtn.onclick = async ()=>{
   try{
-    const auth = await Pi.authenticate(
-      ["payments"],
-      onIncompletePaymentFound
-    );
+    const auth = await Pi.authenticate(["username","payments"]);
     user = auth.user;
     login.classList.add("hidden");
     app.classList.remove("hidden");
     welcome.innerText = "Welcome " + user.username;
     loadBooks();
   }catch(e){
-    console.error(e);
-    alert("Login failed. Use Pi Browser.");
+    alert("Login failed. Please use Pi Browser.");
   }
 };
-
-function onIncompletePaymentFound(payment){
-  console.log("Incomplete payment found:", payment);
-}
 
 function logout(){ location.reload(); }
 
@@ -156,26 +167,9 @@ async function loadBooks(){
 function toggleAdd(){ addBook.classList.toggle("hidden"); }
 
 /* ================= UPLOAD BOOK ================= */
-const CLOUD_NAME = "dkb0phegf";
-const UPLOAD_PRESET = "spicy1998";
-
-async function uploadCloudinary(file, folder){
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("upload_preset", UPLOAD_PRESET);
-  fd.append("folder", folder);
-
-  const r = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
-    { method:"POST", body:fd }
-  );
-  const d = await r.json();
-  return d.secure_url;
-}
-
 async function uploadBook(){
   if(!rights.checked){
-    alert("Confirm book ownership");
+    alert("You must confirm book ownership");
     return;
   }
 
@@ -185,7 +179,7 @@ async function uploadBook(){
   const pdfFile = pdf.files[0];
 
   if(!titleVal || !priceVal || !coverFile || !pdfFile){
-    alert("Fill all fields");
+    alert("Please fill all fields");
     return;
   }
 
@@ -205,7 +199,7 @@ async function uploadBook(){
       createdAt: Date.now()
     });
 
-    alert("✅ Book uploaded");
+    alert("✅ Book uploaded successfully");
     addBook.classList.add("hidden");
     loadBooks();
   }catch(e){
@@ -218,15 +212,14 @@ async function uploadBook(){
 }
 
 /* ================= BUY WITH PI ================= */
-const PI_BACKEND_URL = "https://pi-backend-c8nz.onrender.com"; // الرابط الذي أعطاك Render
-
-function buy(bookId, price){
+async function buy(bookId, price){
   if(!confirm(`Buy this book for ${price} Pi?`)) return;
 
   Pi.createPayment(
     {
       amount: price,
-      memo: "Purchase from Spicy Library",
+      currency: "Pi",
+      memo: "Buy book from Spicy Library",
       metadata: { bookId }
     },
     {
@@ -238,16 +231,20 @@ function buy(bookId, price){
         });
       },
       onSuccess: async function(payment){
-        alert("✅ Payment successful");
+        alert("✅ Payment successful!");
         const doc = await db.collection("books").doc(bookId).get();
         if(doc.exists) window.open(doc.data().pdf, "_blank");
       },
-      onCancel: function(){ alert("Payment cancelled"); },
-      onError: function(err){ alert("Payment error"); console.error(err); }
+      onCancel: function(){
+        alert("Payment cancelled by user");
+      },
+      onError: function(err){
+        console.error(err);
+        alert("Payment error: " + (err.message || "Unknown error"));
+      }
     }
   );
 }
 </script>
-
 </body>
 </html>
