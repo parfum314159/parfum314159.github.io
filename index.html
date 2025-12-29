@@ -110,9 +110,6 @@ const db = firebase.firestore();
 
 let user = null;
 
-/* ================= BACKEND ================= */
-const PI_BACKEND_URL = "https://pi-backend-c8nz.onrender.com";
-
 /* ================= CLOUDINARY ================= */
 const CLOUD_NAME = "dkb0phegf";
 const UPLOAD_PRESET = "spicy1998";
@@ -192,59 +189,4 @@ async function uploadBook(){
 
     await db.collection("books").add({
       title: titleVal,
-      price: priceVal,
-      cover: coverURL,
-      pdf: pdfURL,
-      owner: user.username,
-      createdAt: Date.now()
-    });
-
-    alert("✅ Book uploaded successfully");
-    addBook.classList.add("hidden");
-    loadBooks();
-  }catch(e){
-    console.error(e);
-    alert("Upload failed");
-  }
-
-  uploadBtn.disabled = false;
-  uploadBtn.innerText = "Upload Book";
-}
-
-/* ================= BUY WITH PI ================= */
-async function buy(bookId, price){
-  if(!confirm(`Buy this book for ${price} Pi?`)) return;
-
-  Pi.createPayment(
-    {
-      amount: price,
-      currency: "Pi",
-      memo: "Buy book from Spicy Library",
-      metadata: { bookId }
-    },
-    {
-      onReadyForServerApproval: async function(paymentId){
-        await fetch(`${PI_BACKEND_URL}/approve-payment`, {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ paymentId })
-        });
-      },
-      onSuccess: async function(payment){
-        alert("✅ Payment successful!");
-        const doc = await db.collection("books").doc(bookId).get();
-        if(doc.exists) window.open(doc.data().pdf, "_blank");
-      },
-      onCancel: function(){
-        alert("Payment cancelled by user");
-      },
-      onError: function(err){
-        console.error(err);
-        alert("Payment error: " + (err.message || "Unknown error"));
-      }
-    }
-  );
-}
-</script>
-</body>
-</html>
+      price:
