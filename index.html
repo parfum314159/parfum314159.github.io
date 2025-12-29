@@ -214,8 +214,16 @@ async function buy(bookId, price){
           const data = await res.json();
           console.log("Backend approve response:", data);
           if(data.status === "APPROVED"){
-            const doc = await db.collection("books").doc(bookId).get();
-            window.open(doc.data().pdf, "_blank");
+  await fetch("https://pi-backend-c8nz.onrender.com/complete-payment", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ paymentId })
+  });
+
+  const doc = await db.collection("books").doc(bookId).get();
+  window.open(doc.data().pdf, "_blank");
+}
+
           }else{
             alert("Payment not approved or failed");
           }
