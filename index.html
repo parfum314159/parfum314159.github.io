@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>📚 Spicy Library</title>
+<title>🌶️ Spicy Library</title>
 <!-- Pi SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <!-- Firebase compat -->
@@ -59,7 +59,7 @@ input{
 <body>
 <!-- LOGIN -->
 <div id="login">
-  <h1> Spicy Library</h1>
+  <h1>🌶️ Spicy Library</h1>
   <p class="notice">Login using Pi Network</p>
   <button id="loginBtn">Login with Pi</button>
 </div>
@@ -87,16 +87,16 @@ input{
   <div class="books" id="books"></div>
 </div>
 <script>
-/* ================= INIT ================= */
-Pi.init({version:"2.0", sandbox:false}); // Mainnet
+/* ================= FIREBASE ================= */
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
   authDomain: "spicy-97f54.firebaseapp.com",
   projectId: "spicy-97f54"
 });
 const db = firebase.firestore();
+/* ================= PI ================= */
+Pi.init({version:"2.0", sandbox:false}); // Mainnet
 let user = null;
-
 /* ================= CLOUDINARY ================= */
 const CLOUD_NAME = "dkb0phegf";
 const UPLOAD_PRESET = "spicy1998";
@@ -105,32 +105,29 @@ async function uploadCloudinary(file, folder){
   fd.append("file", file);
   fd.append("upload_preset", UPLOAD_PRESET);
   fd.append("folder", folder);
-  const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { method:"POST", body:fd });
+  const r = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
+    { method:"POST", body:fd }
+  );
   const d = await r.json();
   return d.secure_url;
 }
-
 /* ================= LOGIN ================= */
-document.getElementById("loginBtn").addEventListener("click", async ()=>{
-  if(!Pi.isPiBrowser){
-    alert("Please use Pi Browser to login.");
-    return;
-  }
+loginBtn.onclick = async ()=>{
   try{
     const auth = await Pi.authenticate(["username","payments"]);
     user = auth.user;
-    document.getElementById("login").classList.add("hidden");
-    document.getElementById("app").classList.remove("hidden");
-    document.getElementById("welcome").innerText = "Welcome " + user.username;
+    login.classList.add("hidden");
+    app.classList.remove("hidden");
+    welcome.innerText = "Welcome " + user.username;
     loadBooks();
   }catch(e){
-    console.error(e);
-    alert("Login failed. Make sure you are in Pi Browser and the app is registered in Pi Developer Portal.");
+    alert("Login failed. Please use Pi Browser.");
   }
-});
-
-function logout(){ location.reload(); }
-
+};
+function logout(){
+  location.reload();
+}
 /* ================= BOOKS ================= */
 async function loadBooks(){
   const box = document.getElementById("books");
@@ -143,63 +140,81 @@ async function loadBooks(){
         <img src="${b.cover}">
         <h4>${b.title}</h4>
         <p>${b.price} Pi</p>
-        <button onclick="buy('${doc.id}', ${b.price})">Buy with Pi</button>
+        <button onclick="buy('${doc.id}', ${b.price})">
+          Buy with Pi
+        </button>
       </div>`;
   });
 }
-
-function toggleAdd(){ document.getElementById("addBook").classList.toggle("hidden"); }
-
+function toggleAdd(){
+  addBook.classList.toggle("hidden");
+}
 /* ================= UPLOAD ================= */
 async function uploadBook(){
-  if(!document.getElementById("rights").checked){ alert("You must confirm book ownership"); return; }
-  const titleVal = document.getElementById("title").value.trim();
-  const priceVal = Number(document.getElementById("price").value);
-  const coverFile = document.getElementById("cover").files[0];
-  const pdfFile = document.getElementById("pdf").files[0];
-  if(!titleVal || !priceVal || !coverFile || !pdfFile){ alert("Please fill all fields"); return; }
-
-  const uploadBtn = document.getElementById("uploadBtn");
+  if(!rights.checked){
+    alert("You must confirm book ownership");
+    return;
+  }
+  const titleVal = title.value.trim();
+  const priceVal = Number(price.value);
+  const coverFile = cover.files[0];
+  const pdfFile = pdf.files[0];
+  if(!titleVal || !priceVal || !coverFile || !pdfFile){
+    alert("Please fill all fields");
+    return;
+  }
   uploadBtn.disabled = true;
   uploadBtn.innerText = "Uploading...";
-
   try{
     const coverURL = await uploadCloudinary(coverFile, "covers");
     const pdfURL = await uploadCloudinary(pdfFile, "pdfs");
-    await db.collection("books").add({ title:titleVal, price:priceVal, cover:coverURL, pdf:pdfURL, owner:user.username, createdAt:Date.now() });
+    await db.collection("books").add({
+      title: titleVal,
+      price: priceVal,
+      cover: coverURL,
+      pdf: pdfURL,
+      owner: user.username,
+      createdAt: Date.now()
+    });
     alert("✅ Book uploaded successfully");
-    document.getElementById("addBook").classList.add("hidden");
+    addBook.classList.add("hidden");
     loadBooks();
-  }catch(e){ console.error(e); alert("Upload failed"); }
-
+  }catch(e){
+    console.error(e);
+    alert("Upload failed");
+  }
   uploadBtn.disabled = false;
   uploadBtn.innerText = "Upload Book";
 }
-
 /* ================= BUY ================= */
 async function buy(bookId, price){
-  if(!confirm(`Buy this book for ${price} Pi?`)) return;
-
-  Pi.createPayment(
-    {
+  try{
+    Pi.createPayment({
       amount: price,
       currency: "Pi",
-      memo:"Buy book from Spicy Library",
-      metadata:{ bookId }
-    },
-    {
-      onReadyForServerApproval:function(paymentId){
+      memo: "Buy book",
+      metadata: { bookId }
+    },{
+      onReadyForServerApproval: function(paymentId){
         console.log("Payment ready:", paymentId);
       },
-      onSuccess: async function(payment){
+      onReadyForServerCompletion: async function(paymentId, txid){
         alert("✅ Payment successful!");
         const doc = await db.collection("books").doc(bookId).get();
-        if(doc.exists) window.open(doc.data().pdf, "_blank");
+        window.open(doc.data().pdf, "_blank");
       },
-      onCancel:function(){ alert("Payment cancelled by user"); },
-      onError:function(err){ console.error(err); alert("Payment error: "+(err.message||"Unknown error")); }
-    }
-  );
+      onCancel: function(){
+        alert("Payment cancelled by user");
+      },
+      onError: function(err){
+        console.error(err);
+        alert("Payment error: " + (err.message || "Unknown error"));
+      }
+    });
+  }catch(e){
+    console.error(e);
+    alert("Payment failed");
+  }
 }
 </script>
 </body>
