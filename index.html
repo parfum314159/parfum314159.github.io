@@ -57,17 +57,20 @@ input {
 </style>
 </head>
 <body>
+
 <!-- LOGIN -->
 <div id="login">
   <h1>🌶️ Spicy Library</h1>
   <p class="notice">Login using Pi Network</p>
   <button id="loginBtn">Login with Pi</button>
 </div>
+
 <!-- APP -->
 <div id="app" class="hidden">
   <h3 id="welcome"></h3>
   <button onclick="toggleAdd()">➕ Add Book</button>
   <button onclick="logout()">Logout</button>
+
   <!-- ADD BOOK -->
   <div id="addBook" class="hidden">
     <h3>Add Book</h3>
@@ -82,9 +85,11 @@ input {
     </label><br><br>
     <button id="uploadBtn" onclick="uploadBook()">Upload Book</button>
   </div>
+
   <h3>Books</h3>
   <div class="books" id="books"></div>
 </div>
+
 <script>
 /* ================= FIREBASE ================= */
 firebase.initializeApp({
@@ -93,12 +98,15 @@ firebase.initializeApp({
   projectId: "spicy-97f54"
 });
 const db = firebase.firestore();
+
 /* ================= PI ================= */
 Pi.init({version:"2.0", sandbox:false}); // Mainnet
 let user = null;
+
 /* ================= CLOUDINARY ================= */
 const CLOUD_NAME = "dkb0phegf";
 const UPLOAD_PRESET = "spicy1998"; // unsigned preset
+
 async function uploadCloudinary(file, folder){
   const fd = new FormData();
   fd.append("file", file);
@@ -112,25 +120,14 @@ async function uploadCloudinary(file, folder){
     throw new Error("Cloudinary upload failed");
   }
 }
-/* ================= ELEMENT REFERENCES ================= */  // إضافة هذا القسم الجديد
-const loginDiv = document.getElementById("login");
-const appDiv = document.getElementById("app");
-const welcome = document.getElementById("welcome");
-const addBookDiv = document.getElementById("addBook");
-const titleInput = document.getElementById("title");
-const priceInput = document.getElementById("price");
-const coverInput = document.getElementById("cover");
-const pdfInput = document.getElementById("pdf");
-const rightsCheckbox = document.getElementById("rights");
-const uploadBtn = document.getElementById("uploadBtn");
-const loginBtn = document.getElementById("loginBtn");
+
 /* ================= LOGIN ================= */
 loginBtn.onclick = async () => {
   try {
     const auth = await Pi.authenticate(["username","payments"]);
     user = auth.user;
-    loginDiv.classList.add("hidden");
-    appDiv.classList.remove("hidden");
+    login.classList.add("hidden");
+    app.classList.remove("hidden");
     welcome.innerText = "Welcome " + user.username;
     loadBooks();
   } catch(e) {
@@ -138,7 +135,9 @@ loginBtn.onclick = async () => {
     console.error(e);
   }
 };
+
 function logout(){ location.reload(); }
+
 /* ================= BOOKS ================= */
 async function loadBooks(){
   const box = document.getElementById("books");
@@ -156,28 +155,34 @@ async function loadBooks(){
     `;
   });
 }
+
 function toggleAdd(){
-  addBookDiv.classList.toggle("hidden");
+  addBook.classList.toggle("hidden");
 }
+
 /* ================= UPLOAD BOOK ================= */
 async function uploadBook(){
-  if(!rightsCheckbox.checked){
+  if(!rights.checked){
     alert("You must confirm book ownership");
     return;
   }
-  const titleVal = titleInput.value.trim();
-  const priceVal = Number(priceInput.value);
-  const coverFile = coverInput.files[0];
-  const pdfFile = pdfInput.files[0];
+  const titleVal = title.value.trim();
+  const priceVal = Number(price.value);
+  const coverFile = cover.files[0];
+  const pdfFile = pdf.files[0];
+
   if(!titleVal || !priceVal || !coverFile || !pdfFile){
     alert("Please fill all fields");
     return;
   }
+
   uploadBtn.disabled = true;
   uploadBtn.innerText = "Uploading...";
+
   try {
     const coverURL = await uploadCloudinary(coverFile, "covers");
     const pdfURL = await uploadCloudinary(pdfFile, "pdfs");
+
     const bookData = {
       title: titleVal,
       price: priceVal,
@@ -186,21 +191,26 @@ async function uploadBook(){
       owner: user.username,
       createdAt: Date.now()
     };
+
     console.log("Adding book:", bookData);
     await db.collection("books").add(bookData);
+
     alert("✅ Book uploaded successfully");
-    addBookDiv.classList.add("hidden");
+    addBook.classList.add("hidden");
     loadBooks();
   } catch(e) {
     console.error("Upload failed:", e);
     alert("❌ Upload failed. Check console for details.");
   }
+
   uploadBtn.disabled = false;
   uploadBtn.innerText = "Upload Book";
 }
+
 /* ================= BUY BOOK ================= */
 async function buy(bookId, price){
   if(!confirm(`Buy this book for ${price} Pi?`)) return;
+
   try {
     await Pi.createPayment({
       amount: price,
