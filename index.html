@@ -2,12 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>🌶️ Spicy Library</title>
+<title>📚 Spicy Library</title>
+
 <!-- Pi SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
 <!-- Firebase compat -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
 <style>
 body{
   background:#111;
@@ -56,37 +59,49 @@ input{
 }
 </style>
 </head>
+
 <body>
+
 <!-- LOGIN -->
 <div id="login">
-  <h1> Spicy Library</h1>
+  <h1>📚 Spicy Library</h1>
   <p class="notice">Login using Pi Network</p>
   <button id="loginBtn">Login with Pi</button>
 </div>
+
 <!-- APP -->
 <div id="app" class="hidden">
   <h3 id="welcome"></h3>
   <button onclick="toggleAdd()">➕ Add Book</button>
   <button onclick="logout()">Logout</button>
-  <!-- ADD BOOK -->
+
   <div id="addBook" class="hidden">
     <h3>Add Book</h3>
     <input id="title" placeholder="Book title">
     <input id="price" type="number" placeholder="Price (Pi)">
-    <p>📷 Book Cover (image)</p>
+    <p>📷 Book Cover</p>
     <input type="file" id="cover" accept="image/*">
     <p>📄 Book File (PDF)</p>
     <input type="file" id="pdf" accept="application/pdf"><br><br>
+
     <label class="notice">
       <input type="checkbox" id="rights">
       I confirm that I fully own the rights to this book
     </label><br><br>
+
     <button id="uploadBtn" onclick="uploadBook()">Upload Book</button>
   </div>
+
   <h3>Books</h3>
   <div class="books" id="books"></div>
 </div>
+
 <script>
+/* ================= INIT PI ================= */
+window.addEventListener("load", () => {
+  Pi.init({ version: "2.0", sandbox: false });
+});
+
 /* ================= FIREBASE ================= */
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
@@ -95,46 +110,33 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 
-/* ================= PI - MAINNET ================= */
-Pi.init({version:"2.0", sandbox:false}); // Mainnet - دفع حقيقي بعملة Pi
-
 let user = null;
-
-/* ================= CLOUDINARY ================= */
-const CLOUD_NAME = "dkb0phegf";
-const UPLOAD_PRESET = "spicy1998";
-async function uploadCloudinary(file, folder){
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("upload_preset", UPLOAD_PRESET);
-  fd.append("folder", folder);
-  const r = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
-    { method:"POST", body:fd }
-  );
-  const d = await r.json();
-  return d.secure_url;
-}
 
 /* ================= LOGIN ================= */
 loginBtn.onclick = async ()=>{
   try{
-    const auth = await Pi.authenticate(["username","payments"]);
+    const auth = await Pi.authenticate(
+      ["payments"],
+      onIncompletePaymentFound
+    );
     user = auth.user;
     login.classList.add("hidden");
     app.classList.remove("hidden");
     welcome.innerText = "Welcome " + user.username;
     loadBooks();
   }catch(e){
-    alert("Login failed. Please use Pi Browser and ensure your app is registered in Pi Developer Portal.");
+    console.error(e);
+    alert("Login failed. Use Pi Browser.");
   }
 };
 
-function logout(){
-  location.reload();
+function onIncompletePaymentFound(payment){
+  console.log("Incomplete payment found:", payment);
 }
 
-/* ================= BOOKS ================= */
+function logout(){ location.reload(); }
+
+/* ================= LOAD BOOKS ================= */
 async function loadBooks(){
   const box = document.getElementById("books");
   box.innerHTML = "";
@@ -146,36 +148,54 @@ async function loadBooks(){
         <img src="${b.cover}">
         <h4>${b.title}</h4>
         <p>${b.price} Pi</p>
-        <button onclick="buy('${doc.id}', ${b.price})">
-          Buy with Pi
-        </button>
+        <button onclick="buy('${doc.id}', ${b.price})">Buy with Pi</button>
       </div>`;
   });
 }
 
-function toggleAdd(){
-  addBook.classList.toggle("hidden");
+function toggleAdd(){ addBook.classList.toggle("hidden"); }
+
+/* ================= UPLOAD BOOK ================= */
+const CLOUD_NAME = "dkb0phegf";
+const UPLOAD_PRESET = "spicy1998";
+
+async function uploadCloudinary(file, folder){
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("upload_preset", UPLOAD_PRESET);
+  fd.append("folder", folder);
+
+  const r = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
+    { method:"POST", body:fd }
+  );
+  const d = await r.json();
+  return d.secure_url;
 }
 
-/* ================= UPLOAD ================= */
 async function uploadBook(){
   if(!rights.checked){
-    alert("You must confirm book ownership");
+    alert("Confirm book ownership");
     return;
   }
+
   const titleVal = title.value.trim();
   const priceVal = Number(price.value);
   const coverFile = cover.files[0];
   const pdfFile = pdf.files[0];
+
   if(!titleVal || !priceVal || !coverFile || !pdfFile){
-    alert("Please fill all fields");
+    alert("Fill all fields");
     return;
   }
+
   uploadBtn.disabled = true;
   uploadBtn.innerText = "Uploading...";
+
   try{
     const coverURL = await uploadCloudinary(coverFile, "covers");
     const pdfURL = await uploadCloudinary(pdfFile, "pdfs");
+
     await db.collection("books").add({
       title: titleVal,
       price: priceVal,
@@ -184,51 +204,50 @@ async function uploadBook(){
       owner: user.username,
       createdAt: Date.now()
     });
-    alert("✅ Book uploaded successfully");
+
+    alert("✅ Book uploaded");
     addBook.classList.add("hidden");
     loadBooks();
   }catch(e){
     console.error(e);
-    alert("Upload failed. Check console for details.");
+    alert("Upload failed");
   }
+
   uploadBtn.disabled = false;
   uploadBtn.innerText = "Upload Book";
 }
 
-/* ================= BUY - MAINNET ================= */
-async function buy(bookId, price){
-  if (!confirm(`Are you sure you want to buy this book for ${price} Pi (real payment)?`)) {
-    return;
-  }
+/* ================= BUY WITH PI ================= */
+const PI_BACKEND_URL = "https://pi-backend-c8nz.onrender.com"; // الرابط الذي أعطاك Render
 
-  try{
-    await Pi.createPayment({
+function buy(bookId, price){
+  if(!confirm(`Buy this book for ${price} Pi?`)) return;
+
+  Pi.createPayment(
+    {
       amount: price,
-      currency: "Pi",
       memo: "Purchase from Spicy Library",
       metadata: { bookId }
-    },{
-      onReadyForServerApproval: function(paymentId) {
-        console.log("Payment ID:", paymentId);
+    },
+    {
+      onReadyForServerApproval: async function(paymentId){
+        await fetch(`${PI_BACKEND_URL}/approve-payment`, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ paymentId })
+        });
       },
-      onReadyForServerCompletion: async function(paymentId, txid) {
-        alert("Payment successful! Opening your book...");
+      onSuccess: async function(payment){
+        alert("✅ Payment successful");
         const doc = await db.collection("books").doc(bookId).get();
-        window.open(doc.data().pdf, "_blank");
+        if(doc.exists) window.open(doc.data().pdf, "_blank");
       },
-      onCancel: function(){
-        alert("Payment cancelled by user");
-      },
-      onError: function(err){
-        console.error("Payment error:", err);
-        alert("Payment error: " + (err.message || "Unknown error"));
-      }
-    });
-  }catch(e){
-    console.error(e);
-    alert("Payment failed to start. Make sure you are in Pi Browser and app is registered.");
-  }
+      onCancel: function(){ alert("Payment cancelled"); },
+      onError: function(err){ alert("Payment error"); console.error(err); }
+    }
+  );
 }
 </script>
+
 </body>
 </html>
