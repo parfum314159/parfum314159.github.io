@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <title>📚 Spicy Library</title>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -50,7 +50,6 @@ input{padding:8px;margin:5px;width:90%;}
 </div>
 
 <script>
-/* ================= FIREBASE ================= */
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
   authDomain: "spicy-97f54.firebaseapp.com",
@@ -58,11 +57,11 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 
-/* ================= PI ================= */
-Pi.init({ version:"2.0", sandbox:true }); // ضع false للـ Mainnet
+/* === PI Mainnet === */
+Pi.init({ version:"2.0", sandbox:false }); // Mainnet
 let user = null;
 
-/* ================= CLOUDINARY ================= */
+/* === CLOUDINARY === */
 const CLOUD_NAME = "dkb0phegf";
 const UPLOAD_PRESET = "spicy1998";
 
@@ -76,7 +75,7 @@ async function uploadCloudinary(file, folder){
   return d.secure_url;
 }
 
-/* ================= LOGIN ================= */
+/* === LOGIN === */
 loginBtn.onclick = async () => {
   try{
     const auth = await Pi.authenticate(["username","payments"]);
@@ -92,7 +91,7 @@ loginBtn.onclick = async () => {
 
 function logout(){ location.reload(); }
 
-/* ================= BOOKS ================= */
+/* === BOOKS === */
 async function loadBooks(){
   const box = document.getElementById("books");
   box.innerHTML = "";
@@ -111,7 +110,7 @@ async function loadBooks(){
 
 function toggleAdd(){ addBook.classList.toggle("hidden"); }
 
-/* ================= UPLOAD ================= */
+/* === UPLOAD === */
 async function uploadBook(){
   if(!rights.checked){ alert("Confirm ownership"); return; }
   const titleVal = title.value.trim();
@@ -133,7 +132,7 @@ async function uploadBook(){
   uploadBtn.innerText = "Upload Book";
 }
 
-/* ================= BUY ================= */
+/* === BUY === */
 async function buy(bookId, price){
   if(!confirm(`Buy this book for ${price} Pi?`)) return;
 
@@ -148,7 +147,6 @@ async function buy(bookId, price){
       {
         onReadyForServerApproval: async function(paymentId){
           console.log("Payment ID:", paymentId);
-          // إرسال الـ paymentId مباشرة إلى backend
           const res = await fetch("https://pi-backend-c8nz.onrender.com/approve-payment", {
             method:"POST",
             headers: { "Content-Type":"application/json" },
@@ -167,9 +165,7 @@ async function buy(bookId, price){
         onError: function(err){ console.error(err); alert("Payment error"); }
       }
     );
-  }catch(e){
-    console.error(e); alert("Payment failed");
-  }
+  }catch(e){ console.error(e); alert("Payment failed"); }
 }
 </script>
 
