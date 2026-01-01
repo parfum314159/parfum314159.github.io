@@ -131,7 +131,7 @@ const db = firebase.firestore();
 /* ================= PI MAINNET ================= */
 Pi.init({ version: "2.0", sandbox: false });
 let user = null;
-let userUid = null;  // Pi user UID
+let userUid = null;
 
 /* ================= CLOUDINARY ================= */
 const CLOUD_NAME = "dkb0phegf";
@@ -209,7 +209,7 @@ async function loadBooks(){
   }
 }
 
-/* ================= LOAD MY PURCHASES (CORRECTED) ================= */
+/* ================= LOAD MY PURCHASES ================= */
 async function loadMyPurchases(){
   const box = document.getElementById("myBooks");
   box.innerHTML = "<p>Loading your purchases...</p>";
@@ -245,7 +245,7 @@ async function loadMyPurchases(){
     }
   } catch (e) {
     console.error("Error loading purchases:", e);
-    box.innerHTML = "<p>Error loading your purchases. Check console for details.</p>";
+    box.innerHTML = `<p>Error loading your purchases: ${e.message}</p>`;
   }
 }
 
@@ -311,7 +311,7 @@ async function onIncompletePaymentFound(incompletePayment) {
   }
 }
 
-/* ================= BUY ================= */
+/* ================= BUY - FINAL WITH CLEAR ERROR HANDLING ================= */
 async function buy(bookId, price){
   if(!confirm(`Do you want to buy this book for ${price} Pi?`)) return;
 
@@ -354,21 +354,27 @@ async function buy(bookId, price){
               return;
             }
 
-            // Save purchase correctly
-            await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({
-              purchasedAt: Date.now()
-            });
+            // حفظ الشراء مع تنبيه واضح إذا فشل
+            try {
+              await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({
+                purchasedAt: Date.now()
+              });
+              console.log("Purchase record saved successfully for book:", bookId);
+            } catch (saveErr) {
+              console.error("CRITICAL: Failed to save purchase record:", saveErr);
+              alert("Payment successful and book opened!\nBUT failed to save to My Purchases.\nError: " + saveErr.message + "\n\nFix: Go to Firebase Console > Firestore > Rules and set allow read, write: if true;");
+            }
 
-            // Open book immediately
+            // فتح الكتاب فوراً
             const bookDoc = await db.collection("books").doc(bookId).get();
             if (bookDoc.exists) {
               const pdfUrl = bookDoc.data().pdf;
               window.open(pdfUrl, "_blank");
             }
 
-            alert("Payment successful! The book is now open 📚\nYou can also find it in 'My Purchases'.");
+            alert("Payment successful! The book is now open 📚\nCheck 'My Purchases' tab.");
 
-            // Refresh My Purchases if visible
+            // تحديث القسم
             loadMyPurchases();
 
           } catch (err) {
@@ -381,7 +387,7 @@ async function buy(bookId, price){
 
         onError: (error, payment) => {
           console.error("Pi Payment Error:", error, payment);
-          alert("Payment error: " + error.message + "\nIf there is a pending payment, it will be attempted to complete automatically next time.");
+          alert("Payment error: " + error.message);
         }
       }
     );
