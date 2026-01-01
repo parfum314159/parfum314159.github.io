@@ -8,8 +8,6 @@
 <!-- Firebase compat -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<!-- PDF.js for page count -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 body{
   background:#111;
@@ -69,10 +67,6 @@ input, textarea, select{
 .language{
   font-size:12px;
   color:#aaa;
-}
-.pages{
-  font-size:12px;
-  color:#0f0;
 }
 .ratings{
   font-size:14px;
@@ -214,13 +208,6 @@ async function uploadCloudinary(file, folder){
   return d.secure_url;
 }
 
-/* ================= GET PDF PAGE COUNT ================= */
-async function getPdfPageCount(file) {
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-  return pdf.numPages;
-}
-
 /* ================= LOGIN ================= */
 loginBtn.onclick = async () => {
   try {
@@ -266,7 +253,9 @@ function searchBooks() {
     }
   });
   if (!found && input) {
-    document.getElementById("books").innerHTML += "<p>No books found.</p>";
+    if (!document.querySelector("#books p")) {
+      document.getElementById("books").innerHTML += "<p>No books found.</p>";
+    }
   }
 }
 
@@ -287,13 +276,14 @@ async function loadBooks(){
       const desc = b.description || "No description";
       const lang = b.language ? `Language: ${b.language}` : "";
       const owner = b.owner ? `By: ${b.owner}` : "";
-      const pages = b.pageCount ? `Pages: ${b.pageCount}` : "";
+
       // جلب التقييمات
       const ratingsSnap = await db.collection("ratings").doc(bookId).collection("votes").get();
       const likes = ratingsSnap.docs.filter(d => d.data().vote === "like").length;
       const dislikes = ratingsSnap.docs.filter(d => d.data().vote === "dislike").length;
+
       // تحقق إذا صوت المستخدم
-      const userVoteDoc = await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get();
+      const userVoteDoc = userUid ? await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get() : { exists: false };
       const userVote = userVoteDoc.exists ? userVoteDoc.data().vote : null;
 
       box.innerHTML += `
@@ -304,10 +294,9 @@ async function loadBooks(){
           <div class="description">${desc}</div>
           <div class="owner">${owner}</div>
           <div class="language">${lang}</div>
-          <div class="pages">${pages}</div>
           <div class="ratings">
-            <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button>${likes}
-            <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button>${dislikes}
+            <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
+            <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
           </div>
           <button onclick="buy('${bookId}', ${b.price})">
             Buy with Pi
@@ -346,10 +335,11 @@ async function loadMyPurchases(){
         const desc = b.description || "No description";
         const lang = b.language ? `Language: ${b.language}` : "";
         const owner = b.owner ? `By: ${b.owner}` : "";
-        const pages = b.pageCount ? `Pages: ${b.pageCount}` : "";
+
         const ratingsSnap = await db.collection("ratings").doc(bookId).collection("votes").get();
         const likes = ratingsSnap.docs.filter(d => d.data().vote === "like").length;
         const dislikes = ratingsSnap.docs.filter(d => d.data().vote === "dislike").length;
+
         const userVoteDoc = await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get();
         const userVote = userVoteDoc.exists ? userVoteDoc.data().vote : null;
 
@@ -360,10 +350,9 @@ async function loadMyPurchases(){
             <div class="description">${desc}</div>
             <div class="owner">${owner}</div>
             <div class="language">${lang}</div>
-            <div class="pages">${pages}</div>
             <div class="ratings">
-              <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button>${likes}
-              <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button>${dislikes}
+              <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
+              <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
             </div>
             <button onclick="window.open('${b.pdf}', '_blank')">
               Download PDF
@@ -377,7 +366,7 @@ async function loadMyPurchases(){
   }
 }
 
-/* ================= RATE BOOK (Like/Dislike) ================= */
+/* ================= RATE BOOK ================= */
 async function rateBook(bookId, voteType, button) {
   if (!userUid) {
     alert("Please log in to rate books.");
@@ -388,13 +377,13 @@ async function rateBook(bookId, voteType, button) {
     const voteRef = db.collection("ratings").doc(bookId).collection("votes").doc(userUid);
     await voteRef.set({ vote: voteType, votedAt: Date.now() });
 
-    // تعطيل الأزرار وتحديث العرض
+    // تعطيل الأزرار
     button.disabled = true;
     button.classList.add(voteType === 'like' ? 'liked' : 'disliked');
-    const sibling = button === button.parentNode.querySelector('.like-btn') ? button.parentNode.querySelector('.dislike-btn') : button.parentNode.querySelector('.like-btn');
+    const sibling = button.parentNode.querySelector(voteType === 'like' ? '.dislike-btn' : '.like-btn');
     sibling.disabled = true;
 
-    // إعادة تحميل لتحديث الأرقام
+    // تحديث العرض
     loadBooks();
     loadMyPurchases();
   } catch (e) {
@@ -410,34 +399,22 @@ async function uploadBook(){
   const priceVal = Number(price.value);
   const descVal = description.value.trim();
   const langVal = language.value;
-  const pdfFile = pdf.files[0];
-  if(!titleVal || !priceVal || !cover.files[0] || !pdfFile)
+  if(!titleVal || !priceVal || !cover.files[0] || !pdf.files[0])
     return alert("Please fill in all required fields");
-
   uploadBtn.disabled = true;
-  uploadBtn.innerText = "Counting pages...";
-
   try {
-    // حساب عدد الصفحات
-    const pageCount = await getPdfPageCount(pdfFile);
-
-    uploadBtn.innerText = "Uploading...";
-
     const coverURL = await uploadCloudinary(cover.files[0], "covers");
-    const pdfURL = await uploadCloudinary(pdfFile, "pdfs");
-
+    const pdfURL = await uploadCloudinary(pdf.files[0], "pdfs");
     await db.collection("books").add({
       title: titleVal,
       price: priceVal,
       description: descVal,
       language: langVal,
-      pageCount: pageCount,
       cover: coverURL,
       pdf: pdfURL,
       owner: user.username,
       createdAt: Date.now()
     });
-
     alert("Book uploaded successfully!");
     addBook.classList.add("hidden");
     loadBooks();
@@ -446,7 +423,6 @@ async function uploadBook(){
     alert("Upload failed: " + e.message);
   }
   uploadBtn.disabled = false;
-  uploadBtn.innerText = "Upload Book";
 }
 
 function toggleAdd(){
