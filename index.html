@@ -86,6 +86,18 @@ input, textarea, select{
 .tab-content.active{
   display:block;
 }
+#searchInput{
+  width:80%;
+  margin:10px auto;
+  display:block;
+}
+.disclaimer{
+  font-size:12px;
+  color:#ccc;
+  margin-top:20px;
+  padding:10px;
+  border-top:1px solid #333;
+}
 </style>
 </head>
 <body>
@@ -137,7 +149,11 @@ input, textarea, select{
     </div>
 
     <h3>All Books</h3>
+    <input type="text" id="searchInput" placeholder="Search by book title..." oninput="searchBooks()">
     <div class="books" id="books"></div>
+    <div class="disclaimer">
+      Disclaimer: The website is not responsible for any copyright issues. Each user is fully responsible for the books they upload.
+    </div>
   </div>
 
   <!-- MY PURCHASES TAB -->
@@ -206,6 +222,19 @@ function openTab(tabName) {
   document.querySelector(`button[onclick="openTab('${tabName}')"]`).classList.add('active');
 
   if (tabName === 'purchases') loadMyPurchases();
+}
+
+/* ================= SEARCH BOOKS ================= */
+function searchBooks() {
+  const input = document.getElementById("searchInput").value.toLowerCase();
+  const books = document.querySelectorAll("#books .book");
+  books.forEach(book => {
+    const title = book.querySelector("h4").textContent.toLowerCase();
+    book.style.display = title.includes(input) ? "block" : "none";
+  });
+  if (Array.from(books).every(book => book.style.display === "none")) {
+    document.getElementById("books").innerHTML += "<p>No books found.</p>";
+  }
 }
 
 /* ================= LOAD ALL BOOKS ================= */
