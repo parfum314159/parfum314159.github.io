@@ -123,14 +123,14 @@ async function uploadCloudinary(file, folder){
 /* ================= LOGIN ================= */
 loginBtn.onclick = async () => {
   try {
-    const auth = await Pi.authenticate(["username","payments"], onIncompletePaymentFound);  // أضفنا onIncompletePaymentFound هنا
+    const auth = await Pi.authenticate(["username","payments"], onIncompletePaymentFound);
     user = auth.user;
     login.classList.add("hidden");
     app.classList.remove("hidden");
     welcome.innerText = "Welcome " + user.username;
     loadBooks();
   } catch (e) {
-    alert("يرجى فتح التطبيق داخل Pi Browser فقط!");
+    alert("Please open this app inside the Pi Browser only!");
   }
 };
 
@@ -163,11 +163,11 @@ function toggleAdd(){
 
 /* ================= UPLOAD ================= */
 async function uploadBook(){
-  if(!rights.checked) return alert("Confirm ownership");
+  if(!rights.checked) return alert("Please confirm that you own the rights to this book");
   const titleVal = title.value.trim();
   const priceVal = Number(price.value);
   if(!titleVal || !priceVal || !cover.files[0] || !pdf.files[0])
-    return alert("Fill all fields");
+    return alert("Please fill in all fields");
   uploadBtn.disabled = true;
   try {
     const coverURL = await uploadCloudinary(cover.files[0], "covers");
@@ -190,46 +190,45 @@ async function uploadBook(){
   uploadBtn.disabled = false;
 }
 
-/* ================= إكمال دفعة معلقة تلقائياً ================= */
+/* ================= HANDLE INCOMPLETE PAYMENT ================= */
 async function onIncompletePaymentFound(incompletePayment) {
-  alert("تم اكتشاف دفعة سابقة معلقة... جاري إكمالها تلقائياً");
+  alert("A previous pending payment was detected... Attempting to complete it automatically");
   console.log("Incomplete payment found:", incompletePayment);
 
-  // نستخدم نفس منطق الإكمال مع txid الموجود في incompletePayment
   try {
     const response = await fetch("https://pi-backend-c8nz.onrender.com/complete-payment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         paymentId: incompletePayment.identifier,
-        txid: incompletePayment.transaction?.txid  // txid موجود هنا إذا تم الدفع
+        txid: incompletePayment.transaction?.txid
       })
     });
 
     if (!response.ok) {
       const err = await response.json();
-      console.error("Failed to complete incomplete payment:", err);
-      alert("فشل إكمال الدفعة المعلقة تلقائياً. اذهب إلى developers.minepi.com لإكمالها يدوياً.");
+      console.error("Failed to complete pending payment:", err);
+      alert("Failed to automatically complete the pending payment.\nPlease go to developers.minepi.com to complete or cancel it manually.");
       return;
     }
 
-    alert("تم إكمال الدفعة المعلقة بنجاح! يمكنك الآن إجراء دفع جديد.");
+    alert("Pending payment completed successfully!\nYou can now make new purchases.");
   } catch (err) {
-    console.error("Error completing incomplete payment:", err);
-    alert("خطأ في إكمال الدفعة المعلقة. جرب مرة أخرى أو أكملها يدوياً من لوحة التحكم.");
+    console.error("Error completing pending payment:", err);
+    alert("Error completing pending payment.\nPlease try again or complete it manually from the developer dashboard.");
   }
 }
 
-/* ================= BUY - FINAL FIXED ================= */
+/* ================= BUY - FINAL ENGLISH VERSION ================= */
 async function buy(bookId, price){
-  if(!confirm(`هل تريد شراء هذا الكتاب مقابل ${price} Pi؟`)) return;
+  if(!confirm(`Do you want to buy this book for ${price} Pi?`)) return;
 
   try {
     await Pi.createPayment(
       {
         amount: price,
         currency: "Pi",
-        memo: "شراء كتاب من Spicy Library",
+        memo: "Book purchase from Spicy Library",
         metadata: { bookId }
       },
       {
@@ -259,36 +258,36 @@ async function buy(bookId, price){
             if (!response.ok) {
               const errorData = await response.json();
               console.error("Completion failed:", errorData);
-              alert("فشل إكمال الدفع!\nالتفاصيل: " + JSON.stringify(errorData));
+              alert("Payment completion failed!\nDetails: " + JSON.stringify(errorData));
               return;
             }
 
             const doc = await db.collection("books").doc(bookId).get();
             if (!doc.exists) {
-              alert("الكتاب غير موجود!");
+              alert("Book not found!");
               return;
             }
             const pdfUrl = doc.data().pdf;
             window.open(pdfUrl, "_blank");
-            alert("تم الدفع بنجاح! الكتاب مفتوح الآن 📚");
+            alert("Payment successful! The book is now open 📚");
 
           } catch (err) {
             console.error("Completion error:", err);
-            alert("خطأ في الاتصال بالسيرفر أثناء إكمال الدفع.");
+            alert("Server connection error during payment completion.");
           }
         },
 
-        onCancel: () => alert("تم إلغاء الدفع"),
+        onCancel: () => alert("Payment cancelled"),
 
         onError: (error, payment) => {
           console.error("Pi Payment Error:", error, payment);
-          alert("خطأ في الدفع: " + error.message + "\nإذا كانت دفعة معلقة، سيتم محاولة إكمالها تلقائياً في المرة القادمة.");
+          alert("Payment error: " + error.message + "\nIf there is a pending payment, it will be attempted to complete automatically next time.");
         }
       }
     );
   } catch (e) {
     console.error("Payment initiation failed:", e);
-    alert("فشل بدء عملية الدفع. تأكد من فتح التطبيق داخل Pi Browser.");
+    alert("Failed to start payment process. Make sure you are using the Pi Browser.");
   }
 }
 </script>
