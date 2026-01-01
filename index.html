@@ -259,7 +259,7 @@ function searchBooks() {
   }
 }
 
-/* ================= LOAD ALL BOOKS ================= */
+/* ================= LOAD ALL BOOKS (FIXED) ================= */
 async function loadBooks(){
   const box = document.getElementById("books");
   box.innerHTML = "<p>Loading books...</p>";
@@ -278,13 +278,22 @@ async function loadBooks(){
       const owner = b.owner ? `By: ${b.owner}` : "";
 
       // جلب التقييمات
-      const ratingsSnap = await db.collection("ratings").doc(bookId).collection("votes").get();
-      const likes = ratingsSnap.docs.filter(d => d.data().vote === "like").length;
-      const dislikes = ratingsSnap.docs.filter(d => d.data().vote === "dislike").length;
+      let likes = 0;
+      let dislikes = 0;
+      let userVote = null;
+      try {
+        const ratingsSnap = await db.collection("ratings").doc(bookId).collection("votes").get();
+        likes = ratingsSnap.docs.filter(d => d.data().vote === "like").length;
+        dislikes = ratingsSnap.docs.filter(d => d.data().vote === "dislike").length;
 
-      // تحقق إذا صوت المستخدم
-      const userVoteDoc = userUid ? await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get() : { exists: false };
-      const userVote = userVoteDoc.exists ? userVoteDoc.data().vote : null;
+        if (userUid) {
+          const userVoteDoc = await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get();
+          userVote = userVoteDoc.exists ? userVoteDoc.data().vote : null;
+        }
+      } catch (ratingErr) {
+        console.error("Error loading ratings for book " + bookId + ":", ratingErr);
+        // لا نوقف التحميل، نستمر بدون تقييمات لهذا الكتاب
+      }
 
       box.innerHTML += `
         <div class="book">
@@ -304,12 +313,13 @@ async function loadBooks(){
         </div>`;
     }
   } catch (e) {
-    console.error(e);
-    box.innerHTML = "<p>Error loading books.</p>";
+    console.error("Critical error loading books:", e);
+    box.innerHTML = "<p>Error loading books. Retrying in 5 seconds...</p>";
+    setTimeout(loadBooks, 5000);  // إعادة محاولة تلقائية
   }
 }
 
-/* ================= LOAD MY PURCHASES ================= */
+/* ================= LOAD MY PURCHASES (FIXED) ================= */
 async function loadMyPurchases(){
   const box = document.getElementById("myBooks");
   box.innerHTML = "<p>Loading your purchases...</p>";
@@ -336,12 +346,19 @@ async function loadMyPurchases(){
         const lang = b.language ? `Language: ${b.language}` : "";
         const owner = b.owner ? `By: ${b.owner}` : "";
 
-        const ratingsSnap = await db.collection("ratings").doc(bookId).collection("votes").get();
-        const likes = ratingsSnap.docs.filter(d => d.data().vote === "like").length;
-        const dislikes = ratingsSnap.docs.filter(d => d.data().vote === "dislike").length;
+        let likes = 0;
+        let dislikes = 0;
+        let userVote = null;
+        try {
+          const ratingsSnap = await db.collection("ratings").doc(bookId).collection("votes").get();
+          likes = ratingsSnap.docs.filter(d => d.data().vote === "like").length;
+          dislikes = ratingsSnap.docs.filter(d => d.data().vote === "dislike").length;
 
-        const userVoteDoc = await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get();
-        const userVote = userVoteDoc.exists ? userVoteDoc.data().vote : null;
+          const userVoteDoc = await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get();
+          userVote = userVoteDoc.exists ? userVoteDoc.data().vote : null;
+        } catch (ratingErr) {
+          console.error("Error loading ratings for purchased book " + bookId + ":", ratingErr);
+        }
 
         box.innerHTML += `
           <div class="book">
@@ -362,7 +379,8 @@ async function loadMyPurchases(){
     }
   } catch (e) {
     console.error("Error loading purchases:", e);
-    box.innerHTML = `<p>Error loading your purchases: ${e.message}</p>`;
+    box.innerHTML = `<p>Error loading your purchases. Retrying in 5 seconds...</p>`;
+    setTimeout(loadMyPurchases, 5000);
   }
 }
 
@@ -377,13 +395,11 @@ async function rateBook(bookId, voteType, button) {
     const voteRef = db.collection("ratings").doc(bookId).collection("votes").doc(userUid);
     await voteRef.set({ vote: voteType, votedAt: Date.now() });
 
-    // تعطيل الأزرار
     button.disabled = true;
     button.classList.add(voteType === 'like' ? 'liked' : 'disliked');
     const sibling = button.parentNode.querySelector(voteType === 'like' ? '.dislike-btn' : '.like-btn');
     sibling.disabled = true;
 
-    // تحديث العرض
     loadBooks();
     loadMyPurchases();
   } catch (e) {
