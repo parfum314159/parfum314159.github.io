@@ -68,20 +68,6 @@ input, textarea, select{
   font-size:12px;
   color:#aaa;
 }
-.ratings{
-  font-size:14px;
-  margin:8px 0;
-}
-.like-btn, .dislike-btn{
-  background:none;
-  border:none;
-  font-size:18px;
-  cursor:pointer;
-  margin:0 5px;
-}
-.like-btn.liked, .dislike-btn.disliked{
-  opacity:0.6;
-}
 .notice{
   font-size:14px;
   color:#ccc;
@@ -99,18 +85,6 @@ input, textarea, select{
 }
 .tab-content.active{
   display:block;
-}
-#searchInput{
-  width:80%;
-  margin:10px auto;
-  display:block;
-}
-.disclaimer{
-  font-size:12px;
-  color:#ccc;
-  margin-top:20px;
-  padding:10px;
-  border-top:1px solid #333;
 }
 </style>
 </head>
@@ -163,11 +137,7 @@ input, textarea, select{
     </div>
 
     <h3>All Books</h3>
-    <input type="text" id="searchInput" placeholder="Search by book title..." oninput="searchBooks()">
     <div class="books" id="books"></div>
-    <div class="disclaimer">
-      Disclaimer: The website is not responsible for any copyright issues. Each user is fully responsible for the books they upload.
-    </div>
   </div>
 
   <!-- MY PURCHASES TAB -->
@@ -238,28 +208,7 @@ function openTab(tabName) {
   if (tabName === 'purchases') loadMyPurchases();
 }
 
-/* ================= SEARCH BOOKS ================= */
-function searchBooks() {
-  const input = document.getElementById("searchInput").value.toLowerCase();
-  const books = document.querySelectorAll("#books .book");
-  let found = false;
-  books.forEach(book => {
-    const title = book.querySelector("h4").textContent.toLowerCase();
-    if (title.includes(input)) {
-      book.style.display = "block";
-      found = true;
-    } else {
-      book.style.display = "none";
-    }
-  });
-  if (!found && input) {
-    if (!document.querySelector("#books p")) {
-      document.getElementById("books").innerHTML += "<p>No books found.</p>";
-    }
-  }
-}
-
-/* ================= LOAD ALL BOOKS (FIXED) ================= */
+/* ================= LOAD ALL BOOKS ================= */
 async function loadBooks(){
   const box = document.getElementById("books");
   box.innerHTML = "<p>Loading books...</p>";
@@ -270,31 +219,11 @@ async function loadBooks(){
       box.innerHTML = "<p>No books available yet.</p>";
       return;
     }
-    for (const doc of snap.docs) {
+    snap.forEach(doc => {
       const b = doc.data();
-      const bookId = doc.id;
       const desc = b.description || "No description";
       const lang = b.language ? `Language: ${b.language}` : "";
       const owner = b.owner ? `By: ${b.owner}` : "";
-
-      // جلب التقييمات
-      let likes = 0;
-      let dislikes = 0;
-      let userVote = null;
-      try {
-        const ratingsSnap = await db.collection("ratings").doc(bookId).collection("votes").get();
-        likes = ratingsSnap.docs.filter(d => d.data().vote === "like").length;
-        dislikes = ratingsSnap.docs.filter(d => d.data().vote === "dislike").length;
-
-        if (userUid) {
-          const userVoteDoc = await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get();
-          userVote = userVoteDoc.exists ? userVoteDoc.data().vote : null;
-        }
-      } catch (ratingErr) {
-        console.error("Error loading ratings for book " + bookId + ":", ratingErr);
-        // لا نوقف التحميل، نستمر بدون تقييمات لهذا الكتاب
-      }
-
       box.innerHTML += `
         <div class="book">
           <img src="${b.cover}">
@@ -303,23 +232,18 @@ async function loadBooks(){
           <div class="description">${desc}</div>
           <div class="owner">${owner}</div>
           <div class="language">${lang}</div>
-          <div class="ratings">
-            <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
-            <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
-          </div>
-          <button onclick="buy('${bookId}', ${b.price})">
+          <button onclick="buy('${doc.id}', ${b.price})">
             Buy with Pi
           </button>
         </div>`;
-    }
+    });
   } catch (e) {
-    console.error("Critical error loading books:", e);
-    box.innerHTML = "<p>Error loading books. Retrying in 5 seconds...</p>";
-    setTimeout(loadBooks, 5000);  // إعادة محاولة تلقائية
+    console.error(e);
+    box.innerHTML = "<p>Error loading books.</p>";
   }
 }
 
-/* ================= LOAD MY PURCHASES (FIXED) ================= */
+/* ================= LOAD MY PURCHASES ================= */
 async function loadMyPurchases(){
   const box = document.getElementById("myBooks");
   box.innerHTML = "<p>Loading your purchases...</p>";
@@ -345,21 +269,6 @@ async function loadMyPurchases(){
         const desc = b.description || "No description";
         const lang = b.language ? `Language: ${b.language}` : "";
         const owner = b.owner ? `By: ${b.owner}` : "";
-
-        let likes = 0;
-        let dislikes = 0;
-        let userVote = null;
-        try {
-          const ratingsSnap = await db.collection("ratings").doc(bookId).collection("votes").get();
-          likes = ratingsSnap.docs.filter(d => d.data().vote === "like").length;
-          dislikes = ratingsSnap.docs.filter(d => d.data().vote === "dislike").length;
-
-          const userVoteDoc = await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get();
-          userVote = userVoteDoc.exists ? userVoteDoc.data().vote : null;
-        } catch (ratingErr) {
-          console.error("Error loading ratings for purchased book " + bookId + ":", ratingErr);
-        }
-
         box.innerHTML += `
           <div class="book">
             <img src="${b.cover}">
@@ -367,10 +276,6 @@ async function loadMyPurchases(){
             <div class="description">${desc}</div>
             <div class="owner">${owner}</div>
             <div class="language">${lang}</div>
-            <div class="ratings">
-              <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
-              <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
-            </div>
             <button onclick="window.open('${b.pdf}', '_blank')">
               Download PDF
             </button>
@@ -379,32 +284,7 @@ async function loadMyPurchases(){
     }
   } catch (e) {
     console.error("Error loading purchases:", e);
-    box.innerHTML = `<p>Error loading your purchases. Retrying in 5 seconds...</p>`;
-    setTimeout(loadMyPurchases, 5000);
-  }
-}
-
-/* ================= RATE BOOK ================= */
-async function rateBook(bookId, voteType, button) {
-  if (!userUid) {
-    alert("Please log in to rate books.");
-    return;
-  }
-
-  try {
-    const voteRef = db.collection("ratings").doc(bookId).collection("votes").doc(userUid);
-    await voteRef.set({ vote: voteType, votedAt: Date.now() });
-
-    button.disabled = true;
-    button.classList.add(voteType === 'like' ? 'liked' : 'disliked');
-    const sibling = button.parentNode.querySelector(voteType === 'like' ? '.dislike-btn' : '.like-btn');
-    sibling.disabled = true;
-
-    loadBooks();
-    loadMyPurchases();
-  } catch (e) {
-    console.error("Rating error:", e);
-    alert("Failed to submit rating.");
+    box.innerHTML = `<p>Error loading your purchases: ${e.message}</p>`;
   }
 }
 
