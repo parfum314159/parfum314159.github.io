@@ -30,7 +30,7 @@ button:disabled{
   background:#555;
   cursor:not-allowed;
 }
-input{
+input, textarea, select{
   padding:8px;
   margin:5px;
   width:90%;
@@ -47,9 +47,27 @@ input{
   border-radius:8px;
   padding:15px;
   margin:10px;
-  width:220px
+  width:220px;
+  font-size:14px;
 }
-.book img{width:200px}
+.book img{width:200px; border-radius:6px;}
+.book h4{margin:10px 0 5px;}
+.book p{margin:5px 0;}
+.description{
+  font-size:12px;
+  color:#ccc;
+  height:60px;
+  overflow:hidden;
+  margin:8px 0;
+}
+.owner{
+  font-size:12px;
+  color:#ff4500;
+}
+.language{
+  font-size:12px;
+  color:#aaa;
+}
 .notice{
   font-size:14px;
   color:#ccc;
@@ -97,6 +115,16 @@ input{
       <h3>Add Book</h3>
       <input id="title" placeholder="Book title">
       <input id="price" type="number" placeholder="Price (Pi)">
+      <textarea id="description" placeholder="Book description (optional)" rows="3"></textarea>
+      <select id="language">
+        <option value="">Select language</option>
+        <option value="English">English</option>
+        <option value="Arabic">Arabic</option>
+        <option value="French">French</option>
+        <option value="Spanish">Spanish</option>
+        <option value="German">German</option>
+        <option value="Other">Other</option>
+      </select>
       <p>📷 Book Cover</p>
       <input type="file" id="cover" accept="image/*">
       <p>📄 Book File (PDF)</p>
@@ -193,11 +221,17 @@ async function loadBooks(){
     }
     snap.forEach(doc => {
       const b = doc.data();
+      const desc = b.description || "No description";
+      const lang = b.language ? `Language: ${b.language}` : "";
+      const owner = b.owner ? `By: ${b.owner}` : "";
       box.innerHTML += `
         <div class="book">
           <img src="${b.cover}">
           <h4>${b.title}</h4>
           <p>${b.price} Pi</p>
+          <div class="description">${desc}</div>
+          <div class="owner">${owner}</div>
+          <div class="language">${lang}</div>
           <button onclick="buy('${doc.id}', ${b.price})">
             Buy with Pi
           </button>
@@ -232,11 +266,16 @@ async function loadMyPurchases(){
       const bookDoc = await db.collection("books").doc(bookId).get();
       if (bookDoc.exists) {
         const b = bookDoc.data();
+        const desc = b.description || "No description";
+        const lang = b.language ? `Language: ${b.language}` : "";
+        const owner = b.owner ? `By: ${b.owner}` : "";
         box.innerHTML += `
           <div class="book">
             <img src="${b.cover}">
             <h4>${b.title}</h4>
-            <p>Purchased</p>
+            <div class="description">${desc}</div>
+            <div class="owner">${owner}</div>
+            <div class="language">${lang}</div>
             <button onclick="window.open('${b.pdf}', '_blank')">
               Download PDF
             </button>
@@ -254,8 +293,10 @@ async function uploadBook(){
   if(!rights.checked) return alert("Please confirm that you own the rights to this book");
   const titleVal = title.value.trim();
   const priceVal = Number(price.value);
+  const descVal = description.value.trim();
+  const langVal = language.value;
   if(!titleVal || !priceVal || !cover.files[0] || !pdf.files[0])
-    return alert("Please fill in all fields");
+    return alert("Please fill in all required fields");
   uploadBtn.disabled = true;
   try {
     const coverURL = await uploadCloudinary(cover.files[0], "covers");
@@ -263,6 +304,8 @@ async function uploadBook(){
     await db.collection("books").add({
       title: titleVal,
       price: priceVal,
+      description: descVal,
+      language: langVal,
       cover: coverURL,
       pdf: pdfURL,
       owner: user.username,
@@ -311,7 +354,7 @@ async function onIncompletePaymentFound(incompletePayment) {
   }
 }
 
-/* ================= BUY - FINAL WITH CLEAR ERROR HANDLING ================= */
+/* ================= BUY ================= */
 async function buy(bookId, price){
   if(!confirm(`Do you want to buy this book for ${price} Pi?`)) return;
 
@@ -354,18 +397,15 @@ async function buy(bookId, price){
               return;
             }
 
-            // حفظ الشراء مع تنبيه واضح إذا فشل
             try {
               await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({
                 purchasedAt: Date.now()
               });
-              console.log("Purchase record saved successfully for book:", bookId);
             } catch (saveErr) {
-              console.error("CRITICAL: Failed to save purchase record:", saveErr);
-              alert("Payment successful and book opened!\nBUT failed to save to My Purchases.\nError: " + saveErr.message + "\n\nFix: Go to Firebase Console > Firestore > Rules and set allow read, write: if true;");
+              console.error("Failed to save purchase record:", saveErr);
+              alert("Payment successful, but failed to save to My Purchases.\nError: " + saveErr.message);
             }
 
-            // فتح الكتاب فوراً
             const bookDoc = await db.collection("books").doc(bookId).get();
             if (bookDoc.exists) {
               const pdfUrl = bookDoc.data().pdf;
@@ -374,7 +414,6 @@ async function buy(bookId, price){
 
             alert("Payment successful! The book is now open 📚\nCheck 'My Purchases' tab.");
 
-            // تحديث القسم
             loadMyPurchases();
 
           } catch (err) {
