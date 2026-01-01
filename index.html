@@ -131,7 +131,7 @@ const db = firebase.firestore();
 /* ================= PI MAINNET ================= */
 Pi.init({ version: "2.0", sandbox: false });
 let user = null;
-let userUid = null;  // لتخزين uid المستخدم من Pi
+let userUid = null;  // Pi user UID
 
 /* ================= CLOUDINARY ================= */
 const CLOUD_NAME = "dkb0phegf";
@@ -155,12 +155,12 @@ loginBtn.onclick = async () => {
   try {
     const auth = await Pi.authenticate(["username","payments"], onIncompletePaymentFound);
     user = auth.user;
-    userUid = auth.user.uid;  // مهم جدًا لحفظ المشتريات
+    userUid = auth.user.uid;
     login.classList.add("hidden");
     app.classList.remove("hidden");
     welcome.innerText = "Welcome " + user.username;
     loadBooks();
-    loadMyPurchases();  // تحميل الكتب المشتراة
+    loadMyPurchases();
   } catch (e) {
     alert("Please open this app inside the Pi Browser only!");
   }
@@ -183,23 +183,33 @@ function openTab(tabName) {
 /* ================= LOAD ALL BOOKS ================= */
 async function loadBooks(){
   const box = document.getElementById("books");
-  box.innerHTML = "";
-  const snap = await db.collection("books").get();
-  snap.forEach(doc => {
-    const b = doc.data();
-    box.innerHTML += `
-      <div class="book">
-        <img src="${b.cover}">
-        <h4>${b.title}</h4>
-        <p>${b.price} Pi</p>
-        <button onclick="buy('${doc.id}', ${b.price})">
-          Buy with Pi
-        </button>
-      </div>`;
-  });
+  box.innerHTML = "<p>Loading books...</p>";
+  try {
+    const snap = await db.collection("books").get();
+    box.innerHTML = "";
+    if (snap.empty) {
+      box.innerHTML = "<p>No books available yet.</p>";
+      return;
+    }
+    snap.forEach(doc => {
+      const b = doc.data();
+      box.innerHTML += `
+        <div class="book">
+          <img src="${b.cover}">
+          <h4>${b.title}</h4>
+          <p>${b.price} Pi</p>
+          <button onclick="buy('${doc.id}', ${b.price})">
+            Buy with Pi
+          </button>
+        </div>`;
+    });
+  } catch (e) {
+    console.error(e);
+    box.innerHTML = "<p>Error loading books.</p>";
+  }
 }
 
-/* ================= LOAD MY PURCHASES ================= */
+/* ================= LOAD MY PURCHASES (CORRECTED) ================= */
 async function loadMyPurchases(){
   const box = document.getElementById("myBooks");
   box.innerHTML = "<p>Loading your purchases...</p>";
@@ -210,7 +220,7 @@ async function loadMyPurchases(){
   }
 
   try {
-    const purchasesSnap = await db.collection(`purchases/${userUid}`).get();
+    const purchasesSnap = await db.collection("purchases").doc(userUid).collection("books").get();
     if (purchasesSnap.empty) {
       box.innerHTML = "<p>You haven't purchased any books yet.</p>";
       return;
@@ -235,7 +245,7 @@ async function loadMyPurchases(){
     }
   } catch (e) {
     console.error("Error loading purchases:", e);
-    box.innerHTML = "<p>Error loading your purchases.</p>";
+    box.innerHTML = "<p>Error loading your purchases. Check console for details.</p>";
   }
 }
 
@@ -344,12 +354,12 @@ async function buy(bookId, price){
               return;
             }
 
-            // حفظ سجل الشراء للمستخدم
-            await db.collection(`purchases/${userUid}`).doc(bookId).set({
+            // Save purchase correctly
+            await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({
               purchasedAt: Date.now()
             });
 
-            // فتح الكتاب فوراً
+            // Open book immediately
             const bookDoc = await db.collection("books").doc(bookId).get();
             if (bookDoc.exists) {
               const pdfUrl = bookDoc.data().pdf;
@@ -358,10 +368,8 @@ async function buy(bookId, price){
 
             alert("Payment successful! The book is now open 📚\nYou can also find it in 'My Purchases'.");
 
-            // تحديث قسم المشتريات
-            if (document.getElementById('purchases').classList.contains('active')) {
-              loadMyPurchases();
-            }
+            // Refresh My Purchases if visible
+            loadMyPurchases();
 
           } catch (err) {
             console.error("Completion error:", err);
