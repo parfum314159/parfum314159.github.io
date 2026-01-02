@@ -25,6 +25,7 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
 .ratings{font-size:14px;margin:8px 0;}
 .like-btn, .dislike-btn{background:none;border:none;font-size:18px;cursor:pointer;margin:0 5px;}
 .like-btn.liked, .dislike-btn.disliked{opacity:0.6;}
+.notice{font-size:14px;color:#ccc;}
 .tab-btn{background:#333;margin:10px;padding:10px 20px;border:none;border-radius:6px;color:#fff;cursor:pointer;}
 .tab-btn.active{background:#ff4500;}
 .tab-content{display:none;}
@@ -32,16 +33,20 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
 #searchInput{width:80%;max-width:500px;margin:15px auto;display:block;padding:10px;}
 .disclaimer{font-size:12px;color:#ccc;margin:20px;padding:10px;border-top:1px solid #333;}
 .upload-status{font-size:14px;color:#0f9;margin:10px 0;}
+.sales-book{background:#222;border:1px solid #444;border-radius:8px;padding:15px;margin:20px auto;width:90%;max-width:500px;}
+.sales-book h4{margin:10px 0;}
+.profit{font-size:16px;color:#0f9;font-weight:bold;}
 .total-profit{font-size:18px;color:#ffd700;font-weight:bold;margin:20px 0;}
-#payoutBtn{background:#00aaff;font-size:16px;padding:15px 30px;}
+#payoutBtn{background:#00aaff;font-size:16px;padding:15px 30px;margin-top:20px;}
+.payout-note{font-size:14px;color:#aaa;margin:15px 0;padding:10px;background:#222;border-radius:8px;}
 .login-required{color:#f88;font-size:14px;margin:10px;}
 </style>
 </head>
 <body>
 
 <div id="login">
-  <h1> Spicy Library</h1>
-  <p>تسجيل الدخول عبر Pi Network مطلوب للشراء، الرفع، التقييم والسحب</p>
+  <h1>📚 Spicy Library</h1>
+  <p class="notice">Login required using Pi Network for buying, uploading, rating, and withdrawals</p>
   <button id="loginBtn">Login with Pi</button>
 </div>
 
@@ -58,8 +63,8 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
 
   <div id="store" class="tab-content active">
     <div id="addBook" class="hidden">
-      <h3>Add New Book</h3>
-      <p class="login-required">يجب تسجيل الدخول لرفع كتاب</p>
+      <h3>Add Book</h3>
+      <p class="login-required">You must be logged in to upload a book</p>
       <input id="title" placeholder="Book title">
       <input id="price" type="number" min="0.1" step="0.1" placeholder="Price (Pi)">
       <textarea id="description" placeholder="Book description (optional)" rows="3"></textarea>
@@ -74,27 +79,27 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
       </select>
       <p>Number of pages (optional)</p>
       <input id="manualPages" type="number" placeholder="e.g. 250" min="1">
-      <p>📷 Book Cover (image only)</p>
+      <p>📷 Book Cover (images only)</p>
       <button id="uploadCoverBtn">Upload Cover</button>
       <p id="coverStatus" class="upload-status"></p>
       <p>📄 Book File (PDF only)</p>
       <button id="uploadPdfBtn">Upload PDF</button>
       <p id="pdfStatus" class="upload-status"></p>
-      <br>
-      <label>
+      <br><br>
+      <label class="notice">
         <input type="checkbox" id="rights">
-        <strong>I confirm that I own all rights to this book and am fully responsible for its content</strong>
+        I confirm that I own all rights to this book and am fully responsible for its content
       </label>
       <br><br>
       <button id="saveBookBtn" disabled>Save Book</button>
     </div>
 
     <h3>All Books</h3>
-    <input type="text" id="searchInput" placeholder="Search by title..." oninput="searchBooks()">
+    <input type="text" id="searchInput" placeholder="Search by book title..." oninput="searchBooks()">
     <div class="books" id="books"></div>
 
     <div class="disclaimer">
-      <strong>Disclaimer:</strong> The platform is not responsible for copyright violations. Each seller is fully responsible for the uploaded content.
+      Disclaimer: The website is not responsible for any copyright issues. Each user is fully responsible for the books they upload.
     </div>
   </div>
 
@@ -105,19 +110,19 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
 
   <div id="sales" class="tab-content">
     <h3>My Sales & Earnings</h3>
-    <p>Platform fee: 30% – You receive 70% of each sale</p>
+    <p>Platform fee: 30% – You get 70% of each sale</p>
     <p>Minimum payout: 5 Pi</p>
-    <div style="background:#222;padding:15px;border-radius:8px;margin:15px auto;max-width:600px;">
-      <strong>Payout processing:</strong> Manual within 1–30 days.
+    <div class="payout-note">
+      <strong>Payout processing time:</strong> Payments are processed manually and can take from 1-2 days up to a maximum of 30 days, depending on volume.
     </div>
     <div id="mySalesBooks"></div>
-    <div id="totalEarnings" class="total-profit">Loading...</div>
+    <div id="totalEarnings" class="total-profit">Loading earnings...</div>
     <button id="payoutBtn" onclick="requestPayout()" disabled>Request Payout</button>
   </div>
 </div>
 
 <script>
-// ================= FIREBASE =================
+// ================= FIREBASE CONFIG =================
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
   authDomain: "spicy-97f54.firebaseapp.com",
@@ -126,7 +131,7 @@ firebase.initializeApp({
 const db = firebase.firestore();
 
 // ================= PI SDK =================
-Pi.init({ version: "2.0", sandbox: false }); // Mainnet في 2026
+Pi.init({ version: "2.0", sandbox: false });
 
 let user = null;
 let userUid = null;
@@ -134,9 +139,9 @@ let coverUrl = "";
 let pdfUrl = "";
 let pageCount = "Unknown";
 
-const BACKEND_URL = "https://pi-backend-c8nz.onrender.com"; // غيّر إذا تغير URL الـ Render
+const BACKEND_URL = "https://pi-backend-c8nz.onrender.com"; // Change if your Render URL is different
 
-// ================= CLOUDINARY =================
+// ================= CLOUDINARY WIDGETS =================
 const coverWidget = cloudinary.createUploadWidget({
   cloudName: "dkb0phegf",
   uploadPreset: "spicy1998",
@@ -146,10 +151,10 @@ const coverWidget = cloudinary.createUploadWidget({
 }, (error, result) => {
   if (!error && result && result.event === "success") {
     coverUrl = result.info.secure_url;
-    document.getElementById("coverStatus").innerText = "✓ Cover uploaded!";
+    document.getElementById("coverStatus").innerText = "Cover uploaded successfully!";
     checkSaveReady();
   } else if (error) {
-    alert("Cover upload failed.");
+    alert("Cover upload failed. Please select a valid image.");
   }
 });
 
@@ -163,10 +168,10 @@ const pdfWidget = cloudinary.createUploadWidget({
   if (!error && result && result.event === "success") {
     pdfUrl = result.info.secure_url;
     pageCount = result.info.pages || "Unknown";
-    document.getElementById("pdfStatus").innerText = `✓ PDF uploaded! ${result.info.pages ? 'Pages: ' + result.info.pages : ''}`;
+    document.getElementById("pdfStatus").innerText = "PDF uploaded successfully!" + (result.info.pages ? ` (Pages: ${result.info.pages})` : "");
     checkSaveReady();
   } else if (error) {
-    alert("PDF upload failed.");
+    alert("PDF upload failed. Please select a valid PDF file.");
   }
 });
 
@@ -177,11 +182,10 @@ function checkSaveReady() {
   document.getElementById("saveBookBtn").disabled = !(coverUrl && pdfUrl && user);
 }
 
-// ================= AUTH =================
-async function authenticate() {
+// ================= AUTHENTICATION =================
+document.getElementById("loginBtn").onclick = async () => {
   try {
-    const scopes = ['username', 'payments'];
-    const authResult = await Pi.authenticate(scopes, onIncompletePaymentFound);
+    const authResult = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
     user = authResult.user;
     userUid = user.uid;
     document.getElementById("welcome").innerText = `Welcome, ${user.username}!`;
@@ -191,21 +195,19 @@ async function authenticate() {
     loadMyPurchases();
     loadMySales();
   } catch (err) {
-    alert("Login failed. Open in Pi Browser only.");
+    alert("Login failed. Please open this page in the Pi Browser.");
   }
-}
-
-document.getElementById("loginBtn").onclick = authenticate;
+};
 
 function logout() {
   location.reload();
 }
 
-// ================= INCOMPLETE PAYMENT =================
+// ================= INCOMPLETE PAYMENT HANDLER =================
 async function onIncompletePaymentFound(incompletePayment) {
-  alert("Previous pending payment detected. Completing automatically...");
+  alert("A previous pending payment was detected. Attempting to complete it automatically...");
   try {
-    const res = await fetch(`${BACKEND_URL}/complete-payment`, {
+    const response = await fetch(`${BACKEND_URL}/complete-payment`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -213,20 +215,20 @@ async function onIncompletePaymentFound(incompletePayment) {
         txid: incompletePayment.transaction?.txid
       })
     });
-    if (res.ok) {
-      alert("Pending payment completed!");
+    if (response.ok) {
+      alert("Pending payment completed successfully!");
     } else {
-      alert("Failed to complete pending payment. Check developer dashboard.");
+      alert("Failed to complete pending payment. Please check developers.minepi.com dashboard.");
     }
   } catch (err) {
-    alert("Error completing pending payment.");
+    alert("Error completing pending payment. Try again later.");
   }
 }
 
 // ================= SAVE BOOK =================
 async function saveBook() {
-  if (!user) return alert("Login required");
-  if (!document.getElementById("rights").checked) return alert("Confirm rights");
+  if (!user) return alert("You must be logged in to upload a book.");
+  if (!document.getElementById("rights").checked) return alert("Please confirm that you own all rights to this book.");
 
   const title = document.getElementById("title").value.trim();
   const price = Number(document.getElementById("price").value);
@@ -234,13 +236,15 @@ async function saveBook() {
   const language = document.getElementById("language").value;
   const manualPages = document.getElementById("manualPages").value.trim();
 
-  if (!title || price <= 0 || !coverUrl || !pdfUrl) return alert("Complete all fields");
+  if (!title || !price || price <= 0 || !coverUrl || !pdfUrl) {
+    return alert("Please fill all required fields and upload both cover and PDF.");
+  }
 
-  const finalPages = manualPages || pageCount;
+  const finalPageCount = manualPages || pageCount;
 
-  const btn = document.getElementById("saveBookBtn");
-  btn.disabled = true;
-  btn.innerText = "Saving...";
+  const saveBtn = document.getElementById("saveBookBtn");
+  saveBtn.disabled = true;
+  saveBtn.innerText = "Saving...";
 
   try {
     await db.collection("books").add({
@@ -248,7 +252,7 @@ async function saveBook() {
       price,
       description,
       language,
-      pageCount: finalPages,
+      pageCount: finalPageCount,
       salesCount: 0,
       cover: coverUrl,
       pdf: pdfUrl,
@@ -256,33 +260,171 @@ async function saveBook() {
       ownerUid: user.uid,
       createdAt: Date.now()
     });
+
     alert("Book uploaded successfully!");
     toggleAdd();
     coverUrl = pdfUrl = "";
+    pageCount = "Unknown";
+    document.getElementById("title").value = document.getElementById("price").value = document.getElementById("description").value = document.getElementById("manualPages").value = "";
+    document.getElementById("language").value = "";
+    document.getElementById("rights").checked = false;
     document.getElementById("coverStatus").innerText = "";
     document.getElementById("pdfStatus").innerText = "";
     checkSaveReady();
     loadBooks();
     loadMySales();
   } catch (e) {
-    alert("Failed: " + e.message);
+    console.error(e);
+    alert("Upload failed: " + e.message);
   } finally {
-    btn.disabled = false;
-    btn.innerText = "Save Book";
+    saveBtn.disabled = false;
+    saveBtn.innerText = "Save Book";
   }
 }
 
-// ================= LOAD BOOKS =================
+// ================= REQUEST PAYOUT =================
+async function requestPayout() {
+  const totalEarningsText = document.getElementById("totalEarnings").innerText;
+  const totalEarnings = parseFloat(totalEarningsText.replace("Total earnings: ", "").replace(" Pi", "")) || 0;
+
+  if (totalEarnings < 5) {
+    alert("Minimum payout is 5 Pi. Wait for more sales.");
+    return;
+  }
+
+  const walletAddress = prompt(`Your current earnings: ${totalEarnings.toFixed(2)} Pi\n\nEnter your Pi Wallet address:`);
+  if (!walletAddress || walletAddress.trim() === "") {
+    alert("Wallet address is required.");
+    return;
+  }
+
+  const payoutBtn = document.getElementById("payoutBtn");
+  payoutBtn.disabled = true;
+
+  try {
+    await db.collection("payout_requests").add({
+      username: user.username,
+      earnings: totalEarnings.toFixed(2),
+      walletAddress: walletAddress.trim(),
+      requestedAt: Date.now(),
+      status: "pending"
+    });
+
+    // Reset salesCount on all user's books
+    const booksSnap = await db.collection("books").where("owner", "==", user.username).get();
+    const batch = db.batch();
+    booksSnap.forEach(doc => batch.update(doc.ref, { salesCount: 0 }));
+    await batch.commit();
+
+    alert("Payout request sent successfully!\nEarnings reset to zero.\nPayment will be processed manually (usually 1-2 days).");
+    loadMySales();
+  } catch (e) {
+    console.error(e);
+    alert("Failed to send payout request. Your earnings are safe.");
+  } finally {
+    payoutBtn.disabled = false;
+  }
+}
+
+// ================= LOAD MY SALES =================
+async function loadMySales() {
+  const box = document.getElementById("mySalesBooks");
+  const totalBox = document.getElementById("totalEarnings");
+  box.innerHTML = "<p>Loading your sales...</p>";
+  totalBox.innerHTML = "";
+
+  if (!user) {
+    box.innerHTML = "<p>Please log in again.</p>";
+    return;
+  }
+
+  try {
+    const booksSnap = await db.collection("books").where("owner", "==", user.username).get();
+    if (booksSnap.empty) {
+      box.innerHTML = "<p>You haven't uploaded any books yet.</p>";
+      totalBox.innerHTML = "<div class='total-profit'>Total earnings: 0 Pi</div>";
+      document.getElementById("payoutBtn").disabled = true;
+      return;
+    }
+
+    box.innerHTML = "";
+    let totalEarnings = 0;
+
+    for (const doc of booksSnap.docs) {
+      const b = doc.data();
+      const sales = b.salesCount || 0;
+      const profit = sales * b.price * 0.7;
+      totalEarnings += profit;
+
+      box.innerHTML += `
+        <div class="sales-book">
+          <img src="${b.cover}" style="width:150px;border-radius:6px;">
+          <h4>${b.title}</h4>
+          <p>Price: ${b.price} Pi</p>
+          <p>Sales: ${sales}</p>
+          <div class="profit">Your earnings: ${profit.toFixed(2)} Pi (70%)</div>
+        </div>`;
+    }
+
+    totalBox.innerHTML = `<div class="total-profit">Total earnings: ${totalEarnings.toFixed(2)} Pi</div>`;
+    document.getElementById("payoutBtn").disabled = totalEarnings < 5;
+  } catch (e) {
+    console.error(e);
+    box.innerHTML = "<p>Error loading sales.</p>";
+  }
+}
+
+// ================= TABS & SEARCH =================
+function openTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(tabName).classList.add('active');
+  document.querySelector(`button[onclick="openTab('${tabName}')"]`).classList.add('active');
+
+  if (tabName === 'store') loadBooks();
+  if (tabName === 'purchases') loadMyPurchases();
+  if (tabName === 'sales') loadMySales();
+}
+
+function searchBooks() {
+  const input = document.getElementById("searchInput").value.toLowerCase();
+  const books = document.querySelectorAll("#books .book");
+  let found = false;
+
+  books.forEach(book => {
+    const title = book.querySelector("h4").textContent.toLowerCase();
+    if (title.includes(input)) {
+      book.style.display = "block";
+      found = true;
+    } else {
+      book.style.display = "none";
+    }
+  });
+
+  if (!found && input && !document.querySelector("#books p")) {
+    document.getElementById("books").innerHTML += "<p>No books found.</p>";
+  }
+}
+
+function toggleAdd() {
+  if (!user) return alert("You must be logged in to add a book.");
+  document.getElementById("addBook").classList.toggle("hidden");
+}
+
+// ================= LOAD ALL BOOKS =================
 async function loadBooks() {
   const box = document.getElementById("books");
-  box.innerHTML = "<p>Loading...</p>";
+  box.innerHTML = "<p>Loading books...</p>";
+
   try {
     const snap = await db.collection("books").orderBy("createdAt", "desc").get();
     box.innerHTML = "";
+
     if (snap.empty) {
-      box.innerHTML = "<p>No books yet.</p>";
+      box.innerHTML = "<p>No books available yet.</p>";
       return;
     }
+
     for (const doc of snap.docs) {
       const b = doc.data();
       const bookId = doc.id;
@@ -297,15 +439,16 @@ async function loadBooks() {
         const ratingsSnap = await db.collection("ratings").doc(bookId).collection("votes").get();
         likes = ratingsSnap.docs.filter(d => d.data().vote === "like").length;
         dislikes = ratingsSnap.docs.filter(d => d.data().vote === "dislike").length;
+
         if (userUid) {
           const voteDoc = await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get();
           userVote = voteDoc.exists ? voteDoc.data().vote : null;
         }
-      } catch (e) {}
+      } catch (e) { console.error(e); }
 
       box.innerHTML += `
         <div class="book">
-          <img src="${b.cover}" alt="cover">
+          <img src="${b.cover}" alt="Cover">
           <h4>${b.title}</h4>
           <p><strong>${b.price} Pi</strong></p>
           <div class="description">${desc}</div>
@@ -317,124 +460,159 @@ async function loadBooks() {
             <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote || !user ? 'disabled' : ''}>👍</button> ${likes}
             <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote || !user ? 'disabled' : ''}>👎</button> ${dislikes}
           </div>
-          <button onclick="buy('${bookId}', ${b.price})" ${!user ? 'disabled' : ''}>Buy with Pi</button>
+          <button onclick="buy('${bookId}', ${b.price})" ${!user ? 'disabled' : ''}>
+            Buy with Pi
+          </button>
         </div>`;
     }
   } catch (e) {
-    box.innerHTML = "<p>Error. Retry...</p>";
+    console.error(e);
+    box.innerHTML = "<p>Error loading books. Retrying...</p>";
     setTimeout(loadBooks, 5000);
-  }
-}
-
-// ================= BUY =================
-async function buy(bookId, price) {
-  if (!user) return alert("Login required");
-  if (!confirm(`Buy for ${price} Pi?`)) return;
-
-  try {
-    await Pi.createPayment({
-      amount: price,
-      memo: "Spicy Library Book Purchase",
-      metadata: { bookId }
-    }, {
-      onReadyForServerApproval: async (paymentId) => {
-        await fetch(`${BACKEND_URL}/approve-payment`, {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({paymentId})
-        });
-      },
-      onReadyForServerCompletion: async (paymentId, txid) => {
-        const res = await fetch(`${BACKEND_URL}/complete-payment`, {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({paymentId, txid})
-        });
-        if (!res.ok) throw new Error("Completion failed");
-
-        // Update Firestore (client-side - safe with rules)
-        await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({purchasedAt: Date.now()});
-        await db.runTransaction(async (tx) => {
-          const ref = db.collection("books").doc(bookId);
-          const doc = await tx.get(ref);
-          tx.update(ref, {salesCount: (doc.data().salesCount || 0) + 1});
-        });
-
-        const bookDoc = await db.collection("books").doc(bookId).get();
-        window.open(bookDoc.data().pdf, "_blank");
-        alert("Payment successful! Book opened 📚");
-        loadBooks(); loadMyPurchases(); loadMySales();
-      },
-      onCancel: () => alert("Cancelled"),
-      onError: (err) => alert("Error: " + err.message)
-    });
-  } catch (e) {
-    alert("Payment failed. Use Pi Browser.");
-  }
-}
-
-// ================= RATE BOOK =================
-async function rateBook(bookId, voteType, button) {
-  if (!user) return alert("Login required");
-  try {
-    await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).set({
-      vote: voteType,
-      votedAt: Date.now()
-    });
-    button.disabled = true;
-    button.classList.add(voteType === 'like' ? 'liked' : 'disliked');
-    loadBooks(); loadMyPurchases();
-  } catch (e) {
-    alert("Rating failed");
   }
 }
 
 // ================= LOAD MY PURCHASES =================
 async function loadMyPurchases() {
   const box = document.getElementById("myBooks");
-  box.innerHTML = "<p>Loading...</p>";
-  if (!userUid) return box.innerHTML = "<p>Login required</p>";
+  box.innerHTML = "<p>Loading your purchases...</p>";
+
+  if (!userUid) {
+    box.innerHTML = "<p>Please log in again.</p>";
+    return;
+  }
+
   try {
-    const snap = await db.collection("purchases").doc(userUid).collection("books").get();
-    if (snap.empty) return box.innerHTML = "<p>No purchases yet.</p>";
+    const purchasesSnap = await db.collection("purchases").doc(userUid).collection("books").get();
+    if (purchasesSnap.empty) {
+      box.innerHTML = "<p>You haven't purchased any books yet.</p>";
+      return;
+    }
+
     box.innerHTML = "";
-    for (const doc of snap.docs) {
+    for (const doc of purchasesSnap.docs) {
       const bookId = doc.id;
       const bookSnap = await db.collection("books").doc(bookId).get();
-      if (bookSnap.exists) {
-        const b = bookSnap.data();
-        // Similar to loadBooks but with Download button
-        box.innerHTML += `<div class="book">... <button onclick="window.open('${b.pdf}', '_blank')">Download PDF</button></div>`;
-      }
+      if (!bookSnap.exists) continue;
+
+      const b = bookSnap.data();
+      const desc = b.description ? b.description.substring(0, 100) + "..." : "No description";
+      const lang = b.language ? `Language: ${b.language}` : "";
+      const owner = `By: ${b.owner}`;
+      const pages = b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
+      const sales = b.salesCount > 0 ? `Sales: ${b.salesCount}` : "";
+
+      let likes = 0, dislikes = 0, userVote = null;
+      try {
+        const ratingsSnap = await db.collection("ratings").doc(bookId).collection("votes").get();
+        likes = ratingsSnap.docs.filter(d => d.data().vote === "like").length;
+        dislikes = ratingsSnap.docs.filter(d => d.data().vote === "dislike").length;
+        const voteDoc = await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get();
+        userVote = voteDoc.exists ? voteDoc.data().vote : null;
+      } catch (e) {}
+
+      box.innerHTML += `
+        <div class="book">
+          <img src="${b.cover}" alt="Cover">
+          <h4>${b.title}</h4>
+          <div class="description">${desc}</div>
+          <div class="owner">${owner}</div>
+          <div class="language">${lang}</div>
+          <div class="pages">${pages}</div>
+          <div class="sales">${sales}</div>
+          <div class="ratings">
+            <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
+            <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
+          </div>
+          <button onclick="window.open('${b.pdf}', '_blank')">Download PDF</button>
+        </div>`;
     }
   } catch (e) {
+    console.error(e);
+    box.innerHTML = "<p>Error loading purchases. Retrying...</p>";
     setTimeout(loadMyPurchases, 5000);
   }
 }
 
-// ================= LOAD MY SALES & PAYOUT =================
-async function loadMySales() {
-  // Your original loadMySales code
-  // + requestPayout code
+// ================= RATE BOOK =================
+async function rateBook(bookId, voteType, button) {
+  if (!userUid) return alert("Please log in to rate books.");
+
+  try {
+    await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).set({
+      vote: voteType,
+      votedAt: Date.now()
+    });
+
+    button.disabled = true;
+    button.classList.add(voteType === 'like' ? 'liked' : 'disliked');
+    const sibling = button.parentNode.querySelector(voteType === 'like' ? '.dislike-btn' : '.like-btn');
+    if (sibling) sibling.disabled = true;
+
+    loadBooks();
+    loadMyPurchases();
+  } catch (e) {
+    alert("Failed to submit rating.");
+  }
 }
 
-function toggleAdd() {
-  if (!user) return alert("Login to add book");
-  document.getElementById("addBook").classList.toggle("hidden");
-}
+// ================= BUY BOOK =================
+async function buy(bookId, price) {
+  if (!user) return alert("You must be logged in to buy.");
+  if (!confirm(`Do you want to buy this book for ${price} Pi?`)) return;
 
-function openTab(tabName) {
-  document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
-  document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
-  document.getElementById(tabName).classList.add("active");
-  document.querySelector(`button[onclick="openTab('${tabName}')"]`).classList.add("active");
-  if (tabName === "store") loadBooks();
-  if (tabName === "purchases") loadMyPurchases();
-  if (tabName === "sales") loadMySales();
-}
+  try {
+    await Pi.createPayment({
+      amount: price,
+      memo: "Book purchase from Spicy Library",
+      metadata: { bookId }
+    }, {
+      onReadyForServerApproval: async (paymentId) => {
+        const res = await fetch(`${BACKEND_URL}/approve-payment`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId })
+        });
+        if (!res.ok) console.error("Approval failed");
+      },
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        const res = await fetch(`${BACKEND_URL}/complete-payment`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId, txid })
+        });
 
-function searchBooks() {
-  // Your original search code
+        if (!res.ok) {
+          const err = await res.json();
+          alert("Payment completion failed: " + JSON.stringify(err));
+          return;
+        }
+
+        // Record purchase and increment sales
+        await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({ purchasedAt: Date.now() });
+
+        await db.runTransaction(async (tx) => {
+          const ref = db.collection("books").doc(bookId);
+          const doc = await tx.get(ref);
+          if (doc.exists) {
+            tx.update(ref, { salesCount: (doc.data().salesCount || 0) + 1 });
+          }
+        });
+
+        const bookSnap = await db.collection("books").doc(bookId).get();
+        window.open(bookSnap.data().pdf, "_blank");
+
+        alert("Payment successful! Book opened.");
+        loadBooks();
+        loadMyPurchases();
+        loadMySales();
+      },
+      onCancel: () => alert("Payment cancelled"),
+      onError: (error) => alert("Payment error: " + error.message)
+    });
+  } catch (e) {
+    alert("Failed to start payment. Use Pi Browser.");
+  }
 }
 
 </script>
