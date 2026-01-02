@@ -182,9 +182,6 @@ input, textarea, select{
   </div>
 </div>
 
-<!-- Hidden iframe for Cloudinary upload (with sandbox fix) -->
-<iframe id="upload_target" name="upload_target" style="display:none" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
-
 <script>
 /* ================= FIREBASE ================= */
 firebase.initializeApp({
@@ -202,6 +199,34 @@ let userUid = null;
 /* ================= CLOUDINARY ================= */
 const CLOUD_NAME = "dkb0phegf";
 const UPLOAD_PRESET = "spicy1998";
+
+/* ================= UPLOAD USING XMLHttpRequest ================= */
+async function uploadWithXHR(file, folder) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, true);
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const data = JSON.parse(xhr.responseText);
+        resolve(data);
+      } else {
+        reject(new Error(`Upload failed with status: ${xhr.status}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+
+    xhr.ontimeout = () => reject(new Error("Upload timed out"));
+
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", UPLOAD_PRESET);
+    fd.append("folder", folder);
+
+    xhr.send(fd);
+  });
+}
 
 /* ================= LOGIN ================= */
 loginBtn.onclick = async () => {
@@ -405,7 +430,7 @@ async function rateBook(bookId, voteType, button) {
   }
 }
 
-/* ================= UPLOAD USING FORM + IFRAME (FINAL FIX) ================= */
+/* ================= UPLOAD ================= */
 async function uploadBook(){
   if(!rights.checked) return alert("Please confirm that you own the rights to this book");
   const titleVal = title.value.trim();
@@ -419,104 +444,14 @@ async function uploadBook(){
   uploadBtn.innerText = "Uploading cover...";
 
   try {
-    // رفع الغلاف
-    const coverForm = document.createElement("form");
-    coverForm.method = "POST";
-    coverForm.action = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`;
-    coverForm.target = "upload_target";
-    coverForm.enctype = "multipart/form-data";
-    coverForm.style.display = "none";
-
-    const coverPreset = document.createElement("input");
-    coverPreset.type = "hidden";
-    coverPreset.name = "upload_preset";
-    coverPreset.value = UPLOAD_PRESET;
-    coverForm.appendChild(coverPreset);
-
-    const coverFolder = document.createElement("input");
-    coverFolder.type = "hidden";
-    coverFolder.name = "folder";
-    coverFolder.value = "covers";
-    coverForm.appendChild(coverFolder);
-
-    const coverFileInput = document.createElement("input");
-    coverFileInput.type = "file";
-    coverFileInput.name = "file";
-    coverFileInput.files = cover.files;
-    coverForm.appendChild(coverFileInput);
-
-    document.body.appendChild(coverForm);
-
-    const coverPromise = new Promise((resolve, reject) => {
-      const iframe = document.getElementById("upload_target");
-      iframe.onload = () => {
-        try {
-          const response = iframe.contentDocument.body.innerText;
-          const data = JSON.parse(response);
-          if (data.error) reject(new Error(data.error.message));
-          resolve(data);
-        } catch (e) {
-          reject(e);
-        }
-      };
-    });
-
-    coverForm.submit();
-    const coverData = await coverPromise;
-    document.body.removeChild(coverForm);
+    const coverData = await uploadWithXHR(cover.files[0], "covers");
 
     uploadBtn.innerText = "Uploading PDF...";
-
-    // رفع PDF
-    const pdfForm = document.createElement("form");
-    pdfForm.method = "POST";
-    pdfForm.action = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`;
-    pdfForm.target = "upload_target";
-    pdfForm.enctype = "multipart/form-data";
-    pdfForm.style.display = "none";
-
-    const pdfPreset = document.createElement("input");
-    pdfPreset.type = "hidden";
-    pdfPreset.name = "upload_preset";
-    pdfPreset.value = UPLOAD_PRESET;
-    pdfForm.appendChild(pdfPreset);
-
-    const pdfFolder = document.createElement("input");
-    pdfFolder.type = "hidden";
-    pdfFolder.name = "folder";
-    pdfFolder.value = "pdfs";
-    pdfForm.appendChild(pdfFolder);
-
-    const pdfFileInput = document.createElement("input");
-    pdfFileInput.type = "file";
-    pdfFileInput.name = "file";
-    pdfFileInput.files = pdf.files;
-    pdfForm.appendChild(pdfFileInput);
-
-    document.body.appendChild(pdfForm);
-
-    const pdfPromise = new Promise((resolve, reject) => {
-      const iframe = document.getElementById("upload_target");
-      iframe.onload = () => {
-        try {
-          const response = iframe.contentDocument.body.innerText;
-          const data = JSON.parse(response);
-          if (data.error) reject(new Error(data.error.message));
-          resolve(data);
-        } catch (e) {
-          reject(e);
-        }
-      };
-    });
-
-    pdfForm.submit();
-    const pdfData = await pdfPromise;
-    document.body.removeChild(pdfForm);
+    const pdfData = await uploadWithXHR(pdf.files[0], "pdfs");
 
     const pageCount = pdfData.pages || "Unknown";
 
     uploadBtn.innerText = "Saving to database...";
-
     await db.collection("books").add({
       title: titleVal,
       price: priceVal,
@@ -534,7 +469,7 @@ async function uploadBook(){
     loadBooks();
   } catch (e) {
     console.error("Upload error:", e);
-    alert("Upload failed: " + (e.message || "Network error. Please try again."));
+    alert("Upload failed: " + (e.message || "Please try again."));
   } finally {
     uploadBtn.disabled = false;
     uploadBtn.innerText = "Upload Book";
