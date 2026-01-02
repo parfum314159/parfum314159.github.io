@@ -39,6 +39,14 @@ input, textarea, select{padding:8px;margin:5px;width:90%;}
 .profit{font-size:16px;color:#0f9;font-weight:bold;}
 .total-profit{font-size:18px;color:#ffd700;font-weight:bold;margin:20px 0;}
 #payoutBtn{background:#00aaff;margin-top:20px;}
+.payout-note{
+  font-size:14px;
+  color:#aaa;
+  margin:15px 0;
+  padding:10px;
+  background:#222;
+  border-radius:8px;
+}
 </style>
 </head>
 <body>
@@ -107,6 +115,9 @@ input, textarea, select{padding:8px;margin:5px;width:90%;}
     <h3>My Sales & Earnings</h3>
     <p>Platform fee: 30% – You get 70% of each sale</p>
     <p>Minimum payout: 5 Pi</p>
+    <div class="payout-note">
+      <strong>Payout processing time:</strong> Payments are processed manually and can take from 1-2 days up to a maximum of 30 days, depending on volume.
+    </div>
     <div id="mySalesBooks"></div>
     <div id="totalEarnings" class="total-profit"></div>
     <button id="payoutBtn" onclick="requestPayout()">Request Payout</button>
@@ -114,6 +125,7 @@ input, textarea, select{padding:8px;margin:5px;width:90%;}
 </div>
 
 <script>
+/* ================= FIREBASE ================= */
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
   authDomain: "spicy-97f54.firebaseapp.com",
@@ -121,15 +133,16 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 
+/* ================= PI MAINNET ================= */
 Pi.init({ version: "2.0", sandbox: false });
 let user = null;
 let userUid = null;
 
+/* ================= CLOUDINARY WIDGET ================= */
 let coverUrl = "";
 let pdfUrl = "";
 let pageCount = "Unknown";
 
-// رفع الغلاف (صور فقط)
 const coverWidget = cloudinary.createUploadWidget({
   cloudName: "dkb0phegf",
   uploadPreset: "spicy1998",
@@ -148,7 +161,6 @@ const coverWidget = cloudinary.createUploadWidget({
   }
 });
 
-// رفع PDF (PDF فقط)
 const pdfWidget = cloudinary.createUploadWidget({
   cloudName: "dkb0phegf",
   uploadPreset: "spicy1998",
@@ -177,6 +189,7 @@ function checkSaveReady() {
   }
 }
 
+/* ================= SAVE BOOK ================= */
 async function saveBook() {
   if(!rights.checked) return alert("Please confirm that you own all rights to this book");
   const titleVal = title.value.trim();
@@ -226,6 +239,7 @@ async function saveBook() {
   }
 }
 
+/* ================= REQUEST PAYOUT ================= */
 async function requestPayout() {
   const totalEarnings = parseFloat(document.getElementById("totalEarnings").innerText.replace("Total earnings: ", "").replace(" Pi", "")) || 0;
 
@@ -260,7 +274,7 @@ async function requestPayout() {
     });
     await batch.commit();
 
-    alert("Payout request sent successfully!\nYour earnings have been reset to zero.\nThe admin will process your payment soon.");
+    alert("Payout request sent successfully!\nYour earnings have been reset to zero.\nPayment will be processed within 1-30 days (usually 1-2 days).");
 
     loadMySales();
   } catch (e) {
@@ -271,6 +285,7 @@ async function requestPayout() {
   }
 }
 
+/* ================= LOAD MY SALES ================= */
 async function loadMySales() {
   const box = document.getElementById("mySalesBooks");
   const totalBox = document.getElementById("totalEarnings");
@@ -318,6 +333,7 @@ async function loadMySales() {
   }
 }
 
+/* ================= LOGIN ================= */
 loginBtn.onclick = async () => {
   try {
     const auth = await Pi.authenticate(["username","payments"], onIncompletePaymentFound);
@@ -338,6 +354,7 @@ function logout(){
   location.reload();
 }
 
+/* ================= TABS ================= */
 function openTab(tabName) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -348,6 +365,7 @@ function openTab(tabName) {
   if (tabName === 'sales') loadMySales();
 }
 
+/* ================= SEARCH BOOKS ================= */
 function searchBooks() {
   const input = document.getElementById("searchInput").value.toLowerCase();
   const books = document.querySelectorAll("#books .book");
@@ -368,6 +386,7 @@ function searchBooks() {
   }
 }
 
+/* ================= LOAD ALL BOOKS ================= */
 async function loadBooks(){
   const box = document.getElementById("books");
   box.innerHTML = "<p>Loading books...</p>";
@@ -429,6 +448,7 @@ async function loadBooks(){
   }
 }
 
+/* ================= LOAD MY PURCHASES ================= */
 async function loadMyPurchases(){
   const box = document.getElementById("myBooks");
   box.innerHTML = "<p>Loading your purchases...</p>";
@@ -497,6 +517,7 @@ async function loadMyPurchases(){
   }
 }
 
+/* ================= RATE BOOK ================= */
 async function rateBook(bookId, voteType, button) {
   if (!userUid) {
     alert("Please log in to rate books.");
@@ -524,6 +545,7 @@ function toggleAdd(){
   addBook.classList.toggle("hidden");
 }
 
+/* ================= HANDLE INCOMPLETE PAYMENT ================= */
 async function onIncompletePaymentFound(incompletePayment) {
   alert("A previous pending payment was detected... Attempting to complete it automatically");
   console.log("Incomplete payment found:", incompletePayment);
@@ -552,6 +574,7 @@ async function onIncompletePaymentFound(incompletePayment) {
   }
 }
 
+/* ================= BUY ================= */
 async function buy(bookId, price){
   if(!confirm(`Do you want to buy this book for ${price} Pi?`)) return;
 
