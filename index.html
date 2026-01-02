@@ -150,6 +150,10 @@ input, textarea, select{
   font-weight:bold;
   margin:20px 0;
 }
+#payoutBtn{
+  background:#00aaff;
+  margin-top:20px;
+}
 </style>
 </head>
 <body>
@@ -220,12 +224,13 @@ input, textarea, select{
     <div class="books" id="myBooks"></div>
   </div>
 
-  <!-- MY SALES TAB (NEW) -->
+  <!-- MY SALES TAB -->
   <div id="sales" class="tab-content">
     <h3>My Sales & Earnings</h3>
     <p>Platform fee: 30% – You get 70% of each sale</p>
     <div id="mySalesBooks"></div>
     <div id="totalEarnings" class="total-profit"></div>
+    <button id="payoutBtn" onclick="requestPayout()">Request Payout</button>
   </div>
 </div>
 
@@ -332,7 +337,7 @@ async function saveBook() {
     document.getElementById("coverStatus").innerText = "";
     document.getElementById("pdfStatus").innerText = "";
     loadBooks();
-    loadMySales(); // تحديث المبيعات
+    loadMySales();
   } catch (e) {
     console.error(e);
     alert("Save failed: " + e.message);
@@ -342,7 +347,39 @@ async function saveBook() {
   }
 }
 
-/* ================= LOAD MY SALES (NEW TAB) ================= */
+/* ================= REQUEST PAYOUT ================= */
+async function requestPayout() {
+  const totalEarnings = parseFloat(document.getElementById("totalEarnings").innerText.replace("Total earnings: ", "").replace(" Pi", "")) || 0;
+
+  if (totalEarnings <= 0) {
+    alert("No earnings to withdraw yet.");
+    return;
+  }
+
+  const walletAddress = prompt(`Your earnings: ${totalEarnings.toFixed(2)} Pi\n\nPlease enter your Pi Wallet address to receive payment:`);
+
+  if (!walletAddress || walletAddress.trim() === "") {
+    alert("Wallet address is required.");
+    return;
+  }
+
+  try {
+    await db.collection("payout_requests").add({
+      username: user.username,
+      earnings: totalEarnings.toFixed(2),
+      walletAddress: walletAddress.trim(),
+      requestedAt: Date.now(),
+      status: "pending"
+    });
+
+    alert("Payout request sent successfully!\nThe platform admin will process it soon.");
+  } catch (e) {
+    console.error(e);
+    alert("Failed to send request. Try again.");
+  }
+}
+
+/* ================= LOAD MY SALES ================= */
 async function loadMySales() {
   const box = document.getElementById("mySalesBooks");
   const totalBox = document.getElementById("totalEarnings");
@@ -359,6 +396,7 @@ async function loadMySales() {
     if (booksSnap.empty) {
       box.innerHTML = "<p>You haven't uploaded any books yet.</p>";
       totalBox.innerHTML = "<p>Total earnings: 0 Pi</p>";
+      document.getElementById("payoutBtn").disabled = true;
       return;
     }
 
@@ -367,9 +405,8 @@ async function loadMySales() {
 
     for (const bookDoc of booksSnap.docs) {
       const b = bookDoc.data();
-      const bookId = bookDoc.id;
       const sales = b.salesCount || 0;
-      const sellerProfit = sales * b.price * 0.7; // 70% للبائع
+      const sellerProfit = sales * b.price * 0.7;
       totalEarnings += sellerProfit;
 
       box.innerHTML += `
@@ -383,6 +420,7 @@ async function loadMySales() {
     }
 
     totalBox.innerHTML = `<div class="total-profit">Total earnings: ${totalEarnings.toFixed(2)} Pi</div>`;
+    document.getElementById("payoutBtn").disabled = totalEarnings <= 0;
   } catch (e) {
     console.error(e);
     box.innerHTML = "<p>Error loading sales.</p>";
@@ -400,7 +438,7 @@ loginBtn.onclick = async () => {
     welcome.innerText = "Welcome " + user.username;
     loadBooks();
     loadMyPurchases();
-    loadMySales(); // تحميل المبيعات عند الدخول
+    loadMySales();
   } catch (e) {
     alert("Please open this app inside the Pi Browser only!");
   }
@@ -697,7 +735,7 @@ async function buy(bookId, price){
 
             loadBooks();
             loadMyPurchases();
-            loadMySales(); // تحديث إذا كان البائع يشاهد
+            loadMySales();
           } catch (err) {
             console.error("Completion error:", err);
             alert("Server connection error during payment completion.");
