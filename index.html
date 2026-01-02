@@ -129,6 +129,27 @@ input, textarea, select{
   color:#0f0;
   margin:10px 0;
 }
+.sales-book{
+  background:#222;
+  border:1px solid #444;
+  border-radius:8px;
+  padding:15px;
+  margin:20px auto;
+  width:90%;
+  max-width:500px;
+}
+.sales-book h4{margin:10px 0;}
+.profit{
+  font-size:16px;
+  color:#0f9;
+  font-weight:bold;
+}
+.total-profit{
+  font-size:18px;
+  color:#ffd700;
+  font-weight:bold;
+  margin:20px 0;
+}
 </style>
 </head>
 <body>
@@ -149,6 +170,7 @@ input, textarea, select{
   <div>
     <button class="tab-btn active" onclick="openTab('store')">Store</button>
     <button class="tab-btn" onclick="openTab('purchases')">My Purchases</button>
+    <button class="tab-btn" onclick="openTab('sales')">My Sales</button>
   </div>
 
   <!-- STORE TAB -->
@@ -196,6 +218,14 @@ input, textarea, select{
   <div id="purchases" class="tab-content">
     <h3>My Purchased Books</h3>
     <div class="books" id="myBooks"></div>
+  </div>
+
+  <!-- MY SALES TAB (NEW) -->
+  <div id="sales" class="tab-content">
+    <h3>My Sales & Earnings</h3>
+    <p>Platform fee: 30% – You get 70% of each sale</p>
+    <div id="mySalesBooks"></div>
+    <div id="totalEarnings" class="total-profit"></div>
   </div>
 </div>
 
@@ -286,7 +316,7 @@ async function saveBook() {
       description: descVal,
       language: langVal,
       pageCount: finalPageCount,
-      salesCount: 0,  // بداية المبيعات
+      salesCount: 0,
       cover: coverUrl,
       pdf: pdfUrl,
       owner: user.username,
@@ -302,12 +332,60 @@ async function saveBook() {
     document.getElementById("coverStatus").innerText = "";
     document.getElementById("pdfStatus").innerText = "";
     loadBooks();
+    loadMySales(); // تحديث المبيعات
   } catch (e) {
     console.error(e);
     alert("Save failed: " + e.message);
   } finally {
     saveBtn.disabled = false;
     saveBtn.innerText = "Save Book";
+  }
+}
+
+/* ================= LOAD MY SALES (NEW TAB) ================= */
+async function loadMySales() {
+  const box = document.getElementById("mySalesBooks");
+  const totalBox = document.getElementById("totalEarnings");
+  box.innerHTML = "<p>Loading your sales...</p>";
+  totalBox.innerHTML = "";
+
+  if (!userUid) {
+    box.innerHTML = "<p>Please log in again.</p>";
+    return;
+  }
+
+  try {
+    const booksSnap = await db.collection("books").where("owner", "==", user.username).get();
+    if (booksSnap.empty) {
+      box.innerHTML = "<p>You haven't uploaded any books yet.</p>";
+      totalBox.innerHTML = "<p>Total earnings: 0 Pi</p>";
+      return;
+    }
+
+    box.innerHTML = "";
+    let totalEarnings = 0;
+
+    for (const bookDoc of booksSnap.docs) {
+      const b = bookDoc.data();
+      const bookId = bookDoc.id;
+      const sales = b.salesCount || 0;
+      const sellerProfit = sales * b.price * 0.7; // 70% للبائع
+      totalEarnings += sellerProfit;
+
+      box.innerHTML += `
+        <div class="sales-book">
+          <img src="${b.cover}" style="width:150px; border-radius:6px;">
+          <h4>${b.title}</h4>
+          <p>Price: ${b.price} Pi</p>
+          <p>Sales: ${sales}</p>
+          <div class="profit">Your earnings: ${sellerProfit.toFixed(2)} Pi (70%)</div>
+        </div>`;
+    }
+
+    totalBox.innerHTML = `<div class="total-profit">Total earnings: ${totalEarnings.toFixed(2)} Pi</div>`;
+  } catch (e) {
+    console.error(e);
+    box.innerHTML = "<p>Error loading sales.</p>";
   }
 }
 
@@ -322,6 +400,7 @@ loginBtn.onclick = async () => {
     welcome.innerText = "Welcome " + user.username;
     loadBooks();
     loadMyPurchases();
+    loadMySales(); // تحميل المبيعات عند الدخول
   } catch (e) {
     alert("Please open this app inside the Pi Browser only!");
   }
@@ -339,6 +418,7 @@ function openTab(tabName) {
   document.querySelector(`button[onclick="openTab('${tabName}')"]`).classList.add('active');
 
   if (tabName === 'purchases') loadMyPurchases();
+  if (tabName === 'sales') loadMySales();
 }
 
 /* ================= SEARCH BOOKS ================= */
@@ -593,12 +673,12 @@ async function buy(bookId, price){
               return;
             }
 
-            // حفظ الشراء للمستخدم
+            // حفظ الشراء
             await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({
               purchasedAt: Date.now()
             });
 
-            // زيادة عدد المبيعات للكتاب
+            // زيادة المبيعات
             const bookRef = db.collection("books").doc(bookId);
             await db.runTransaction(async (transaction) => {
               const bookDoc = await transaction.get(bookRef);
@@ -613,11 +693,11 @@ async function buy(bookId, price){
               window.open(pdfUrl, "_blank");
             }
 
-            alert("Payment successful! The book is now open 📚\nCheck 'My Purchases' tab.");
+            alert("Payment successful! The book is now open 📚");
 
-            loadBooks();  // تحديث المتجر ليظهر العدد الجديد
+            loadBooks();
             loadMyPurchases();
-
+            loadMySales(); // تحديث إذا كان البائع يشاهد
           } catch (err) {
             console.error("Completion error:", err);
             alert("Server connection error during payment completion.");
