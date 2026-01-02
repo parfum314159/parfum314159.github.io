@@ -163,6 +163,8 @@ input, textarea, select{
         <option value="German">German</option>
         <option value="Other">Other</option>
       </select>
+      <p>Number of pages (optional, for accuracy)</p>
+      <input id="manualPages" type="number" placeholder="e.g. 250" min="1">
       <p>📷 Book Cover</p>
       <button id="uploadCoverBtn">Upload Cover</button>
       <p id="coverStatus" class="upload-status"></p>
@@ -224,7 +226,7 @@ const coverWidget = cloudinary.createUploadWidget({
     document.getElementById("coverStatus").innerText = "Cover uploaded successfully!";
     checkSaveReady();
   } else if (error) {
-    alert("Cover upload failed: " + error.statusText);
+    alert("Cover upload failed: " + (error.statusText || "Unknown error"));
   }
 });
 
@@ -234,15 +236,15 @@ const pdfWidget = cloudinary.createUploadWidget({
   folder: "pdfs",
   cropping: false,
   multiple: false,
-  resourceType: "raw"  // مهم للـ PDF
+  resourceType: "raw"
 }, (error, result) => {
   if (!error && result && result.event === "success") {
     pdfUrl = result.info.secure_url;
     pageCount = result.info.pages || "Unknown";
-    document.getElementById("pdfStatus").innerText = "PDF uploaded successfully! Pages: " + pageCount;
+    document.getElementById("pdfStatus").innerText = "PDF uploaded successfully!" + (result.info.pages ? ` Pages: ${result.info.pages}` : "");
     checkSaveReady();
   } else if (error) {
-    alert("PDF upload failed: " + error.statusText);
+    alert("PDF upload failed: " + (error.statusText || "Unknown error"));
   }
 });
 
@@ -262,7 +264,11 @@ async function saveBook() {
   const priceVal = Number(price.value);
   const descVal = description.value.trim();
   const langVal = language.value;
-  if(!titleVal || !priceVal || !coverUrl || !pdfUrl) return alert("Please upload cover and PDF first");
+  const manualPagesVal = manualPages.value.trim();
+
+  if(!titleVal || !priceVal || !coverUrl || !pdfUrl) return alert("Please complete all fields and upload files");
+
+  const finalPageCount = manualPagesVal || pageCount;
 
   const saveBtn = document.getElementById("saveBookBtn");
   saveBtn.disabled = true;
@@ -274,7 +280,7 @@ async function saveBook() {
       price: priceVal,
       description: descVal,
       language: langVal,
-      pageCount: pageCount,
+      pageCount: finalPageCount,
       cover: coverUrl,
       pdf: pdfUrl,
       owner: user.username,
@@ -286,6 +292,7 @@ async function saveBook() {
     coverUrl = "";
     pdfUrl = "";
     pageCount = "Unknown";
+    manualPages.value = "";
     document.getElementById("coverStatus").innerText = "";
     document.getElementById("pdfStatus").innerText = "";
     loadBooks();
@@ -366,7 +373,7 @@ async function loadBooks(){
       const desc = b.description || "No description";
       const lang = b.language ? `Language: ${b.language}` : "";
       const owner = b.owner ? `By: ${b.owner}` : "";
-      const pages = b.pageCount ? `Pages: ${b.pageCount}` : "";
+      const pages = b.pageCount && b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
 
       let likes = 0;
       let dislikes = 0;
@@ -435,7 +442,7 @@ async function loadMyPurchases(){
         const desc = b.description || "No description";
         const lang = b.language ? `Language: ${b.language}` : "";
         const owner = b.owner ? `By: ${b.owner}` : "";
-        const pages = b.pageCount ? `Pages: ${b.pageCount}` : "";
+        const pages = b.pageCount && b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
 
         let likes = 0;
         let dislikes = 0;
