@@ -42,29 +42,24 @@ input, textarea, select{padding:8px;margin:5px;width:90%;}
 </style>
 </head>
 <body>
-<!-- LOGIN -->
 <div id="login">
   <h1>📚 Spicy Library</h1>
   <p class="notice">Login using Pi Network</p>
   <button id="loginBtn">Login with Pi</button>
 </div>
 
-<!-- APP -->
 <div id="app" class="hidden">
   <h3 id="welcome"></h3>
   <button onclick="toggleAdd()">➕ Add Book</button>
   <button onclick="logout()">Logout</button>
 
-  <!-- Tabs -->
   <div>
     <button class="tab-btn active" onclick="openTab('store')">Store</button>
     <button class="tab-btn" onclick="openTab('purchases')">My Purchases</button>
     <button class="tab-btn" onclick="openTab('sales')">My Sales</button>
   </div>
 
-  <!-- STORE TAB -->
   <div id="store" class="tab-content active">
-    <!-- ADD BOOK -->
     <div id="addBook" class="hidden">
       <h3>Add Book</h3>
       <input id="title" placeholder="Book title">
@@ -81,10 +76,10 @@ input, textarea, select{padding:8px;margin:5px;width:90%;}
       </select>
       <p>Number of pages (optional)</p>
       <input id="manualPages" type="number" placeholder="e.g. 250" min="1">
-      <p>📷 Book Cover</p>
+      <p>📷 Book Cover (images only)</p>
       <button id="uploadCoverBtn">Upload Cover</button>
       <p id="coverStatus" class="upload-status"></p>
-      <p>📄 Book File (PDF)</p>
+      <p>📄 Book File (PDF only)</p>
       <button id="uploadPdfBtn">Upload PDF</button>
       <p id="pdfStatus" class="upload-status"></p>
       <br><br>
@@ -103,13 +98,11 @@ input, textarea, select{padding:8px;margin:5px;width:90%;}
     </div>
   </div>
 
-  <!-- MY PURCHASES TAB -->
   <div id="purchases" class="tab-content">
     <h3>My Purchased Books</h3>
     <div class="books" id="myBooks"></div>
   </div>
 
-  <!-- MY SALES TAB -->
   <div id="sales" class="tab-content">
     <h3>My Sales & Earnings</h3>
     <p>Platform fee: 30% – You get 70% of each sale</p>
@@ -136,30 +129,34 @@ let coverUrl = "";
 let pdfUrl = "";
 let pageCount = "Unknown";
 
+// رفع الغلاف (صور فقط)
 const coverWidget = cloudinary.createUploadWidget({
   cloudName: "dkb0phegf",
   uploadPreset: "spicy1998",
   folder: "covers",
   cropping: false,
   multiple: false,
-  resourceType: "image"
+  resourceType: "image",
+  clientAllowedFormats: ["jpg", "jpeg", "png", "gif", "webp"]
 }, (error, result) => {
   if (!error && result && result.event === "success") {
     coverUrl = result.info.secure_url;
     document.getElementById("coverStatus").innerText = "Cover uploaded successfully!";
     checkSaveReady();
   } else if (error) {
-    alert("Cover upload failed: " + (error.statusText || "Unknown error"));
+    alert("Cover upload failed: Please select an image file (jpg, png, etc.).");
   }
 });
 
+// رفع PDF (PDF فقط)
 const pdfWidget = cloudinary.createUploadWidget({
   cloudName: "dkb0phegf",
   uploadPreset: "spicy1998",
   folder: "pdfs",
   cropping: false,
   multiple: false,
-  resourceType: "raw"
+  resourceType: "raw",
+  clientAllowedFormats: ["pdf"]
 }, (error, result) => {
   if (!error && result && result.event === "success") {
     pdfUrl = result.info.secure_url;
@@ -167,7 +164,7 @@ const pdfWidget = cloudinary.createUploadWidget({
     document.getElementById("pdfStatus").innerText = "PDF uploaded successfully!" + (result.info.pages ? ` Pages: ${result.info.pages}` : "");
     checkSaveReady();
   } else if (error) {
-    alert("PDF upload failed: " + (error.statusText || "Unknown error"));
+    alert("PDF upload failed: Please select a PDF file only.");
   }
 });
 
