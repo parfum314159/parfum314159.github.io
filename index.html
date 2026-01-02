@@ -182,9 +182,6 @@ input, textarea, select{
   </div>
 </div>
 
-<!-- Hidden iframe for Cloudinary upload -->
-<iframe id="upload_target" name="upload_target" style="display:none"></iframe>
-
 <script>
 /* ================= FIREBASE ================= */
 firebase.initializeApp({
@@ -202,6 +199,29 @@ let userUid = null;
 /* ================= CLOUDINARY ================= */
 const CLOUD_NAME = "dkb0phegf";
 const UPLOAD_PRESET = "spicy1998";
+
+/* ================= UPLOAD USING CORS PROXY ================= */
+async function uploadWithProxy(file, folder) {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("upload_preset", UPLOAD_PRESET);
+  fd.append("folder", folder);
+
+  const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`);
+
+  const response = await fetch(proxyUrl, {
+    method: "POST",
+    body: fd
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data;
+}
 
 /* ================= LOGIN ================= */
 loginBtn.onclick = async () => {
@@ -405,99 +425,29 @@ async function rateBook(bookId, voteType, button) {
   }
 }
 
-/* ================= UPLOAD USING FORM + IFRAME (BYPASS CORS) ================= */
+/* ================= UPLOAD WITH CORS PROXY ================= */
 async function uploadBook(){
   if(!rights.checked) return alert("Please confirm that you own the rights to this book");
   const titleVal = title.value.trim();
   const priceVal = Number(price.value);
   const descVal = description.value.trim();
   const langVal = language.value;
-  if(!titleVal || !priceVal || !cover.files[0] || !pdf.files[0]) return alert("Please fill in all required fields");
+  if(!titleVal || !priceVal || !cover.files[0] || !pdf.files[0])
+    return alert("Please fill in all required fields");
 
   const uploadBtn = document.getElementById("uploadBtn");
   uploadBtn.disabled = true;
-  uploadBtn.innerText = "Uploading...";
+  uploadBtn.innerText = "Uploading cover...";
 
   try {
-    // رفع الغلاف
-    const coverForm = new FormData();
-    coverForm.append("file", cover.files[0]);
-    coverForm.append("upload_preset", UPLOAD_PRESET);
-    coverForm.append("folder", "covers");
+    const coverData = await uploadWithProxy(cover.files[0], "covers");
 
-    const coverIframe = document.getElementById("upload_target");
-    const coverPromise = new Promise((resolve, reject) => {
-      coverIframe.onload = () => {
-        try {
-          const response = coverIframe.contentWindow.document.body.innerText;
-          const data = JSON.parse(response);
-          if (data.error) reject(new Error(data.error.message));
-          resolve(data);
-        } catch (e) {
-          reject(e);
-        }
-      };
-    });
-
-    const coverFormElement = document.createElement("form");
-    coverFormElement.method = "POST";
-    coverFormElement.action = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`;
-    coverFormElement.target = "upload_target";
-    coverFormElement.enctype = "multipart/form-data";
-    coverFormElement.style.display = "none";
-    for (const [key, value] of coverForm.entries()) {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = key;
-      input.value = value instanceof File ? value : value;
-      coverFormElement.appendChild(input);
-    }
-    document.body.appendChild(coverFormElement);
-    coverFormElement.submit();
-
-    const coverData = await coverPromise;
-    document.body.removeChild(coverFormElement);
-
-    // رفع PDF
-    const pdfForm = new FormData();
-    pdfForm.append("file", pdf.files[0]);
-    pdfForm.append("upload_preset", UPLOAD_PRESET);
-    pdfForm.append("folder", "pdfs");
-
-    const pdfPromise = new Promise((resolve, reject) => {
-      coverIframe.onload = () => {
-        try {
-          const response = coverIframe.contentWindow.document.body.innerText;
-          const data = JSON.parse(response);
-          if (data.error) reject(new Error(data.error.message));
-          resolve(data);
-        } catch (e) {
-          reject(e);
-        }
-      };
-    });
-
-    const pdfFormElement = document.createElement("form");
-    pdfFormElement.method = "POST";
-    pdfFormElement.action = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`;
-    pdfFormElement.target = "upload_target";
-    pdfFormElement.enctype = "multipart/form-data";
-    pdfFormElement.style.display = "none";
-    for (const [key, value] of pdfForm.entries()) {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = key;
-      input.value = value instanceof File ? value : value;
-      pdfFormElement.appendChild(input);
-    }
-    document.body.appendChild(pdfFormElement);
-    pdfFormElement.submit();
-
-    const pdfData = await pdfPromise;
-    document.body.removeChild(pdfFormElement);
+    uploadBtn.innerText = "Uploading PDF...";
+    const pdfData = await uploadWithProxy(pdf.files[0], "pdfs");
 
     const pageCount = pdfData.pages || "Unknown";
 
+    uploadBtn.innerText = "Saving to database...";
     await db.collection("books").add({
       title: titleVal,
       price: priceVal,
@@ -515,7 +465,7 @@ async function uploadBook(){
     loadBooks();
   } catch (e) {
     console.error("Upload error:", e);
-    alert("Upload failed: " + (e.message || "Please try again."));
+    alert("Upload failed: " + (e.message || "Check your internet connection and try again."));
   } finally {
     uploadBtn.disabled = false;
     uploadBtn.innerText = "Upload Book";
