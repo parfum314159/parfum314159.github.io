@@ -75,6 +75,11 @@ input, textarea, select{
   color:#0f9;
   font-weight:bold;
 }
+.sales{
+  font-size:12px;
+  color:#ffd700;
+  font-weight:bold;
+}
 .ratings{
   font-size:14px;
   margin:8px 0;
@@ -163,7 +168,7 @@ input, textarea, select{
         <option value="German">German</option>
         <option value="Other">Other</option>
       </select>
-      <p>Number of pages (optional, for accuracy)</p>
+      <p>Number of pages (optional)</p>
       <input id="manualPages" type="number" placeholder="e.g. 250" min="1">
       <p>📷 Book Cover</p>
       <button id="uploadCoverBtn">Upload Cover</button>
@@ -281,6 +286,7 @@ async function saveBook() {
       description: descVal,
       language: langVal,
       pageCount: finalPageCount,
+      salesCount: 0,  // بداية المبيعات
       cover: coverUrl,
       pdf: pdfUrl,
       owner: user.username,
@@ -374,6 +380,7 @@ async function loadBooks(){
       const lang = b.language ? `Language: ${b.language}` : "";
       const owner = b.owner ? `By: ${b.owner}` : "";
       const pages = b.pageCount && b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
+      const sales = b.salesCount > 0 ? `Sales: ${b.salesCount}` : "";
 
       let likes = 0;
       let dislikes = 0;
@@ -400,6 +407,7 @@ async function loadBooks(){
           <div class="owner">${owner}</div>
           <div class="language">${lang}</div>
           <div class="pages">${pages}</div>
+          <div class="sales">${sales}</div>
           <div class="ratings">
             <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
             <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
@@ -443,6 +451,7 @@ async function loadMyPurchases(){
         const lang = b.language ? `Language: ${b.language}` : "";
         const owner = b.owner ? `By: ${b.owner}` : "";
         const pages = b.pageCount && b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
+        const sales = b.salesCount > 0 ? `Sales: ${b.salesCount}` : "";
 
         let likes = 0;
         let dislikes = 0;
@@ -466,6 +475,7 @@ async function loadMyPurchases(){
             <div class="owner">${owner}</div>
             <div class="language">${lang}</div>
             <div class="pages">${pages}</div>
+            <div class="sales">${sales}</div>
             <div class="ratings">
               <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
               <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
@@ -540,7 +550,7 @@ async function onIncompletePaymentFound(incompletePayment) {
   }
 }
 
-/* ================= BUY ================= */
+/* ================= BUY (WITH SALES INCREMENT) ================= */
 async function buy(bookId, price){
   if(!confirm(`Do you want to buy this book for ${price} Pi?`)) return;
 
@@ -583,14 +593,19 @@ async function buy(bookId, price){
               return;
             }
 
-            try {
-              await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({
-                purchasedAt: Date.now()
-              });
-            } catch (saveErr) {
-              console.error("Failed to save purchase record:", saveErr);
-              alert("Payment successful, but failed to save to My Purchases.\nError: " + saveErr.message);
-            }
+            // حفظ الشراء للمستخدم
+            await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({
+              purchasedAt: Date.now()
+            });
+
+            // زيادة عدد المبيعات للكتاب
+            const bookRef = db.collection("books").doc(bookId);
+            await db.runTransaction(async (transaction) => {
+              const bookDoc = await transaction.get(bookRef);
+              if (!bookDoc.exists) throw "Book does not exist!";
+              const newSales = (bookDoc.data().salesCount || 0) + 1;
+              transaction.update(bookRef, { salesCount: newSales });
+            });
 
             const bookDoc = await db.collection("books").doc(bookId).get();
             if (bookDoc.exists) {
@@ -600,6 +615,7 @@ async function buy(bookId, price){
 
             alert("Payment successful! The book is now open 📚\nCheck 'My Purchases' tab.");
 
+            loadBooks();  // تحديث المتجر ليظهر العدد الجديد
             loadMyPurchases();
 
           } catch (err) {
