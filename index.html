@@ -6,6 +6,7 @@
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>  <!-- Added for auth -->
 <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
 <style>
 body{background:#111;color:#fff;font-family:Arial;text-align:center;margin:0;padding:20px;}
@@ -125,6 +126,8 @@ firebase.initializeApp({
   projectId: "spicy-97f54"
 });
 const db = firebase.firestore();
+const auth = firebase.auth(); // Added for authentication
+
 /* ================= PI MAINNET ================= */
 Pi.init({ version: "2.0", sandbox: false });
 let user = null;
@@ -298,22 +301,32 @@ async function loadMySales() {
   }
 }
 /* ================= LOGIN ================= */
-loginBtn.onclick = async () => {
+document.getElementById("loginBtn").onclick = async () => {
   try {
-    const auth = await Pi.authenticate(["username","payments"], onIncompletePaymentFound);
-    user = auth.user;
-    userUid = auth.user.uid;
-    login.classList.add("hidden");
-    app.classList.remove("hidden");
-    welcome.innerText = "Welcome " + user.username;
+    const authResult = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
+    user = authResult.user;
+    userUid = auth.user.uid;  // Fixed typo: authResult.user.uid
+    // Send Pi access_token to backend for Firebase custom token
+    const res = await fetch("https://pi-backend-c8nz.onrender.com/create-firebase-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access_token: authResult.accessToken, uid: userUid })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Auth failed");
+    await auth.signInWithCustomToken(data.customToken);
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+    document.getElementById("welcome").innerText = "Welcome " + user.username;
     loadBooks();
     loadMyPurchases();
     loadMySales();
   } catch (e) {
-    alert("Please open this app inside the Pi Browser only!");
+    alert("Login failed: " + e.message + ". Please open in Pi Browser.");
   }
 };
 function logout(){
+  auth.signOut();
   location.reload();
 }
 /* ================= TABS ================= */
@@ -407,7 +420,7 @@ async function loadBooks(){
 async function loadMyPurchases(){
   const box = document.getElementById("myBooks");
   box.innerHTML = "<p>Loading your purchases...</p>";
-  if (!userUid) {
+  if (!auth.currentUser) {
     box.innerHTML = "<p>Please log in again.</p>";
     return;
   }
@@ -467,7 +480,7 @@ async function loadMyPurchases(){
 }
 /* ================= RATE BOOK ================= */
 async function rateBook(bookId, voteType, button) {
-  if (!userUid) {
+  if (!auth.currentUser) {
     alert("Please log in to rate books.");
     return;
   }
@@ -565,7 +578,7 @@ async function buy(bookId, price){
             const bookDoc = await db.collection("books").doc(bookId).get();
             if (bookDoc.exists) {
               const pdfUrl = bookDoc.data().pdf;
-              window.open(pdfUrl, "_blank");
+              window.open(pdfUrl, '_blank');
             }
             alert("Payment successful! The book is now open 📚");
             loadBooks();
