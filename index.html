@@ -8,6 +8,8 @@
 <!-- Firebase compat -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<!-- Cloudinary Widget -->
+<script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
 <style>
 body{
   background:#111;
@@ -117,6 +119,11 @@ input, textarea, select{
   padding:10px;
   border-top:1px solid #333;
 }
+.upload-status{
+  font-size:14px;
+  color:#0f0;
+  margin:10px 0;
+}
 </style>
 </head>
 <body>
@@ -157,14 +164,17 @@ input, textarea, select{
         <option value="Other">Other</option>
       </select>
       <p>📷 Book Cover</p>
-      <input type="file" id="cover" accept="image/*">
+      <button id="uploadCoverBtn">Upload Cover</button>
+      <p id="coverStatus" class="upload-status"></p>
       <p>📄 Book File (PDF)</p>
-      <input type="file" id="pdf" accept="application/pdf"><br><br>
+      <button id="uploadPdfBtn">Upload PDF</button>
+      <p id="pdfStatus" class="upload-status"></p>
+      <br><br>
       <label class="notice">
         <input type="checkbox" id="rights">
         I confirm that I own all rights to this book
       </label><br><br>
-      <button id="uploadBtn" onclick="uploadBook()">Upload Book</button>
+      <button id="saveBookBtn" onclick="saveBook()" disabled>Save Book</button>
     </div>
 
     <h3>All Books</h3>
@@ -196,36 +206,96 @@ Pi.init({ version: "2.0", sandbox: false });
 let user = null;
 let userUid = null;
 
-/* ================= CLOUDINARY ================= */
-const CLOUD_NAME = "dkb0phegf";
-const UPLOAD_PRESET = "spicy1998";
+/* ================= CLOUDINARY WIDGET ================= */
+let coverUrl = "";
+let pdfUrl = "";
+let pageCount = "Unknown";
 
-/* ================= UPLOAD USING XMLHttpRequest ================= */
-async function uploadWithXHR(file, folder) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, true);
+const coverWidget = cloudinary.createUploadWidget({
+  cloudName: "dkb0phegf",
+  uploadPreset: "spicy1998",
+  folder: "covers",
+  cropping: false,
+  multiple: false,
+  resourceType: "image"
+}, (error, result) => {
+  if (!error && result && result.event === "success") {
+    coverUrl = result.info.secure_url;
+    document.getElementById("coverStatus").innerText = "Cover uploaded successfully!";
+    checkSaveReady();
+  } else if (error) {
+    alert("Cover upload failed: " + error.statusText);
+  }
+});
 
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        const data = JSON.parse(xhr.responseText);
-        resolve(data);
-      } else {
-        reject(new Error(`Upload failed with status: ${xhr.status}`));
-      }
-    };
+const pdfWidget = cloudinary.createUploadWidget({
+  cloudName: "dkb0phegf",
+  uploadPreset: "spicy1998",
+  folder: "pdfs",
+  cropping: false,
+  multiple: false,
+  resourceType: "raw"  // مهم للـ PDF
+}, (error, result) => {
+  if (!error && result && result.event === "success") {
+    pdfUrl = result.info.secure_url;
+    pageCount = result.info.pages || "Unknown";
+    document.getElementById("pdfStatus").innerText = "PDF uploaded successfully! Pages: " + pageCount;
+    checkSaveReady();
+  } else if (error) {
+    alert("PDF upload failed: " + error.statusText);
+  }
+});
 
-    xhr.onerror = () => reject(new Error("Network error during upload"));
+document.getElementById("uploadCoverBtn").addEventListener("click", () => coverWidget.open());
+document.getElementById("uploadPdfBtn").addEventListener("click", () => pdfWidget.open());
 
-    xhr.ontimeout = () => reject(new Error("Upload timed out"));
+function checkSaveReady() {
+  if (coverUrl && pdfUrl) {
+    document.getElementById("saveBookBtn").disabled = false;
+  }
+}
 
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("upload_preset", UPLOAD_PRESET);
-    fd.append("folder", folder);
+/* ================= SAVE BOOK ================= */
+async function saveBook() {
+  if(!rights.checked) return alert("Please confirm that you own all rights to this book");
+  const titleVal = title.value.trim();
+  const priceVal = Number(price.value);
+  const descVal = description.value.trim();
+  const langVal = language.value;
+  if(!titleVal || !priceVal || !coverUrl || !pdfUrl) return alert("Please upload cover and PDF first");
 
-    xhr.send(fd);
-  });
+  const saveBtn = document.getElementById("saveBookBtn");
+  saveBtn.disabled = true;
+  saveBtn.innerText = "Saving...";
+
+  try {
+    await db.collection("books").add({
+      title: titleVal,
+      price: priceVal,
+      description: descVal,
+      language: langVal,
+      pageCount: pageCount,
+      cover: coverUrl,
+      pdf: pdfUrl,
+      owner: user.username,
+      createdAt: Date.now()
+    });
+
+    alert("Book uploaded successfully!");
+    addBook.classList.add("hidden");
+    coverUrl = "";
+    pdfUrl = "";
+    pageCount = "Unknown";
+    document.getElementById("coverStatus").innerText = "";
+    document.getElementById("pdfStatus").innerText = "";
+    loadBooks();
+  } catch (e) {
+    console.error(e);
+    alert("Save failed: " + e.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerText = "Save Book";
+  }
 }
 
 /* ================= LOGIN ================= */
@@ -427,52 +497,6 @@ async function rateBook(bookId, voteType, button) {
   } catch (e) {
     console.error("Rating error:", e);
     alert("Failed to submit rating.");
-  }
-}
-
-/* ================= UPLOAD ================= */
-async function uploadBook(){
-  if(!rights.checked) return alert("Please confirm that you own the rights to this book");
-  const titleVal = title.value.trim();
-  const priceVal = Number(price.value);
-  const descVal = description.value.trim();
-  const langVal = language.value;
-  if(!titleVal || !priceVal || !cover.files[0] || !pdf.files[0]) return alert("Please fill in all required fields");
-
-  const uploadBtn = document.getElementById("uploadBtn");
-  uploadBtn.disabled = true;
-  uploadBtn.innerText = "Uploading cover...";
-
-  try {
-    const coverData = await uploadWithXHR(cover.files[0], "covers");
-
-    uploadBtn.innerText = "Uploading PDF...";
-    const pdfData = await uploadWithXHR(pdf.files[0], "pdfs");
-
-    const pageCount = pdfData.pages || "Unknown";
-
-    uploadBtn.innerText = "Saving to database...";
-    await db.collection("books").add({
-      title: titleVal,
-      price: priceVal,
-      description: descVal,
-      language: langVal,
-      pageCount: pageCount,
-      cover: coverData.secure_url,
-      pdf: pdfData.secure_url,
-      owner: user.username,
-      createdAt: Date.now()
-    });
-
-    alert("Book uploaded successfully!");
-    addBook.classList.add("hidden");
-    loadBooks();
-  } catch (e) {
-    console.error("Upload error:", e);
-    alert("Upload failed: " + (e.message || "Please try again."));
-  } finally {
-    uploadBtn.disabled = false;
-    uploadBtn.innerText = "Upload Book";
   }
 }
 
