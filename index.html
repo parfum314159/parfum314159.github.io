@@ -68,6 +68,11 @@ input, textarea, select{
   font-size:12px;
   color:#aaa;
 }
+.pages{
+  font-size:12px;
+  color:#0f9;
+  font-weight:bold;
+}
 .ratings{
   font-size:14px;
   margin:8px 0;
@@ -177,6 +182,9 @@ input, textarea, select{
   </div>
 </div>
 
+<!-- Hidden iframe for Cloudinary upload (with sandbox fix) -->
+<iframe id="upload_target" name="upload_target" style="display:none" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+
 <script>
 /* ================= FIREBASE ================= */
 firebase.initializeApp({
@@ -194,19 +202,6 @@ let userUid = null;
 /* ================= CLOUDINARY ================= */
 const CLOUD_NAME = "dkb0phegf";
 const UPLOAD_PRESET = "spicy1998";
-
-async function uploadCloudinary(file, folder){
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("upload_preset", UPLOAD_PRESET);
-  fd.append("folder", folder);
-  const r = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
-    { method:"POST", body:fd }
-  );
-  const d = await r.json();
-  return d.secure_url;
-}
 
 /* ================= LOGIN ================= */
 loginBtn.onclick = async () => {
@@ -259,7 +254,7 @@ function searchBooks() {
   }
 }
 
-/* ================= LOAD ALL BOOKS (FIXED) ================= */
+/* ================= LOAD ALL BOOKS ================= */
 async function loadBooks(){
   const box = document.getElementById("books");
   box.innerHTML = "<p>Loading books...</p>";
@@ -276,8 +271,8 @@ async function loadBooks(){
       const desc = b.description || "No description";
       const lang = b.language ? `Language: ${b.language}` : "";
       const owner = b.owner ? `By: ${b.owner}` : "";
+      const pages = b.pageCount ? `Pages: ${b.pageCount}` : "";
 
-      // جلب التقييمات
       let likes = 0;
       let dislikes = 0;
       let userVote = null;
@@ -291,8 +286,7 @@ async function loadBooks(){
           userVote = userVoteDoc.exists ? userVoteDoc.data().vote : null;
         }
       } catch (ratingErr) {
-        console.error("Error loading ratings for book " + bookId + ":", ratingErr);
-        // لا نوقف التحميل، نستمر بدون تقييمات لهذا الكتاب
+        console.error("Error loading ratings:", ratingErr);
       }
 
       box.innerHTML += `
@@ -303,6 +297,7 @@ async function loadBooks(){
           <div class="description">${desc}</div>
           <div class="owner">${owner}</div>
           <div class="language">${lang}</div>
+          <div class="pages">${pages}</div>
           <div class="ratings">
             <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
             <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
@@ -313,13 +308,13 @@ async function loadBooks(){
         </div>`;
     }
   } catch (e) {
-    console.error("Critical error loading books:", e);
+    console.error(e);
     box.innerHTML = "<p>Error loading books. Retrying in 5 seconds...</p>";
-    setTimeout(loadBooks, 5000);  // إعادة محاولة تلقائية
+    setTimeout(loadBooks, 5000);
   }
 }
 
-/* ================= LOAD MY PURCHASES (FIXED) ================= */
+/* ================= LOAD MY PURCHASES ================= */
 async function loadMyPurchases(){
   const box = document.getElementById("myBooks");
   box.innerHTML = "<p>Loading your purchases...</p>";
@@ -345,6 +340,7 @@ async function loadMyPurchases(){
         const desc = b.description || "No description";
         const lang = b.language ? `Language: ${b.language}` : "";
         const owner = b.owner ? `By: ${b.owner}` : "";
+        const pages = b.pageCount ? `Pages: ${b.pageCount}` : "";
 
         let likes = 0;
         let dislikes = 0;
@@ -357,7 +353,7 @@ async function loadMyPurchases(){
           const userVoteDoc = await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get();
           userVote = userVoteDoc.exists ? userVoteDoc.data().vote : null;
         } catch (ratingErr) {
-          console.error("Error loading ratings for purchased book " + bookId + ":", ratingErr);
+          console.error("Error loading ratings:", ratingErr);
         }
 
         box.innerHTML += `
@@ -367,6 +363,7 @@ async function loadMyPurchases(){
             <div class="description">${desc}</div>
             <div class="owner">${owner}</div>
             <div class="language">${lang}</div>
+            <div class="pages">${pages}</div>
             <div class="ratings">
               <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
               <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
@@ -378,8 +375,8 @@ async function loadMyPurchases(){
       }
     }
   } catch (e) {
-    console.error("Error loading purchases:", e);
-    box.innerHTML = `<p>Error loading your purchases. Retrying in 5 seconds...</p>`;
+    console.error(e);
+    box.innerHTML = "<p>Error loading purchases. Retrying in 5 seconds...</p>";
     setTimeout(loadMyPurchases, 5000);
   }
 }
@@ -408,37 +405,140 @@ async function rateBook(bookId, voteType, button) {
   }
 }
 
-/* ================= UPLOAD ================= */
+/* ================= UPLOAD USING FORM + IFRAME (FINAL FIX) ================= */
 async function uploadBook(){
   if(!rights.checked) return alert("Please confirm that you own the rights to this book");
   const titleVal = title.value.trim();
   const priceVal = Number(price.value);
   const descVal = description.value.trim();
   const langVal = language.value;
-  if(!titleVal || !priceVal || !cover.files[0] || !pdf.files[0])
-    return alert("Please fill in all required fields");
+  if(!titleVal || !priceVal || !cover.files[0] || !pdf.files[0]) return alert("Please fill in all required fields");
+
+  const uploadBtn = document.getElementById("uploadBtn");
   uploadBtn.disabled = true;
+  uploadBtn.innerText = "Uploading cover...";
+
   try {
-    const coverURL = await uploadCloudinary(cover.files[0], "covers");
-    const pdfURL = await uploadCloudinary(pdf.files[0], "pdfs");
+    // رفع الغلاف
+    const coverForm = document.createElement("form");
+    coverForm.method = "POST";
+    coverForm.action = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`;
+    coverForm.target = "upload_target";
+    coverForm.enctype = "multipart/form-data";
+    coverForm.style.display = "none";
+
+    const coverPreset = document.createElement("input");
+    coverPreset.type = "hidden";
+    coverPreset.name = "upload_preset";
+    coverPreset.value = UPLOAD_PRESET;
+    coverForm.appendChild(coverPreset);
+
+    const coverFolder = document.createElement("input");
+    coverFolder.type = "hidden";
+    coverFolder.name = "folder";
+    coverFolder.value = "covers";
+    coverForm.appendChild(coverFolder);
+
+    const coverFileInput = document.createElement("input");
+    coverFileInput.type = "file";
+    coverFileInput.name = "file";
+    coverFileInput.files = cover.files;
+    coverForm.appendChild(coverFileInput);
+
+    document.body.appendChild(coverForm);
+
+    const coverPromise = new Promise((resolve, reject) => {
+      const iframe = document.getElementById("upload_target");
+      iframe.onload = () => {
+        try {
+          const response = iframe.contentDocument.body.innerText;
+          const data = JSON.parse(response);
+          if (data.error) reject(new Error(data.error.message));
+          resolve(data);
+        } catch (e) {
+          reject(e);
+        }
+      };
+    });
+
+    coverForm.submit();
+    const coverData = await coverPromise;
+    document.body.removeChild(coverForm);
+
+    uploadBtn.innerText = "Uploading PDF...";
+
+    // رفع PDF
+    const pdfForm = document.createElement("form");
+    pdfForm.method = "POST";
+    pdfForm.action = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`;
+    pdfForm.target = "upload_target";
+    pdfForm.enctype = "multipart/form-data";
+    pdfForm.style.display = "none";
+
+    const pdfPreset = document.createElement("input");
+    pdfPreset.type = "hidden";
+    pdfPreset.name = "upload_preset";
+    pdfPreset.value = UPLOAD_PRESET;
+    pdfForm.appendChild(pdfPreset);
+
+    const pdfFolder = document.createElement("input");
+    pdfFolder.type = "hidden";
+    pdfFolder.name = "folder";
+    pdfFolder.value = "pdfs";
+    pdfForm.appendChild(pdfFolder);
+
+    const pdfFileInput = document.createElement("input");
+    pdfFileInput.type = "file";
+    pdfFileInput.name = "file";
+    pdfFileInput.files = pdf.files;
+    pdfForm.appendChild(pdfFileInput);
+
+    document.body.appendChild(pdfForm);
+
+    const pdfPromise = new Promise((resolve, reject) => {
+      const iframe = document.getElementById("upload_target");
+      iframe.onload = () => {
+        try {
+          const response = iframe.contentDocument.body.innerText;
+          const data = JSON.parse(response);
+          if (data.error) reject(new Error(data.error.message));
+          resolve(data);
+        } catch (e) {
+          reject(e);
+        }
+      };
+    });
+
+    pdfForm.submit();
+    const pdfData = await pdfPromise;
+    document.body.removeChild(pdfForm);
+
+    const pageCount = pdfData.pages || "Unknown";
+
+    uploadBtn.innerText = "Saving to database...";
+
     await db.collection("books").add({
       title: titleVal,
       price: priceVal,
       description: descVal,
       language: langVal,
-      cover: coverURL,
-      pdf: pdfURL,
+      pageCount: pageCount,
+      cover: coverData.secure_url,
+      pdf: pdfData.secure_url,
       owner: user.username,
       createdAt: Date.now()
     });
+
     alert("Book uploaded successfully!");
     addBook.classList.add("hidden");
     loadBooks();
-  } catch(e){
-    console.error(e);
-    alert("Upload failed: " + e.message);
+  } catch (e) {
+    console.error("Upload error:", e);
+    alert("Upload failed: " + (e.message || "Network error. Please try again."));
+  } finally {
+    uploadBtn.disabled = false;
+    uploadBtn.innerText = "Upload Book";
   }
-  uploadBtn.disabled = false;
 }
 
 function toggleAdd(){
