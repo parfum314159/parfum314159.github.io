@@ -39,14 +39,8 @@ input, textarea, select{padding:8px;margin:5px;width:90%;}
 .profit{font-size:16px;color:#0f9;font-weight:bold;}
 .total-profit{font-size:18px;color:#ffd700;font-weight:bold;margin:20px 0;}
 #payoutBtn{background:#00aaff;margin-top:20px;}
-.payout-note{
-  font-size:14px;
-  color:#aaa;
-  margin:15px 0;
-  padding:10px;
-  background:#222;
-  border-radius:8px;
-}
+.payout-note{font-size:14px;color:#aaa;margin:15px 0;padding:10px;background:#222;border-radius:8px;}
+.report-btn{background:#ff3333;color:#fff;padding:5px 10px;font-size:12px;border:none;border-radius:4px;cursor:pointer;margin-top:5px;}
 </style>
 </head>
 <body>
@@ -125,7 +119,6 @@ input, textarea, select{padding:8px;margin:5px;width:90%;}
 </div>
 
 <script>
-/* ================= FIREBASE ================= */
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
   authDomain: "spicy-97f54.firebaseapp.com",
@@ -133,12 +126,10 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 
-/* ================= PI MAINNET ================= */
 Pi.init({ version: "2.0", sandbox: false });
 let user = null;
 let userUid = null;
 
-/* ================= CLOUDINARY WIDGET ================= */
 let coverUrl = "";
 let pdfUrl = "";
 let pageCount = "Unknown";
@@ -189,7 +180,6 @@ function checkSaveReady() {
   }
 }
 
-/* ================= SAVE BOOK ================= */
 async function saveBook() {
   if(!rights.checked) return alert("Please confirm that you own all rights to this book");
   const titleVal = title.value.trim();
@@ -239,7 +229,6 @@ async function saveBook() {
   }
 }
 
-/* ================= REQUEST PAYOUT ================= */
 async function requestPayout() {
   const totalEarnings = parseFloat(document.getElementById("totalEarnings").innerText.replace("Total earnings: ", "").replace(" Pi", "")) || 0;
 
@@ -285,7 +274,6 @@ async function requestPayout() {
   }
 }
 
-/* ================= LOAD MY SALES ================= */
 async function loadMySales() {
   const box = document.getElementById("mySalesBooks");
   const totalBox = document.getElementById("totalEarnings");
@@ -333,60 +321,37 @@ async function loadMySales() {
   }
 }
 
-/* ================= LOGIN ================= */
-loginBtn.onclick = async () => {
-  try {
-    const auth = await Pi.authenticate(["username","payments"], onIncompletePaymentFound);
-    user = auth.user;
-    userUid = auth.user.uid;
-    login.classList.add("hidden");
-    app.classList.remove("hidden");
-    welcome.innerText = "Welcome " + user.username;
-    loadBooks();
-    loadMyPurchases();
-    loadMySales();
-  } catch (e) {
-    alert("Please open this app inside the Pi Browser only!");
+/* ================= REPORT BOOK ================= */
+function reportBook(bookId, bookTitle, bookOwner) {
+  if (!userUid) {
+    alert("Please log in to report a book.");
+    return;
   }
-};
 
-function logout(){
-  location.reload();
-}
+  const reason = prompt(`Report book: "${bookTitle}" by ${bookOwner}\n\nPlease describe the issue (copyright violation, fraud, inappropriate content, etc.):`);
 
-/* ================= TABS ================= */
-function openTab(tabName) {
-  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-  document.getElementById(tabName).classList.add('active');
-  document.querySelector(`button[onclick="openTab('${tabName}')"]`).classList.add('active');
+  if (!reason || reason.trim() === "") {
+    alert("Report reason is required.");
+    return;
+  }
 
-  if (tabName === 'purchases') loadMyPurchases();
-  if (tabName === 'sales') loadMySales();
-}
-
-/* ================= SEARCH BOOKS ================= */
-function searchBooks() {
-  const input = document.getElementById("searchInput").value.toLowerCase();
-  const books = document.querySelectorAll("#books .book");
-  let found = false;
-  books.forEach(book => {
-    const title = book.querySelector("h4").textContent.toLowerCase();
-    if (title.includes(input)) {
-      book.style.display = "block";
-      found = true;
-    } else {
-      book.style.display = "none";
-    }
+  db.collection("book_reports").add({
+    reporter: user.username,
+    bookId: bookId,
+    bookTitle: bookTitle,
+    bookOwner: bookOwner,
+    reason: reason.trim(),
+    reportedAt: Date.now(),
+    status: "pending"
+  }).then(() => {
+    alert("Report sent successfully! The admin will review it and take action if necessary.");
+  }).catch((e) => {
+    console.error(e);
+    alert("Failed to send report. Try again.");
   });
-  if (!found && input) {
-    if (!document.querySelector("#books p")) {
-      document.getElementById("books").innerHTML += "<p>No books found.</p>";
-    }
-  }
 }
 
-/* ================= LOAD ALL BOOKS ================= */
+/* ================= LOAD ALL BOOKS (مع زر التبليغ) ================= */
 async function loadBooks(){
   const box = document.getElementById("books");
   box.innerHTML = "<p>Loading books...</p>";
@@ -439,6 +404,9 @@ async function loadBooks(){
           <button onclick="buy('${bookId}', ${b.price})">
             Buy with Pi
           </button>
+          <button class="report-btn" onclick="reportBook('${bookId}', '${b.title.replace(/'/g, "\\'")}', '${b.owner.replace(/'/g, "\\'")}')">
+            Report Book
+          </button>
         </div>`;
     }
   } catch (e) {
@@ -448,7 +416,6 @@ async function loadBooks(){
   }
 }
 
-/* ================= LOAD MY PURCHASES ================= */
 async function loadMyPurchases(){
   const box = document.getElementById("myBooks");
   box.innerHTML = "<p>Loading your purchases...</p>";
@@ -517,7 +484,6 @@ async function loadMyPurchases(){
   }
 }
 
-/* ================= RATE BOOK ================= */
 async function rateBook(bookId, voteType, button) {
   if (!userUid) {
     alert("Please log in to rate books.");
@@ -545,7 +511,6 @@ function toggleAdd(){
   addBook.classList.toggle("hidden");
 }
 
-/* ================= HANDLE INCOMPLETE PAYMENT ================= */
 async function onIncompletePaymentFound(incompletePayment) {
   alert("A previous pending payment was detected... Attempting to complete it automatically");
   console.log("Incomplete payment found:", incompletePayment);
@@ -574,7 +539,6 @@ async function onIncompletePaymentFound(incompletePayment) {
   }
 }
 
-/* ================= BUY ================= */
 async function buy(bookId, price){
   if(!confirm(`Do you want to buy this book for ${price} Pi?`)) return;
 
@@ -657,6 +621,56 @@ async function buy(bookId, price){
   } catch (e) {
     console.error("Payment initiation failed:", e);
     alert("Failed to start payment process. Make sure you are using the Pi Browser.");
+  }
+}
+
+loginBtn.onclick = async () => {
+  try {
+    const auth = await Pi.authenticate(["username","payments"], onIncompletePaymentFound);
+    user = auth.user;
+    userUid = auth.user.uid;
+    login.classList.add("hidden");
+    app.classList.remove("hidden");
+    welcome.innerText = "Welcome " + user.username;
+    loadBooks();
+    loadMyPurchases();
+    loadMySales();
+  } catch (e) {
+    alert("Please open this app inside the Pi Browser only!");
+  }
+};
+
+function logout(){
+  location.reload();
+}
+
+function openTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(tabName).classList.add('active');
+  document.querySelector(`button[onclick="openTab('${tabName}')"]`).classList.add('active');
+
+  if (tabName === 'purchases') loadMyPurchases();
+  if (tabName === 'sales') loadMySales();
+}
+
+function searchBooks() {
+  const input = document.getElementById("searchInput").value.toLowerCase();
+  const books = document.querySelectorAll("#books .book");
+  let found = false;
+  books.forEach(book => {
+    const title = book.querySelector("h4").textContent.toLowerCase();
+    if (title.includes(input)) {
+      book.style.display = "block";
+      found = true;
+    } else {
+      book.style.display = "none";
+    }
+  });
+  if (!found && input) {
+    if (!document.querySelector("#books p")) {
+      document.getElementById("books").innerHTML += "<p>No books found.</p>";
+    }
   }
 }
 </script>
