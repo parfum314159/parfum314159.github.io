@@ -41,7 +41,7 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
 
 <div id="login">
   <h1>📚 Spicy Library</h1>
-  <p>Login required via Pi Network for buying, uploading, rating, and withdrawals</p>
+  <p>تسجيل الدخول عبر Pi Network مطلوب للشراء، الرفع، التقييم والسحب</p>
   <button id="loginBtn">Login with Pi</button>
 </div>
 
@@ -59,7 +59,7 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
   <div id="store" class="tab-content active">
     <div id="addBook" class="hidden">
       <h3>Add New Book</h3>
-      <p class="login-required">Login required to upload a book</p>
+      <p class="login-required">يجب تسجيل الدخول لرفع كتاب</p>
       <input id="title" placeholder="Book title">
       <input id="price" type="number" min="0.1" step="0.1" placeholder="Price (Pi)">
       <textarea id="description" placeholder="Book description (optional)" rows="3"></textarea>
@@ -112,7 +112,7 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
     </div>
     <div id="mySalesBooks"></div>
     <div id="totalEarnings" class="total-profit">Loading...</div>
-    <button id="payoutBtn" disabled>Request Payout</button>
+    <button id="payoutBtn" onclick="requestPayout()" disabled>Request Payout</button>
   </div>
 </div>
 
@@ -126,13 +126,15 @@ firebase.initializeApp({
 const db = firebase.firestore();
 
 // ================= PI SDK =================
-Pi.init({ version: "2.0", sandbox: false });
+Pi.init({ version: "2.0", sandbox: false }); // Mainnet في 2026
 
 let user = null;
 let userUid = null;
 let coverUrl = "";
 let pdfUrl = "";
 let pageCount = "Unknown";
+
+const BACKEND_URL = "https://pi-backend-c8nz.onrender.com"; // غيّر إذا تغير URL الـ Render
 
 // ================= CLOUDINARY =================
 const coverWidget = cloudinary.createUploadWidget({
@@ -146,6 +148,8 @@ const coverWidget = cloudinary.createUploadWidget({
     coverUrl = result.info.secure_url;
     document.getElementById("coverStatus").innerText = "✓ Cover uploaded!";
     checkSaveReady();
+  } else if (error) {
+    alert("Cover upload failed.");
   }
 });
 
@@ -161,11 +165,13 @@ const pdfWidget = cloudinary.createUploadWidget({
     pageCount = result.info.pages || "Unknown";
     document.getElementById("pdfStatus").innerText = `✓ PDF uploaded! ${result.info.pages ? 'Pages: ' + result.info.pages : ''}`;
     checkSaveReady();
+  } else if (error) {
+    alert("PDF upload failed.");
   }
 });
 
-document.getElementById("uploadCoverBtn").onclick = () => coverWidget.open();
-document.getElementById("uploadPdfBtn").onclick = () => pdfWidget.open();
+document.getElementById("uploadCoverBtn").addEventListener("click", () => coverWidget.open());
+document.getElementById("uploadPdfBtn").addEventListener("click", () => pdfWidget.open());
 
 function checkSaveReady() {
   document.getElementById("saveBookBtn").disabled = !(coverUrl && pdfUrl && user);
@@ -174,7 +180,8 @@ function checkSaveReady() {
 // ================= AUTH =================
 async function authenticate() {
   try {
-    const authResult = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
+    const scopes = ['username', 'payments'];
+    const authResult = await Pi.authenticate(scopes, onIncompletePaymentFound);
     user = authResult.user;
     userUid = user.uid;
     document.getElementById("welcome").innerText = `Welcome, ${user.username}!`;
@@ -184,20 +191,42 @@ async function authenticate() {
     loadMyPurchases();
     loadMySales();
   } catch (err) {
-    alert("Login failed. Open in Pi Browser.");
+    alert("Login failed. Open in Pi Browser only.");
   }
 }
+
+document.getElementById("loginBtn").onclick = authenticate;
 
 function logout() {
   location.reload();
 }
 
-document.getElementById("loginBtn").onclick = authenticate;
+// ================= INCOMPLETE PAYMENT =================
+async function onIncompletePaymentFound(incompletePayment) {
+  alert("Previous pending payment detected. Completing automatically...");
+  try {
+    const res = await fetch(`${BACKEND_URL}/complete-payment`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paymentId: incompletePayment.identifier,
+        txid: incompletePayment.transaction?.txid
+      })
+    });
+    if (res.ok) {
+      alert("Pending payment completed!");
+    } else {
+      alert("Failed to complete pending payment. Check developer dashboard.");
+    }
+  } catch (err) {
+    alert("Error completing pending payment.");
+  }
+}
 
 // ================= SAVE BOOK =================
 async function saveBook() {
   if (!user) return alert("Login required");
-  if (!document.getElementById("rights").checked) return alert("Confirm ownership rights");
+  if (!document.getElementById("rights").checked) return alert("Confirm rights");
 
   const title = document.getElementById("title").value.trim();
   const price = Number(document.getElementById("price").value);
@@ -227,7 +256,7 @@ async function saveBook() {
       ownerUid: user.uid,
       createdAt: Date.now()
     });
-    alert("Book uploaded successfully! 🎉");
+    alert("Book uploaded successfully!");
     toggleAdd();
     coverUrl = pdfUrl = "";
     document.getElementById("coverStatus").innerText = "";
@@ -236,19 +265,158 @@ async function saveBook() {
     loadBooks();
     loadMySales();
   } catch (e) {
-    alert("Upload failed: " + e.message);
+    alert("Failed: " + e.message);
   } finally {
     btn.disabled = false;
     btn.innerText = "Save Book";
   }
 }
 
-// ================= OTHER FUNCTIONS (loadBooks, buy, loadMySales, etc.) =================
-// (Keep the rest similar to your original code with added checks for user != null where sensitive)
+// ================= LOAD BOOKS =================
+async function loadBooks() {
+  const box = document.getElementById("books");
+  box.innerHTML = "<p>Loading...</p>";
+  try {
+    const snap = await db.collection("books").orderBy("createdAt", "desc").get();
+    box.innerHTML = "";
+    if (snap.empty) {
+      box.innerHTML = "<p>No books yet.</p>";
+      return;
+    }
+    for (const doc of snap.docs) {
+      const b = doc.data();
+      const bookId = doc.id;
+      const desc = b.description ? b.description.substring(0, 100) + "..." : "No description";
+      const lang = b.language ? `Language: ${b.language}` : "";
+      const owner = `By: ${b.owner}`;
+      const pages = b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
+      const sales = b.salesCount > 0 ? `Sales: ${b.salesCount}` : "";
 
-async function loadBooks() { /* your original loadBooks with minor fixes */ }
-async function buy(bookId, price) { /* your original buy function */ }
-/* Add the rest of your functions here as in the provided code */
+      let likes = 0, dislikes = 0, userVote = null;
+      try {
+        const ratingsSnap = await db.collection("ratings").doc(bookId).collection("votes").get();
+        likes = ratingsSnap.docs.filter(d => d.data().vote === "like").length;
+        dislikes = ratingsSnap.docs.filter(d => d.data().vote === "dislike").length;
+        if (userUid) {
+          const voteDoc = await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get();
+          userVote = voteDoc.exists ? voteDoc.data().vote : null;
+        }
+      } catch (e) {}
+
+      box.innerHTML += `
+        <div class="book">
+          <img src="${b.cover}" alt="cover">
+          <h4>${b.title}</h4>
+          <p><strong>${b.price} Pi</strong></p>
+          <div class="description">${desc}</div>
+          <div class="owner">${owner}</div>
+          <div class="language">${lang}</div>
+          <div class="pages">${pages}</div>
+          <div class="sales">${sales}</div>
+          <div class="ratings">
+            <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote || !user ? 'disabled' : ''}>👍</button> ${likes}
+            <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote || !user ? 'disabled' : ''}>👎</button> ${dislikes}
+          </div>
+          <button onclick="buy('${bookId}', ${b.price})" ${!user ? 'disabled' : ''}>Buy with Pi</button>
+        </div>`;
+    }
+  } catch (e) {
+    box.innerHTML = "<p>Error. Retry...</p>";
+    setTimeout(loadBooks, 5000);
+  }
+}
+
+// ================= BUY =================
+async function buy(bookId, price) {
+  if (!user) return alert("Login required");
+  if (!confirm(`Buy for ${price} Pi?`)) return;
+
+  try {
+    await Pi.createPayment({
+      amount: price,
+      memo: "Spicy Library Book Purchase",
+      metadata: { bookId }
+    }, {
+      onReadyForServerApproval: async (paymentId) => {
+        await fetch(`${BACKEND_URL}/approve-payment`, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({paymentId})
+        });
+      },
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        const res = await fetch(`${BACKEND_URL}/complete-payment`, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({paymentId, txid})
+        });
+        if (!res.ok) throw new Error("Completion failed");
+
+        // Update Firestore (client-side - safe with rules)
+        await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({purchasedAt: Date.now()});
+        await db.runTransaction(async (tx) => {
+          const ref = db.collection("books").doc(bookId);
+          const doc = await tx.get(ref);
+          tx.update(ref, {salesCount: (doc.data().salesCount || 0) + 1});
+        });
+
+        const bookDoc = await db.collection("books").doc(bookId).get();
+        window.open(bookDoc.data().pdf, "_blank");
+        alert("Payment successful! Book opened 📚");
+        loadBooks(); loadMyPurchases(); loadMySales();
+      },
+      onCancel: () => alert("Cancelled"),
+      onError: (err) => alert("Error: " + err.message)
+    });
+  } catch (e) {
+    alert("Payment failed. Use Pi Browser.");
+  }
+}
+
+// ================= RATE BOOK =================
+async function rateBook(bookId, voteType, button) {
+  if (!user) return alert("Login required");
+  try {
+    await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).set({
+      vote: voteType,
+      votedAt: Date.now()
+    });
+    button.disabled = true;
+    button.classList.add(voteType === 'like' ? 'liked' : 'disliked');
+    loadBooks(); loadMyPurchases();
+  } catch (e) {
+    alert("Rating failed");
+  }
+}
+
+// ================= LOAD MY PURCHASES =================
+async function loadMyPurchases() {
+  const box = document.getElementById("myBooks");
+  box.innerHTML = "<p>Loading...</p>";
+  if (!userUid) return box.innerHTML = "<p>Login required</p>";
+  try {
+    const snap = await db.collection("purchases").doc(userUid).collection("books").get();
+    if (snap.empty) return box.innerHTML = "<p>No purchases yet.</p>";
+    box.innerHTML = "";
+    for (const doc of snap.docs) {
+      const bookId = doc.id;
+      const bookSnap = await db.collection("books").doc(bookId).get();
+      if (bookSnap.exists) {
+        const b = bookSnap.data();
+        // Similar to loadBooks but with Download button
+        box.innerHTML += `<div class="book">... <button onclick="window.open('${b.pdf}', '_blank')">Download PDF</button></div>`;
+      }
+    }
+  } catch (e) {
+    setTimeout(loadMyPurchases, 5000);
+  }
+}
+
+// ================= LOAD MY SALES & PAYOUT =================
+async function loadMySales() {
+  // Your original loadMySales code
+  // + requestPayout code
+}
 
 function toggleAdd() {
   if (!user) return alert("Login to add book");
@@ -256,13 +424,19 @@ function toggleAdd() {
 }
 
 function openTab(tabName) {
-  /* your original openTab */
-  if (tabName === 'store') loadBooks();
-  if (tabName === 'purchases') loadMyPurchases();
-  if (tabName === 'sales') loadMySales();
+  document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+  document.getElementById(tabName).classList.add("active");
+  document.querySelector(`button[onclick="openTab('${tabName}')"]`).classList.add("active");
+  if (tabName === "store") loadBooks();
+  if (tabName === "purchases") loadMyPurchases();
+  if (tabName === "sales") loadMySales();
 }
 
-/* Paste the remaining functions from your original code (loadMyPurchases, rateBook, requestPayout, etc.) */
+function searchBooks() {
+  // Your original search code
+}
+
 </script>
 </body>
 </html>
