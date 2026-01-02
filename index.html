@@ -121,7 +121,6 @@ input, textarea, select{padding:8px;margin:5px;width:90%;}
 </div>
 
 <script>
-/* ================= FIREBASE ================= */
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
   authDomain: "spicy-97f54.firebaseapp.com",
@@ -129,12 +128,10 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 
-/* ================= PI MAINNET ================= */
 Pi.init({ version: "2.0", sandbox: false });
 let user = null;
 let userUid = null;
 
-/* ================= CLOUDINARY WIDGET ================= */
 let coverUrl = "";
 let pdfUrl = "";
 let pageCount = "Unknown";
@@ -183,7 +180,6 @@ function checkSaveReady() {
   }
 }
 
-/* ================= SAVE BOOK ================= */
 async function saveBook() {
   if(!rights.checked) return alert("Please confirm that you own all rights to this book");
   const titleVal = title.value.trim();
@@ -233,7 +229,6 @@ async function saveBook() {
   }
 }
 
-/* ================= REQUEST PAYOUT (English messages, min 5 Pi) ================= */
 async function requestPayout() {
   const totalEarnings = parseFloat(document.getElementById("totalEarnings").innerText.replace("Total earnings: ", "").replace(" Pi", "")) || 0;
 
@@ -279,7 +274,6 @@ async function requestPayout() {
   }
 }
 
-/* ================= LOAD MY SALES ================= */
 async function loadMySales() {
   const box = document.getElementById("mySalesBooks");
   const totalBox = document.getElementById("totalEarnings");
@@ -327,7 +321,324 @@ async function loadMySales() {
   }
 }
 
-/* باقي الكود (login, tabs, loadBooks, loadMyPurchases, buy, etc.) نفس السابق تمامًا */
+loginBtn.onclick = async () => {
+  try {
+    const auth = await Pi.authenticate(["username","payments"], onIncompletePaymentFound);
+    user = auth.user;
+    userUid = auth.user.uid;
+    login.classList.add("hidden");
+    app.classList.remove("hidden");
+    welcome.innerText = "Welcome " + user.username;
+    loadBooks();
+    loadMyPurchases();
+    loadMySales();
+  } catch (e) {
+    alert("Please open this app inside the Pi Browser only!");
+  }
+};
+
+function logout(){
+  location.reload();
+}
+
+function openTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(tabName).classList.add('active');
+  document.querySelector(`button[onclick="openTab('${tabName}')"]`).classList.add('active');
+
+  if (tabName === 'purchases') loadMyPurchases();
+  if (tabName === 'sales') loadMySales();
+}
+
+function searchBooks() {
+  const input = document.getElementById("searchInput").value.toLowerCase();
+  const books = document.querySelectorAll("#books .book");
+  let found = false;
+  books.forEach(book => {
+    const title = book.querySelector("h4").textContent.toLowerCase();
+    if (title.includes(input)) {
+      book.style.display = "block";
+      found = true;
+    } else {
+      book.style.display = "none";
+    }
+  });
+  if (!found && input) {
+    if (!document.querySelector("#books p")) {
+      document.getElementById("books").innerHTML += "<p>No books found.</p>";
+    }
+  }
+}
+
+async function loadBooks(){
+  const box = document.getElementById("books");
+  box.innerHTML = "<p>Loading books...</p>";
+  try {
+    const snap = await db.collection("books").get();
+    box.innerHTML = "";
+    if (snap.empty) {
+      box.innerHTML = "<p>No books available yet.</p>";
+      return;
+    }
+    for (const doc of snap.docs) {
+      const b = doc.data();
+      const bookId = doc.id;
+      const desc = b.description || "No description";
+      const lang = b.language ? `Language: ${b.language}` : "";
+      const owner = b.owner ? `By: ${b.owner}` : "";
+      const pages = b.pageCount && b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
+      const sales = b.salesCount > 0 ? `Sales: ${b.salesCount}` : "";
+
+      let likes = 0;
+      let dislikes = 0;
+      let userVote = null;
+      try {
+        const ratingsSnap = await db.collection("ratings").doc(bookId).collection("votes").get();
+        likes = ratingsSnap.docs.filter(d => d.data().vote === "like").length;
+        dislikes = ratingsSnap.docs.filter(d => d.data().vote === "dislike").length;
+
+        if (userUid) {
+          const userVoteDoc = await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get();
+          userVote = userVoteDoc.exists ? userVoteDoc.data().vote : null;
+        }
+      } catch (ratingErr) {
+        console.error("Error loading ratings:", ratingErr);
+      }
+
+      box.innerHTML += `
+        <div class="book">
+          <img src="${b.cover}">
+          <h4>${b.title}</h4>
+          <p>${b.price} Pi</p>
+          <div class="description">${desc}</div>
+          <div class="owner">${owner}</div>
+          <div class="language">${lang}</div>
+          <div class="pages">${pages}</div>
+          <div class="sales">${sales}</div>
+          <div class="ratings">
+            <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
+            <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
+          </div>
+          <button onclick="buy('${bookId}', ${b.price})">
+            Buy with Pi
+          </button>
+        </div>`;
+    }
+  } catch (e) {
+    console.error(e);
+    box.innerHTML = "<p>Error loading books. Retrying in 5 seconds...</p>";
+    setTimeout(loadBooks, 5000);
+  }
+}
+
+async function loadMyPurchases(){
+  const box = document.getElementById("myBooks");
+  box.innerHTML = "<p>Loading your purchases...</p>";
+
+  if (!userUid) {
+    box.innerHTML = "<p>Please log in again.</p>";
+    return;
+  }
+
+  try {
+    const purchasesSnap = await db.collection("purchases").doc(userUid).collection("books").get();
+    if (purchasesSnap.empty) {
+      box.innerHTML = "<p>You haven't purchased any books yet.</p>";
+      return;
+    }
+
+    box.innerHTML = "";
+    for (const purchaseDoc of purchasesSnap.docs) {
+      const bookId = purchaseDoc.id;
+      const bookDoc = await db.collection("books").doc(bookId).get();
+      if (bookDoc.exists) {
+        const b = bookDoc.data();
+        const desc = b.description || "No description";
+        const lang = b.language ? `Language: ${b.language}` : "";
+        const owner = b.owner ? `By: ${b.owner}` : "";
+        const pages = b.pageCount && b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
+        const sales = b.salesCount > 0 ? `Sales: ${b.salesCount}` : "";
+
+        let likes = 0;
+        let dislikes = 0;
+        let userVote = null;
+        try {
+          const ratingsSnap = await db.collection("ratings").doc(bookId).collection("votes").get();
+          likes = ratingsSnap.docs.filter(d => d.data().vote === "like").length;
+          dislikes = ratingsSnap.docs.filter(d => d.data().vote === "dislike").length;
+
+          const userVoteDoc = await db.collection("ratings").doc(bookId).collection("votes").doc(userUid).get();
+          userVote = userVoteDoc.exists ? userVoteDoc.data().vote : null;
+        } catch (ratingErr) {
+          console.error("Error loading ratings:", ratingErr);
+        }
+
+        box.innerHTML += `
+          <div class="book">
+            <img src="${b.cover}">
+            <h4>${b.title}</h4>
+            <div class="description">${desc}</div>
+            <div class="owner">${owner}</div>
+            <div class="language">${lang}</div>
+            <div class="pages">${pages}</div>
+            <div class="sales">${sales}</div>
+            <div class="ratings">
+              <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${bookId}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
+              <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${bookId}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
+            </div>
+            <button onclick="window.open('${b.pdf}', '_blank')">
+              Download PDF
+            </button>
+          </div>`;
+      }
+    }
+  } catch (e) {
+    console.error(e);
+    box.innerHTML = "<p>Error loading purchases. Retrying in 5 seconds...</p>";
+    setTimeout(loadMyPurchases, 5000);
+  }
+}
+
+async function rateBook(bookId, voteType, button) {
+  if (!userUid) {
+    alert("Please log in to rate books.");
+    return;
+  }
+
+  try {
+    const voteRef = db.collection("ratings").doc(bookId).collection("votes").doc(userUid);
+    await voteRef.set({ vote: voteType, votedAt: Date.now() });
+
+    button.disabled = true;
+    button.classList.add(voteType === 'like' ? 'liked' : 'disliked');
+    const sibling = button.parentNode.querySelector(voteType === 'like' ? '.dislike-btn' : '.like-btn');
+    sibling.disabled = true;
+
+    loadBooks();
+    loadMyPurchases();
+  } catch (e) {
+    console.error("Rating error:", e);
+    alert("Failed to submit rating.");
+  }
+}
+
+function toggleAdd(){
+  addBook.classList.toggle("hidden");
+}
+
+async function onIncompletePaymentFound(incompletePayment) {
+  alert("A previous pending payment was detected... Attempting to complete it automatically");
+  console.log("Incomplete payment found:", incompletePayment);
+
+  try {
+    const response = await fetch("https://pi-backend-c8nz.onrender.com/complete-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paymentId: incompletePayment.identifier,
+        txid: incompletePayment.transaction?.txid
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("Failed to complete pending payment:", err);
+      alert("Failed to automatically complete the pending payment.\nPlease go to developers.minepi.com to complete or cancel it manually.");
+      return;
+    }
+
+    alert("Pending payment completed successfully!\nYou can now make new purchases.");
+  } catch (err) {
+    console.error("Error completing pending payment:", err);
+    alert("Error completing pending payment.\nPlease try again or complete it manually from the developer dashboard.");
+  }
+}
+
+async function buy(bookId, price){
+  if(!confirm(`Do you want to buy this book for ${price} Pi?`)) return;
+
+  try {
+    await Pi.createPayment(
+      {
+        amount: price,
+        currency: "Pi",
+        memo: "Book purchase from Spicy Library",
+        metadata: { bookId }
+      },
+      {
+        onReadyForServerApproval: async (paymentId) => {
+          console.log("Approving payment:", paymentId);
+          try {
+            const res = await fetch("https://pi-backend-c8nz.onrender.com/approve-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paymentId })
+            });
+            if (!res.ok) throw new Error(await res.text());
+          } catch (err) {
+            console.error("Approve failed:", err);
+          }
+        },
+
+        onReadyForServerCompletion: async (paymentId, txid) => {
+          console.log("Completing payment:", paymentId, "txid:", txid);
+          try {
+            const response = await fetch("https://pi-backend-c8nz.onrender.com/complete-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paymentId, txid })
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              console.error("Completion failed:", errorData);
+              alert("Payment completion failed!\nDetails: " + JSON.stringify(errorData));
+              return;
+            }
+
+            await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({
+              purchasedAt: Date.now()
+            });
+
+            const bookRef = db.collection("books").doc(bookId);
+            await db.runTransaction(async (transaction) => {
+              const bookDoc = await transaction.get(bookRef);
+              if (!bookDoc.exists) throw "Book does not exist!";
+              const newSales = (bookDoc.data().salesCount || 0) + 1;
+              transaction.update(bookRef, { salesCount: newSales });
+            });
+
+            const bookDoc = await db.collection("books").doc(bookId).get();
+            if (bookDoc.exists) {
+              const pdfUrl = bookDoc.data().pdf;
+              window.open(pdfUrl, "_blank");
+            }
+
+            alert("Payment successful! The book is now open 📚");
+
+            loadBooks();
+            loadMyPurchases();
+            loadMySales();
+          } catch (err) {
+            console.error("Completion error:", err);
+            alert("Server connection error during payment completion.");
+          }
+        },
+
+        onCancel: () => alert("Payment cancelled"),
+
+        onError: (error, payment) => {
+          console.error("Pi Payment Error:", error, payment);
+          alert("Payment error: " + error.message);
+        }
+      }
+    );
+  } catch (e) {
+    console.error("Payment initiation failed:", e);
+    alert("Failed to start payment process. Make sure you are using the Pi Browser.");
+  }
+}
 </script>
 </body>
 </html>
