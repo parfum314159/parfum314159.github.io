@@ -303,56 +303,88 @@ async function rateBook(bookId, voteType, button) {
 }
 
 // ================= BUY (تأكيد تلقائي كامل) =================
-async function buy(bookId, price) {
-  if (!userUid) return alert("Login required");
-  if (!confirm(`Buy this book for ${price} Pi?`)) return;
+async function buy(bookId, price){
+  if(!confirm(`Do you want to buy this book for ${price} Pi?`)) return;
 
   try {
-    await Pi.createPayment({
-      amount: price,
-      memo: "Spicy Library - Book Purchase",
-      metadata: { bookId, userUid }
-    }, {
-      onReadyForServerApproval: async (paymentId) => {
-        try {
-          await fetch(`${BACKEND_URL}/approve-payment`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paymentId })
-          });
-        } catch (err) {
-          console.error("Approve error:", err);
-        }
+    await Pi.createPayment(
+      {
+        amount: price,
+        currency: "Pi",
+        memo: "Book purchase from Spicy Library",
+        metadata: { bookId }
       },
-      onReadyForServerCompletion: async (paymentId, txid) => {
-        try {
-          const res = await fetch(`${BACKEND_URL}/complete-payment`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paymentId, txid, bookId, userUid })
-          });
-
-          if (!res.ok) {
-            const err = await res.json();
-            alert("Payment failed: " + (err.error || "Unknown error"));
-            return;
+      {
+        onReadyForServerApproval: async (paymentId) => {
+          console.log("Approving payment:", paymentId);
+          try {
+            const res = await fetch("https://pi-backend-c8nz.onrender.com/approve-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paymentId })
+            });
+            if (!res.ok) throw new Error(await res.text());
+          } catch (err) {
+            console.error("Approve failed:", err);
           }
+        },
 
-          const data = await res.json();
-          window.open(data.pdfUrl, "_blank");
-          alert("Payment successful! The book is now open 📚");
-          loadBooks();
-          loadMyPurchases();
-          loadMySales();
-        } catch (err) {
-          alert("Connection error during completion.");
+        onReadyForServerCompletion: async (paymentId, txid) => {
+          console.log("Completing payment:", paymentId, "txid:", txid);
+          try {
+            const response = await fetch("https://pi-backend-c8nz.onrender.com/complete-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paymentId, txid })
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              console.error("Completion failed:", errorData);
+              alert("Payment completion failed!\nDetails: " + JSON.stringify(errorData));
+              return;
+            }
+
+            await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({
+              purchasedAt: Date.now()
+            });
+
+            const bookRef = db.collection("books").doc(bookId);
+            await db.runTransaction(async (transaction) => {
+              const bookDoc = await transaction.get(bookRef);
+              if (!bookDoc.exists) throw "Book does not exist!";
+              const newSales = (bookDoc.data().salesCount || 0) + 1;
+              transaction.update(bookRef, { salesCount: newSales });
+            });
+
+            const bookDoc = await db.collection("books").doc(bookId).get();
+            if (bookDoc.exists) {
+              const pdfUrl = bookDoc.data().pdf;
+              window.open(pdfUrl, "_blank");
+            }
+
+            alert("Payment successful! The book is now open 📚");
+
+            loadBooks();
+            loadMyPurchases();
+            loadMySales();
+          } catch (err) {
+            console.error("Completion error:", err);
+            alert("Server connection error during payment completion.");
+          }
+        },
+
+        onCancel: () => alert("Payment cancelled"),
+
+        onError: (error, payment) => {
+          console.error("Pi Payment Error:", error, payment);
+          alert("Payment error: " + error.message);
         }
-      },
-      onCancel: () => alert("Payment cancelled"),
-      onError: (err) => alert("Payment error: " + err.message)
-    });
+      }
+    );
   } catch (e) {
-    alert("Use Pi Browser for payment.");
+    console.error("Payment initiation failed:", e);
+    alert("Failed to start payment process. Make sure you are using the Pi Browser.");
   }
 }
 
