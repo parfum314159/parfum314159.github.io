@@ -178,30 +178,31 @@ function checkSaveReady() {
 async function onIncompletePaymentFound(incompletePayment) {
   alert("A previous pending payment was detected... Attempting to complete it automatically");
   console.log("Incomplete payment found:", incompletePayment);
+
   try {
-    const response = await fetch(`${BACKEND_URL}/complete-payment`, {
+    const response = await fetch("https://pi-backend-c8nz.onrender.com/complete-payment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         paymentId: incompletePayment.identifier,
-        txid: incompletePayment.transaction?.txid,
-        bookId: incompletePayment.metadata?.bookId,
-        userUid: userUid
+        txid: incompletePayment.transaction?.txid
       })
     });
+
     if (!response.ok) {
       const err = await response.json();
       console.error("Failed to complete pending payment:", err);
       alert("Failed to automatically complete the pending payment.\nPlease go to developers.minepi.com to complete or cancel it manually.");
       return;
     }
+
     alert("Pending payment completed successfully!\nYou can now make new purchases.");
   } catch (err) {
     console.error("Error completing pending payment:", err);
     alert("Error completing pending payment.\nPlease try again or complete it manually from the developer dashboard.");
   }
 }
-
+  
 // ================= LOGIN =================
 document.getElementById("loginBtn").onclick = async () => {
   try {
