@@ -174,10 +174,38 @@ function checkSaveReady() {
   document.getElementById("saveBookBtn").disabled = !(coverUrl && pdfUrl && user);
 }
 
+// ================= HANDLE INCOMPLETE PAYMENT (الحل للدفع العالق) =================
+async function onIncompletePaymentFound(payment) {
+  alert("دفعة عالقة سابقة تم اكتشافها... جاري إكمالها تلقائيًا");
+  try {
+    const res = await fetch(`${BACKEND_URL}/complete-payment`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paymentId: payment.identifier,
+        txid: payment.transaction?.txid || null,
+        bookId: payment.metadata?.bookId,
+        userUid: userUid
+      })
+    });
+
+    if (!res.ok) throw new Error("فشل الإكمال");
+
+    const data = await res.json();
+    if (data.pdfUrl) window.open(data.pdfUrl, "_blank");
+    alert("تم إكمال الدفعة العالقة بنجاح! الكتاب مفتوح الآن 📚");
+    loadBooks();
+    loadMyPurchases();
+    loadMySales();
+  } catch (err) {
+    alert("فشل إكمال الدفعة العالقة تلقائيًا.\nيرجى زيارة developers.minepi.com لإكمالها أو إلغائها يدويًا.");
+  }
+}
+
 // ================= LOGIN =================
 document.getElementById("loginBtn").onclick = async () => {
   try {
-    const authResult = await Pi.authenticate(["username", "payments"]);
+    const authResult = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
     user = authResult.user;
     userUid = user.uid;
 
@@ -189,7 +217,7 @@ document.getElementById("loginBtn").onclick = async () => {
     loadMyPurchases();
     loadMySales();
   } catch (err) {
-    alert("Login failed. Open in Pi Browser.");
+    alert("فشل تسجيل الدخول. تأكد من فتح التطبيق في Pi Browser.");
   }
 };
 
@@ -273,7 +301,7 @@ async function rateBook(bookId, voteType, button) {
   }
 }
 
-// ================= BUY (تأكيد تلقائي كامل) =================
+// ================= BUY =================
 async function buy(bookId, price) {
   if (!userUid) return alert("Login required");
   if (!confirm(`Buy this book for ${price} Pi?`)) return;
@@ -286,12 +314,11 @@ async function buy(bookId, price) {
     }, {
       onReadyForServerApproval: async (paymentId) => {
         try {
-          const res = await fetch(`${BACKEND_URL}/approve-payment`, {
+          await fetch(`${BACKEND_URL}/approve-payment`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ paymentId })
           });
-          if (!res.ok) console.error("Approval failed");
         } catch (err) {
           console.error("Approve error:", err);
         }
@@ -328,7 +355,7 @@ async function buy(bookId, price) {
   }
 }
 
-// ================= DOWNLOAD PDF (via backend) =================
+// ================= DOWNLOAD PDF =================
 async function downloadPdf(bookId) {
   try {
     const res = await fetch(`${BACKEND_URL}/get-pdf`, {
@@ -557,32 +584,6 @@ function toggleAdd() {
   document.getElementById("addBook").classList.toggle("hidden");
 }
 
-/* ================= HANDLE INCOMPLETE PAYMENT (تأكيد تلقائي للعالقة) ================= */
-async function onIncompletePaymentFound(incompletePayment) {
-  alert("تم اكتشاف دفعة معلقة سابقة... جاري إكمالها تلقائيًا");
-  try {
-    const response = await fetch(`${BACKEND_URL}/complete-payment`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        paymentId: incompletePayment.identifier,
-        txid: incompletePayment.transaction?.txid || incompletePayment.txid,
-        bookId: incompletePayment.metadata?.bookId,
-        userUid: userUid
-      })
-    });
-    if (!response.ok) throw new Error("Failed to complete");
-
-    const data = await response.json();
-    window.open(data.pdfUrl, "_blank");
-    alert("تم إكمال الدفعة العالقة بنجاح! الكتاب مفتوح الآن 📚");
-    loadBooks();
-    loadMyPurchases();
-    loadMySales();
-  } catch (err) {
-    alert("فشل إكمال الدفعة العالقة تلقائيًا.\nيرجى إكمالها أو إلغاؤها يدويًا من developers.minepi.com");
-  }
-}
 </script>
 </body>
 </html>
