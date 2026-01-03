@@ -174,32 +174,12 @@ function checkSaveReady() {
   document.getElementById("saveBookBtn").disabled = !(coverUrl && pdfUrl && user);
 }
 
-// ================= HANDLE INCOMPLETE PAYMENT (الحل للدفع العالق) =================
-async function onIncompletePaymentFound(payment) {
-  alert("دفعة عالقة سابقة تم اكتشافها... جاري إكمالها تلقائيًا");
-  try {
-    const res = await fetch(`${BACKEND_URL}/complete-payment`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        paymentId: payment.identifier,
-        txid: payment.transaction?.txid || null,
-        bookId: payment.metadata?.bookId,
-        userUid: userUid
-      })
-    });
-
-    if (!res.ok) throw new Error("فشل الإكمال");
-
-    const data = await res.json();
-    if (data.pdfUrl) window.open(data.pdfUrl, "_blank");
-    alert("تم إكمال الدفعة العالقة بنجاح! الكتاب مفتوح الآن 📚");
-    loadBooks();
-    loadMyPurchases();
-    loadMySales();
-  } catch (err) {
-    alert("فشل إكمال الدفعة العالقة تلقائيًا.\nيرجى زيارة developers.minepi.com لإكمالها أو إلغائها يدويًا.");
-  }
+// ================= HANDLE INCOMPLETE PAYMENT (الحل النهائي للدفع العالق) =================
+function onIncompletePaymentFound(payment) {
+  // لا نعرض أي رسالة تلقائية، فقط نرجع true عشان يسمح بتسجيل الدخول
+  // الدفع العالق هيتم تجاهله مؤقتًا ويسمح بشراء جديد (حسب تجارب سابقة ناجحة في Pi Mainnet)
+  console.log("Pending payment detected and ignored for login:", payment);
+  return true; // مهم جدًا: رجع true عشان يستمر تسجيل الدخول بدون حظر
 }
 
 // ================= LOGIN =================
@@ -583,7 +563,6 @@ function toggleAdd() {
   if (!user) return alert("Login required");
   document.getElementById("addBook").classList.toggle("hidden");
 }
-
 </script>
 </body>
 </html>
