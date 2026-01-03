@@ -118,7 +118,7 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
 </div>
 
 <script>
-// ================= FIREBASE (read only) =================
+// ================= FIREBASE =================
 firebase.initializeApp({
   apiKey: "AIzaSyAwYuJrfAYQ1kTp78ggUKFtQx192i2VsQM",
   authDomain: "spicy-97f54.firebaseapp.com",
@@ -147,7 +147,7 @@ const coverWidget = cloudinary.createUploadWidget({
 }, (error, result) => {
   if (!error && result && result.event === "success") {
     coverUrl = result.info.secure_url;
-    document.getElementById("coverStatus").innerText = "Cover uploaded!";
+    document.getElementById("coverStatus").innerText = "Cover uploaded successfully!";
     checkSaveReady();
   }
 });
@@ -162,7 +162,7 @@ const pdfWidget = cloudinary.createUploadWidget({
   if (!error && result && result.event === "success") {
     pdfUrl = result.info.secure_url;
     pageCount = result.info.pages || "Unknown";
-    document.getElementById("pdfStatus").innerText = "PDF uploaded!" + (result.info.pages ? ` (Pages: ${result.info.pages})` : "");
+    document.getElementById("pdfStatus").innerText = "PDF uploaded successfully!" + (result.info.pages ? ` (Pages: ${result.info.pages})` : "");
     checkSaveReady();
   }
 });
@@ -228,7 +228,7 @@ async function saveBook() {
 
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || "Save failed");
+      throw new Error(err.error || "Upload failed");
     }
 
     alert("Book uploaded successfully!");
@@ -326,7 +326,7 @@ async function buy(bookId, price) {
   }
 }
 
-// ================= DOWNLOAD PDF =================
+// ================= DOWNLOAD PDF (via backend) =================
 async function downloadPdf(bookId) {
   try {
     const res = await fetch(`${BACKEND_URL}/get-pdf`, {
@@ -342,14 +342,14 @@ async function downloadPdf(bookId) {
   }
 }
 
-// ================= LOAD FUNCTIONS =================
+// ================= LOAD FUNCTIONS (read only) =================
 async function loadBooks() {
   const box = document.getElementById("books");
-  box.innerHTML = "<p>Loading...</p>";
+  box.innerHTML = "<p>Loading books...</p>";
   try {
     const snap = await db.collection("books").orderBy("createdAt", "desc").get();
     box.innerHTML = "";
-    if (snap.empty) return box.innerHTML = "<p>No books available.</p>";
+    if (snap.empty) return box.innerHTML = "<p>No books available yet.</p>";
 
     for (const doc of snap.docs) {
       const b = doc.data();
@@ -396,7 +396,7 @@ async function loadBooks() {
 
 async function loadMyPurchases() {
   const box = document.getElementById("myBooks");
-  box.innerHTML = "<p>Loading...</p>";
+  box.innerHTML = "<p>Loading purchases...</p>";
   if (!userUid) return box.innerHTML = "<p>Please log in.</p>";
 
   try {
@@ -450,7 +450,7 @@ async function loadMyPurchases() {
 async function loadMySales() {
   const box = document.getElementById("mySalesBooks");
   const totalBox = document.getElementById("totalEarnings");
-  box.innerHTML = "<p>Loading...</p>";
+  box.innerHTML = "<p>Loading sales...</p>";
   totalBox.innerHTML = "";
   if (!user) return box.innerHTML = "<p>Please log in.</p>";
 
