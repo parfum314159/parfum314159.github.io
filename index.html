@@ -318,6 +318,22 @@ async function buy(bookId, price){
   }
 }
 
+/* ================= DOWNLOAD PDF (via backend) ================= */
+async function downloadPdf(bookId) {
+  try {
+    const res = await fetch(`${BACKEND_URL}/get-pdf`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookId, userUid })
+    });
+    const data = await res.json();
+    if (!res.ok) return alert(data.error || "Access denied");
+    window.open(data.pdfUrl, "_blank");
+  } catch (e) {
+    alert("Download failed.");
+  }
+}
+
 /* ================= REQUEST PAYOUT (reset via backend) ================= */
 async function requestPayout() {
   const totalEarnings = parseFloat(document.getElementById("totalEarnings").innerText.replace("Total earnings: ", "").replace(" Pi", "")) || 0;
@@ -340,7 +356,6 @@ async function requestPayout() {
       requestedAt: Date.now(),
       status: "pending"
     });
-    // Reset sales via backend
     const res = await fetch(`${BACKEND_URL}/reset-sales`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -530,19 +545,45 @@ async function loadMyPurchases(){
   }
 }
 
-/* ================= DOWNLOAD PDF (via backend) ================= */
-async function downloadPdf(bookId) {
+/* ================= LOAD MY SALES ================= */
+async function loadMySales() {
+  const box = document.getElementById("mySalesBooks");
+  const totalBox = document.getElementById("totalEarnings");
+  box.innerHTML = "<p>Loading your sales...</p>";
+  totalBox.innerHTML = "";
+  if (!userUid) {
+    box.innerHTML = "<p>Please log in again.</p>";
+    return;
+  }
   try {
-    const res = await fetch(`${BACKEND_URL}/get-pdf`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bookId, userUid })
-    });
-    const data = await res.json();
-    if (!res.ok) return alert(data.error || "Access denied");
-    window.open(data.pdfUrl, "_blank");
+    const booksSnap = await db.collection("books").where("owner", "==", user.username).get();
+    if (booksSnap.empty) {
+      box.innerHTML = "<p>You haven't uploaded any books yet.</p>";
+      totalBox.innerHTML = "<p>Total earnings: 0 Pi</p>";
+      document.getElementById("payoutBtn").disabled = true;
+      return;
+    }
+    box.innerHTML = "";
+    let totalEarnings = 0;
+    for (const bookDoc of booksSnap.docs) {
+      const b = bookDoc.data();
+      const sales = b.salesCount || 0;
+      const sellerProfit = sales * b.price * 0.7;
+      totalEarnings += sellerProfit;
+      box.innerHTML += `
+        <div class="sales-book">
+          <img src="${b.cover}" style="width:150px; border-radius:6px;">
+          <h4>${b.title}</h4>
+          <p>Price: ${b.price} Pi</p>
+          <p>Sales: ${sales}</p>
+          <div class="profit">Your earnings: ${sellerProfit.toFixed(2)} Pi (70%)</div>
+        </div>`;
+    }
+    totalBox.innerHTML = `<div class="total-profit">Total earnings: ${totalEarnings.toFixed(2)} Pi</div>`;
+    document.getElementById("payoutBtn").disabled = totalEarnings < 5;
   } catch (e) {
-    alert("Download failed.");
+    console.error(e);
+    box.innerHTML = "<p>Error loading sales.</p>";
   }
 }
 
