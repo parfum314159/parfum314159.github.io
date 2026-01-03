@@ -147,7 +147,7 @@ const coverWidget = cloudinary.createUploadWidget({
 }, (error, result) => {
   if (!error && result && result.event === "success") {
     coverUrl = result.info.secure_url;
-    document.getElementById("coverStatus").innerText = "Cover uploaded successfully!";
+    document.getElementById("coverStatus").innerText = "Cover uploaded!";
     checkSaveReady();
   }
 });
@@ -162,7 +162,7 @@ const pdfWidget = cloudinary.createUploadWidget({
   if (!error && result && result.event === "success") {
     pdfUrl = result.info.secure_url;
     pageCount = result.info.pages || "Unknown";
-    document.getElementById("pdfStatus").innerText = "PDF uploaded successfully!" + (result.info.pages ? ` (Pages: ${result.info.pages})` : "");
+    document.getElementById("pdfStatus").innerText = "PDF uploaded!" + (result.info.pages ? ` (Pages: ${result.info.pages})` : "");
     checkSaveReady();
   }
 });
@@ -177,7 +177,7 @@ function checkSaveReady() {
 // ================= LOGIN =================
 document.getElementById("loginBtn").onclick = async () => {
   try {
-    const authResult = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
+    const authResult = await Pi.authenticate(["username", "payments"]);
     user = authResult.user;
     userUid = user.uid;
 
@@ -226,7 +226,10 @@ async function saveBook() {
       })
     });
 
-    if (!res.ok) throw new Error("Save failed");
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Save failed");
+    }
 
     alert("Book uploaded successfully!");
     toggleAdd();
@@ -254,7 +257,10 @@ async function rateBook(bookId, voteType, button) {
       body: JSON.stringify({ bookId, voteType, userUid })
     });
 
-    if (!res.ok) throw new Error("Rating failed");
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Rating failed");
+    }
 
     button.disabled = true;
     button.classList.add(voteType === 'like' ? 'liked' : 'disliked');
@@ -265,7 +271,7 @@ async function rateBook(bookId, voteType, button) {
   }
 }
 
-// ================= BUY (complete via backend) =================
+// ================= BUY (تأكيد تلقائي كامل) =================
 async function buy(bookId, price) {
   if (!userUid) return alert("Login required");
   if (!confirm(`Buy this book for ${price} Pi?`)) return;
@@ -273,41 +279,50 @@ async function buy(bookId, price) {
   try {
     await Pi.createPayment({
       amount: price,
-      memo: "Spicy Library Purchase",
+      memo: "Spicy Library - Book Purchase",
       metadata: { bookId, userUid }
     }, {
       onReadyForServerApproval: async (paymentId) => {
-        await fetch(`${BACKEND_URL}/approve-payment`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId })
-        });
+        try {
+          const res = await fetch(`${BACKEND_URL}/approve-payment`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId })
+          });
+          if (!res.ok) console.error("Approval failed");
+        } catch (err) {
+          console.error("Approve error:", err);
+        }
       },
       onReadyForServerCompletion: async (paymentId, txid) => {
-        const res = await fetch(`${BACKEND_URL}/complete-payment`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId, txid, bookId, userUid })
-        });
+        try {
+          const res = await fetch(`${BACKEND_URL}/complete-payment`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId, txid, bookId, userUid })
+          });
 
-        if (!res.ok) {
-          const err = await res.json();
-          alert("Payment failed: " + (err.error || "Unknown"));
-          return;
+          if (!res.ok) {
+            const err = await res.json();
+            alert("Payment failed: " + (err.error || "Unknown error"));
+            return;
+          }
+
+          const data = await res.json();
+          window.open(data.pdfUrl, "_blank");
+          alert("Payment successful! The book is now open 📚");
+          loadBooks();
+          loadMyPurchases();
+          loadMySales();
+        } catch (err) {
+          alert("Connection error during completion.");
         }
-
-        const data = await res.json();
-        window.open(data.pdfUrl, "_blank");
-        alert("Payment successful! Book opened.");
-        loadBooks();
-        loadMyPurchases();
-        loadMySales();
       },
       onCancel: () => alert("Payment cancelled"),
       onError: (err) => alert("Payment error: " + err.message)
     });
   } catch (e) {
-    alert("Use Pi Browser.");
+    alert("Use Pi Browser for payment.");
   }
 }
 
@@ -327,7 +342,7 @@ async function downloadPdf(bookId) {
   }
 }
 
-// ================= LOAD BOOKS / PURCHASES / SALES (read only from Firestore) =================
+// ================= LOAD FUNCTIONS =================
 async function loadBooks() {
   const box = document.getElementById("books");
   box.innerHTML = "<p>Loading...</p>";
@@ -463,7 +478,7 @@ async function loadMySales() {
           <div class="profit">Your earnings: ${profit.toFixed(2)} Pi (70%)</div>
         </div>`;
     }
-    totalBox.innerHTML = `<div class="total-profit">Total earnings: ${total.toFixed(2)} Pi</div>`;
+    totalBox.innerHTML = `<div class='total-profit'>Total earnings: ${total.toFixed(2)} Pi</div>`;
     document.getElementById("payoutBtn").disabled = total < 5;
   } catch (e) {
     box.innerHTML = "<p>Error loading sales.</p>";
@@ -491,16 +506,10 @@ async function requestPayout() {
       status: "pending"
     });
 
-    // Reset salesCount via backend or client (if rules allow)
-    const snap = await db.collection("books").where("owner", "==", user.username).get();
-    const batch = db.batch();
-    snap.forEach(doc => batch.update(doc.ref, { salesCount: 0 }));
-    await batch.commit();
-
-    alert("Payout request sent! Earnings reset.");
+    alert("Payout request sent successfully!");
     loadMySales();
   } catch (e) {
-    alert("Payout request failed.");
+    alert("Payout request failed: " + e.message);
   } finally {
     btn.disabled = false;
   }
@@ -536,10 +545,6 @@ function searchBooks() {
 function toggleAdd() {
   if (!user) return alert("Login required");
   document.getElementById("addBook").classList.toggle("hidden");
-}
-
-async function onIncompletePaymentFound(incompletePayment) {
-  alert("Pending payment detected. Completing automatically...");
 }
 
 </script>
