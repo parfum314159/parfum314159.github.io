@@ -264,6 +264,8 @@ async function rateBook(bookId, voteType, button) {
 
     button.disabled = true;
     button.classList.add(voteType === 'like' ? 'liked' : 'disliked');
+    const sibling = button.parentNode.querySelector(voteType === 'like' ? '.dislike-btn' : '.like-btn');
+    if (sibling) sibling.disabled = true;
     loadBooks();
     loadMyPurchases();
   } catch (e) {
@@ -506,12 +508,14 @@ async function requestPayout() {
       status: "pending"
     });
 
-    // Reset salesCount from backend (to ensure it works even with strict rules)
-    await fetch(`${BACKEND_URL}/reset-sales`, {
+    // Reset salesCount via backend
+    const res = await fetch(`${BACKEND_URL}/reset-sales`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: user.username })
     });
+
+    if (!res.ok) throw new Error("Reset failed");
 
     alert("Payout request sent successfully!\nYour earnings have been reset to zero.");
     loadMySales();
