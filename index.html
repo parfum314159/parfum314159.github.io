@@ -42,29 +42,29 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
 
 <div id="login">
   <h1>📚 Spicy Library</h1>
-  <p class="notice">تسجيل الدخول باستخدام Pi Network (افتح في Pi Browser)</p>
-  <button id="loginBtn">تسجيل الدخول بـ Pi</button>
+  <p class="notice">Login using Pi Network (must be in Pi Browser)</p>
+  <button id="loginBtn">Login with Pi</button>
 </div>
 
 <div id="app" class="hidden">
   <h3 id="welcome"></h3>
-  <button onclick="toggleAdd()">➕ إضافة كتاب</button>
-  <button onclick="logout()">تسجيل الخروج</button>
+  <button onclick="toggleAdd()">➕ Add Book</button>
+  <button onclick="logout()">Logout</button>
 
   <div>
-    <button class="tab-btn active" onclick="openTab('store')">المتجر</button>
-    <button class="tab-btn" onclick="openTab('purchases')">مشترياتي</button>
-    <button class="tab-btn" onclick="openTab('sales')">مبيعاتي</button>
+    <button class="tab-btn active" onclick="openTab('store')">Store</button>
+    <button class="tab-btn" onclick="openTab('purchases')">My Purchases</button>
+    <button class="tab-btn" onclick="openTab('sales')">My Sales</button>
   </div>
 
   <div id="store" class="tab-content active">
     <div id="addBook" class="hidden">
-      <h3>إضافة كتاب</h3>
-      <input id="title" placeholder="عنوان الكتاب">
-      <input id="price" type="number" min="0.1" step="0.1" placeholder="السعر (Pi)">
-      <textarea id="description" placeholder="وصف الكتاب (اختياري)" rows="3"></textarea>
+      <h3>Add Book</h3>
+      <input id="title" placeholder="Book title">
+      <input id="price" type="number" min="0.1" step="0.1" placeholder="Price (Pi)">
+      <textarea id="description" placeholder="Book description (optional)" rows="3"></textarea>
       <select id="language">
-        <option value="">اختر اللغة</option>
+        <option value="">Select language</option>
         <option value="English">English</option>
         <option value="Arabic">Arabic</option>
         <option value="French">French</option>
@@ -72,46 +72,46 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
         <option value="German">German</option>
         <option value="Other">Other</option>
       </select>
-      <p>عدد الصفحات (اختياري)</p>
-      <input id="manualPages" type="number" placeholder="مثال: 250" min="1">
-      <p>📷 غلاف الكتاب (صور فقط)</p>
-      <button id="uploadCoverBtn">رفع الغلاف</button>
+      <p>Number of pages (optional)</p>
+      <input id="manualPages" type="number" placeholder="e.g. 250" min="1">
+      <p>📷 Book Cover (images only)</p>
+      <button id="uploadCoverBtn">Upload Cover</button>
       <p id="coverStatus" class="upload-status"></p>
-      <p>📄 ملف الكتاب (PDF فقط)</p>
-      <button id="uploadPdfBtn">رفع PDF</button>
+      <p>📄 Book File (PDF only)</p>
+      <button id="uploadPdfBtn">Upload PDF</button>
       <p id="pdfStatus" class="upload-status"></p>
       <br><br>
       <label class="notice">
         <input type="checkbox" id="rights">
-        أؤكد أنني أملك جميع الحقوق لهذا الكتاب
+        I confirm that I own all rights to this book
       </label><br><br>
-      <button id="saveBookBtn" disabled>حفظ الكتاب</button>
+      <button id="saveBookBtn" disabled>Save Book</button>
     </div>
 
-    <h3>جميع الكتب</h3>
-    <input type="text" id="searchInput" placeholder="البحث بعنوان الكتاب..." oninput="searchBooks()">
+    <h3>All Books</h3>
+    <input type="text" id="searchInput" placeholder="Search by book title..." oninput="searchBooks()">
     <div class="books" id="books"></div>
 
     <div class="disclaimer">
-      تنويه: الموقع غير مسؤول عن أي مشاكل حقوق نشر. كل مستخدم مسؤول كاملاً عن الكتب التي يرفعها.
+      Disclaimer: The website is not responsible for any copyright issues. Each user is fully responsible for the books they upload.
     </div>
   </div>
 
   <div id="purchases" class="tab-content">
-    <h3>كتبي المشتراة</h3>
+    <h3>My Purchased Books</h3>
     <div class="books" id="myBooks"></div>
   </div>
 
   <div id="sales" class="tab-content">
-    <h3>مبيعاتي وربحي</h3>
-    <p>رسوم المنصة: 30% – تحصل على 70% من كل بيع</p>
-    <p>الحد الأدنى للسحب: 5 Pi</p>
+    <h3>My Sales & Earnings</h3>
+    <p>Platform fee: 30% – You get 70% of each sale</p>
+    <p>Minimum payout: 5 Pi</p>
     <div class="payout-note">
-      <strong>وقت معالجة السحب:</strong> يتم معالجة الدفعات يدويًا وقد يستغرق من 1-2 أيام إلى 30 يومًا كحد أقصى حسب الحجم.
+      <strong>Payout processing time:</strong> Payments are processed manually and can take from 1-2 days up to a maximum of 30 days, depending on volume.
     </div>
     <div id="mySalesBooks"></div>
-    <div id="totalEarnings" class="total-profit">جاري التحميل...</div>
-    <button id="payoutBtn" onclick="requestPayout()" disabled>طلب سحب</button>
+    <div id="totalEarnings" class="total-profit">Loading earnings...</div>
+    <button id="payoutBtn" onclick="requestPayout()" disabled>Request Payout</button>
   </div>
 </div>
 
@@ -137,7 +137,7 @@ const coverWidget = cloudinary.createUploadWidget({
 }, (error, result) => {
   if (!error && result && result.event === "success") {
     coverUrl = result.info.secure_url;
-    document.getElementById("coverStatus").innerText = "تم رفع الغلاف بنجاح!";
+    document.getElementById("coverStatus").innerText = "Cover uploaded!";
     checkSaveReady();
   }
 });
@@ -152,7 +152,7 @@ const pdfWidget = cloudinary.createUploadWidget({
   if (!error && result && result.event === "success") {
     pdfUrl = result.info.secure_url;
     pageCount = result.info.pages || "Unknown";
-    document.getElementById("pdfStatus").innerText = "تم رفع PDF بنجاح!" + (result.info.pages ? ` (الصفحات: ${result.info.pages})` : "");
+    document.getElementById("pdfStatus").innerText = "PDF uploaded!" + (result.info.pages ? ` (Pages: ${result.info.pages})` : "");
     checkSaveReady();
   }
 });
@@ -166,8 +166,8 @@ function checkSaveReady() {
 
 // ================= تجاهل الدفع العالق =================
 function onIncompletePaymentFound(payment) {
-  console.log("تم تجاهل دفعة عالقة:", payment);
-  return true; // يتجاهل تمامًا ويسمح بالدخول والشراء
+  console.log("Pending payment detected and ignored:", payment);
+  return true; // يتجاهل تمامًا
 }
 
 // ================= تسجيل الدخول =================
@@ -177,7 +177,7 @@ document.getElementById("loginBtn").onclick = async () => {
     user = authResult.user;
     userUid = user.uid;
 
-    document.getElementById("welcome").innerText = `مرحبا، ${user.username}!`;
+    document.getElementById("welcome").innerText = `Welcome, ${user.username}!`;
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
 
@@ -185,7 +185,7 @@ document.getElementById("loginBtn").onclick = async () => {
     loadMyPurchases();
     loadMySales();
   } catch (err) {
-    alert("فشل تسجيل الدخول. افتح التطبيق في Pi Browser.");
+    alert("Login failed. Please open in Pi Browser.");
   }
 };
 
@@ -195,8 +195,8 @@ function logout() {
 
 // ================= رفع كتاب =================
 async function saveBook() {
-  if (!user) return alert("يجب تسجيل الدخول");
-  if (!document.getElementById("rights").checked) return alert("أكد حقوق النشر");
+  if (!user) return alert("Login required");
+  if (!document.getElementById("rights").checked) return alert("Confirm rights");
 
   const title = document.getElementById("title").value.trim();
   const price = Number(document.getElementById("price").value);
@@ -204,13 +204,13 @@ async function saveBook() {
   const language = document.getElementById("language").value;
   const manualPages = document.getElementById("manualPages").value.trim();
 
-  if (!title || price <= 0 || !coverUrl || !pdfUrl) return alert("أكمل جميع الحقول");
+  if (!title || price <= 0 || !coverUrl || !pdfUrl) return alert("Complete all fields");
 
   const finalPages = manualPages || pageCount;
 
   const btn = document.getElementById("saveBookBtn");
   btn.disabled = true;
-  btn.innerText = "جاري الحفظ...";
+  btn.innerText = "Saving...";
 
   try {
     const res = await fetch(`${BACKEND_URL}/save-book`, {
@@ -222,9 +222,9 @@ async function saveBook() {
       })
     });
 
-    if (!res.ok) throw new Error("فشل الرفع");
+    if (!res.ok) throw new Error("Upload failed");
 
-    alert("تم رفع الكتاب بنجاح!");
+    alert("Book uploaded successfully!");
     toggleAdd();
     coverUrl = pdfUrl = "";
     document.getElementById("coverStatus").innerText = "";
@@ -233,16 +233,16 @@ async function saveBook() {
     loadBooks();
     loadMySales();
   } catch (e) {
-    alert("فشل الرفع: " + e.message);
+    alert("Upload failed");
   } finally {
     btn.disabled = false;
-    btn.innerText = "حفظ الكتاب";
+    btn.innerText = "Save Book";
   }
 }
 
 // ================= تقييم كتاب =================
 async function rateBook(bookId, voteType, button) {
-  if (!userUid) return alert("يجب تسجيل الدخول");
+  if (!userUid) return alert("Login required");
   try {
     await fetch(`${BACKEND_URL}/rate-book`, {
       method: "POST",
@@ -257,19 +257,19 @@ async function rateBook(bookId, voteType, button) {
     loadBooks();
     loadMyPurchases();
   } catch (e) {
-    alert("فشل التقييم");
+    alert("Rating failed");
   }
 }
 
 // ================= شراء كتاب =================
 async function buy(bookId, price) {
-  if (!userUid) return alert("يجب تسجيل الدخول");
-  if (!confirm(`هل تريد شراء هذا الكتاب بـ ${price} Pi؟`)) return;
+  if (!userUid) return alert("Login required");
+  if (!confirm(`Buy this book for ${price} Pi?`)) return;
 
   try {
     await Pi.createPayment({
       amount: price,
-      memo: "شراء كتاب من Spicy Library",
+      memo: "Spicy Library - Book Purchase",
       metadata: { bookId, userUid }
     }, {
       onReadyForServerApproval: async (paymentId) => {
@@ -287,22 +287,22 @@ async function buy(bookId, price) {
         });
 
         if (!res.ok) {
-          alert("فشل الدفع");
+          alert("Payment failed");
           return;
         }
 
         const data = await res.json();
         window.open(data.pdfUrl, "_blank");
-        alert("تم الدفع بنجاح! الكتاب مفتوح الآن 📚");
+        alert("Payment successful! The book is now open 📚");
         loadBooks();
         loadMyPurchases();
         loadMySales();
       },
-      onCancel: () => alert("تم إلغاء الدفع"),
-      onError: (err) => alert("خطأ في الدفع: " + err.message)
+      onCancel: () => alert("Payment cancelled"),
+      onError: (err) => alert("Payment error: " + err.message)
     });
   } catch (e) {
-    alert("استخدم Pi Browser للدفع");
+    alert("Use Pi Browser for payment.");
   }
 }
 
@@ -315,17 +315,17 @@ async function downloadPdf(bookId) {
       body: JSON.stringify({ bookId, userUid })
     });
     const data = await res.json();
-    if (!res.ok) return alert(data.error || "غير مسموح");
+    if (!res.ok) return alert(data.error || "Access denied");
     window.open(data.pdfUrl, "_blank");
   } catch (e) {
-    alert("فشل التحميل");
+    alert("Download failed");
   }
 }
 
 // ================= جلب الكتب =================
 async function loadBooks() {
   const box = document.getElementById("books");
-  box.innerHTML = "<p>جاري تحميل الكتب...</p>";
+  box.innerHTML = "<p>Loading books...</p>";
   try {
     const res = await fetch(`${BACKEND_URL}/books`);
     const json = await res.json();
@@ -333,10 +333,9 @@ async function loadBooks() {
 
     const books = json.books;
     box.innerHTML = "";
-    if (books.length === 0) return box.innerHTML = "<p>لا توجد كتب متاحة.</p>";
+    if (books.length === 0) return box.innerHTML = "<p>No books available.</p>";
 
     for (const b of books) {
-      // جلب التقييمات
       const ratingsRes = await fetch(`${BACKEND_URL}/book-ratings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -345,15 +344,15 @@ async function loadBooks() {
       const ratingsJson = await ratingsRes.json();
       const { likes = 0, dislikes = 0, userVote = null } = ratingsJson.success ? ratingsJson : {};
 
-      const desc = b.description ? b.description.substring(0, 100) + "..." : "لا يوجد وصف";
-      const lang = b.language ? `اللغة: ${b.language}` : "";
-      const owner = `بواسطة: ${b.owner}`;
-      const pages = b.pageCount !== "Unknown" ? `الصفحات: ${b.pageCount}` : "";
-      const sales = b.salesCount > 0 ? `المبيعات: ${b.salesCount}` : "";
+      const desc = b.description ? b.description.substring(0, 100) + "..." : "No description";
+      const lang = b.language ? `Language: ${b.language}` : "";
+      const owner = `By: ${b.owner}`;
+      const pages = b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
+      const sales = b.salesCount > 0 ? `Sales: ${b.salesCount}` : "";
 
       box.innerHTML += `
         <div class="book">
-          <img src="${b.cover}" alt="غلاف">
+          <img src="${b.cover}" alt="Cover">
           <h4>${b.title}</h4>
           <p><strong>${b.price} Pi</strong></p>
           <div class="description">${desc}</div>
@@ -365,11 +364,11 @@ async function loadBooks() {
             <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${b.id}', 'like', this)" ${userVote || !user ? 'disabled' : ''}>👍</button> ${likes}
             <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${b.id}', 'dislike', this)" ${userVote || !user ? 'disabled' : ''}>👎</button> ${dislikes}
           </div>
-          <button onclick="buy('${b.id}', ${b.price})" ${!user ? 'disabled' : ''}>شراء بـ Pi</button>
+          <button onclick="buy('${b.id}', ${b.price})" ${!user ? 'disabled' : ''}>Buy with Pi</button>
         </div>`;
     }
   } catch (e) {
-    box.innerHTML = "<p>خطأ في تحميل الكتب. إعادة المحاولة...</p>";
+    box.innerHTML = "<p>Error loading books. Retrying...</p>";
     setTimeout(loadBooks, 5000);
   }
 }
@@ -377,8 +376,8 @@ async function loadBooks() {
 // ================= جلب مشترياتي =================
 async function loadMyPurchases() {
   const box = document.getElementById("myBooks");
-  box.innerHTML = "<p>جاري تحميل المشتريات...</p>";
-  if (!userUid) return box.innerHTML = "<p>سجل الدخول من فضلك.</p>";
+  box.innerHTML = "<p>Loading purchases...</p>";
+  if (!userUid) return box.innerHTML = "<p>Please log in.</p>";
 
   try {
     const res = await fetch(`${BACKEND_URL}/my-purchases`, {
@@ -391,7 +390,7 @@ async function loadMyPurchases() {
 
     const books = json.books;
     box.innerHTML = "";
-    if (books.length === 0) return box.innerHTML = "<p>لا توجد مشتريات بعد.</p>";
+    if (books.length === 0) return box.innerHTML = "<p>No purchases yet.</p>";
 
     for (const b of books) {
       const ratingsRes = await fetch(`${BACKEND_URL}/book-ratings`, {
@@ -402,15 +401,15 @@ async function loadMyPurchases() {
       const ratingsJson = await ratingsRes.json();
       const { likes = 0, dislikes = 0, userVote = null } = ratingsJson.success ? ratingsJson : {};
 
-      const desc = b.description ? b.description.substring(0, 100) + "..." : "لا يوجد وصف";
-      const lang = b.language ? `اللغة: ${b.language}` : "";
-      const owner = `بواسطة: ${b.owner}`;
-      const pages = b.pageCount !== "Unknown" ? `الصفحات: ${b.pageCount}` : "";
-      const sales = b.salesCount > 0 ? `المبيعات: ${b.salesCount}` : "";
+      const desc = b.description ? b.description.substring(0, 100) + "..." : "No description";
+      const lang = b.language ? `Language: ${b.language}` : "";
+      const owner = `By: ${b.owner}`;
+      const pages = b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
+      const sales = b.salesCount > 0 ? `Sales: ${b.salesCount}` : "";
 
       box.innerHTML += `
         <div class="book">
-          <img src="${b.cover}" alt="غلاف">
+          <img src="${b.cover}" alt="Cover">
           <h4>${b.title}</h4>
           <div class="description">${desc}</div>
           <div class="owner">${owner}</div>
@@ -421,11 +420,11 @@ async function loadMyPurchases() {
             <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${b.id}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
             <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${b.id}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
           </div>
-          <button onclick="downloadPdf('${b.id}')">تحميل PDF</button>
+          <button onclick="downloadPdf('${b.id}')">Download PDF</button>
         </div>`;
     }
   } catch (e) {
-    box.innerHTML = "<p>خطأ في تحميل المشتريات. إعادة المحاولة...</p>";
+    box.innerHTML = "<p>Error loading purchases. Retrying...</p>";
     setTimeout(loadMyPurchases, 5000);
   }
 }
@@ -434,9 +433,9 @@ async function loadMyPurchases() {
 async function loadMySales() {
   const box = document.getElementById("mySalesBooks");
   const totalBox = document.getElementById("totalEarnings");
-  box.innerHTML = "<p>جاري تحميل المبيعات...</p>";
+  box.innerHTML = "<p>Loading sales...</p>";
   totalBox.innerHTML = "";
-  if (!user) return box.innerHTML = "<p>سجل الدخول من فضلك.</p>";
+  if (!user) return box.innerHTML = "<p>Please log in.</p>";
 
   try {
     const res = await fetch(`${BACKEND_URL}/my-sales`, {
@@ -449,8 +448,8 @@ async function loadMySales() {
 
     const books = json.books;
     if (books.length === 0) {
-      box.innerHTML = "<p>لم تقم برفع أي كتب بعد.</p>";
-      totalBox.innerHTML = "<div class='total-profit'>الإجمالي: 0 Pi</div>";
+      box.innerHTML = "<p>No books uploaded.</p>";
+      totalBox.innerHTML = "<div class='total-profit'>Total earnings: 0 Pi</div>";
       document.getElementById("payoutBtn").disabled = true;
       return;
     }
@@ -464,27 +463,27 @@ async function loadMySales() {
         <div class="sales-book">
           <img src="${b.cover}" style="width:150px;border-radius:6px;">
           <h4>${b.title}</h4>
-          <p>السعر: ${b.price} Pi</p>
-          <p>المبيعات: ${b.salesCount || 0}</p>
-          <div class="profit">ربحك: ${profit.toFixed(2)} Pi (70%)</div>
+          <p>Price: ${b.price} Pi</p>
+          <p>Sales: ${b.salesCount || 0}</p>
+          <div class="profit">Your earnings: ${profit.toFixed(2)} Pi (70%)</div>
         </div>`;
     }
-    totalBox.innerHTML = `<div class='total-profit'>الإجمالي: ${total.toFixed(2)} Pi</div>`;
+    totalBox.innerHTML = `<div class='total-profit'>Total earnings: ${total.toFixed(2)} Pi</div>`;
     document.getElementById("payoutBtn").disabled = total < 5;
   } catch (e) {
-    box.innerHTML = "<p>خطأ في تحميل المبيعات.</p>";
+    box.innerHTML = "<p>Error loading sales.</p>";
   }
 }
 
 // ================= طلب سحب =================
 async function requestPayout() {
   const totalText = document.getElementById("totalEarnings").innerText;
-  const totalEarnings = parseFloat(totalText.replace("الإجمالي: ", "").replace(" Pi", "")) || 0;
+  const totalEarnings = parseFloat(totalText.replace("Total earnings: ", "").replace(" Pi", "")) || 0;
 
-  if (totalEarnings < 5) return alert("الحد الأدنى للسحب 5 Pi");
+  if (totalEarnings < 5) return alert("Minimum payout is 5 Pi");
 
-  const wallet = prompt(`ربحك الحالي: ${totalEarnings.toFixed(2)} Pi\nأدخل عنوان محفظة Pi:`);
-  if (!wallet || wallet.trim() === "") return alert("عنوان المحفظة مطلوب");
+  const wallet = prompt(`Your earnings: ${totalEarnings.toFixed(2)} Pi\nEnter your Pi Wallet address:`);
+  if (!wallet || wallet.trim() === "") return alert("Wallet address required");
 
   const btn = document.getElementById("payoutBtn");
   btn.disabled = true;
@@ -496,16 +495,16 @@ async function requestPayout() {
       body: JSON.stringify({ username: user.username })
     });
 
-    alert("تم إرسال طلب السحب بنجاح!\nتم تصفير الربح.");
+    alert("Payout request sent successfully!\nYour earnings have been reset to zero.");
     loadMySales();
   } catch (e) {
-    alert("فشل طلب السحب");
+    alert("Payout request failed");
   } finally {
     btn.disabled = false;
   }
 }
 
-// ================= تبويبات والبحث وإضافة كتاب =================
+// ================= تبويبات والبحث =================
 function openTab(tabName) {
   document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
   document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
@@ -526,7 +525,7 @@ function searchBooks() {
 }
 
 function toggleAdd() {
-  if (!user) return alert("يجب تسجيل الدخول");
+  if (!user) return alert("Login required");
   document.getElementById("addBook").classList.toggle("hidden");
 }
 </script>
