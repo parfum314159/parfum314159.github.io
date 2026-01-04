@@ -4,24 +4,28 @@
 <meta charset="UTF-8">
 <title>📚 Spicy Library</title>
 
+<!-- Pi SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<!-- Cloudinary -->
 <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
 
 <style>
-/* === نفس الستايل بدون تغيير === */
 body{background:#111;color:#fff;font-family:Arial;text-align:center;margin:0;padding:20px;}
 button{padding:10px 20px;border:none;border-radius:6px;background:#ff4500;color:#fff;cursor:pointer;margin:5px;}
-button:disabled{background:#555;cursor:not-allowed;}
+button:disabled{background:#555;}
 input, textarea, select{padding:8px;margin:5px;width:90%;}
 .hidden{display:none}
 .books{display:flex;flex-wrap:wrap;justify-content:center}
-.book{background:#1c1c1c;border:1px solid #333;border-radius:8px;padding:15px;margin:10px;width:220px;font-size:14px;}
+.book{background:#1c1c1c;border:1px solid #333;border-radius:8px;padding:15px;margin:10px;width:220px;}
 .book img{width:200px;border-radius:6px;}
+.tab-btn{background:#333;margin:5px;}
+.tab-btn.active{background:#ff4500;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
 </style>
 </head>
-
 <body>
-
 <div id="login">
   <h1>📚 Spicy Library</h1>
   <button id="loginBtn">Login with Pi</button>
@@ -32,37 +36,59 @@ input, textarea, select{padding:8px;margin:5px;width:90%;}
   <button onclick="toggleAdd()">➕ Add Book</button>
   <button onclick="logout()">Logout</button>
 
-  <div id="addBook" class="hidden">
-    <input id="title" placeholder="Book title">
-    <input id="price" type="number" placeholder="Price (Pi)">
-    <textarea id="description" placeholder="Description"></textarea>
-
-    <button id="uploadCoverBtn">Upload Cover</button>
-    <p id="coverStatus"></p>
-
-    <button id="uploadPdfBtn">Upload PDF</button>
-    <p id="pdfStatus"></p>
-
-    <label>
-      <input type="checkbox" id="rights"> I own the rights
-    </label>
-
-    <button id="saveBookBtn" onclick="saveBook()" disabled>Save Book</button>
+  <div>
+    <button class="tab-btn active" onclick="openTab('store')">Store</button>
+    <button class="tab-btn" onclick="openTab('purchases')">My Purchases</button>
+    <button class="tab-btn" onclick="openTab('sales')">My Sales</button>
   </div>
 
-  <h3>All Books</h3>
-  <div class="books" id="books"></div>
-</div>
+  <!-- STORE -->
+  <div id="store" class="tab-content active">
+    <div id="addBook" class="hidden">
+      <input id="title" placeholder="Book title">
+      <input id="price" type="number" placeholder="Price (Pi)">
+      <textarea id="description" placeholder="Description"></textarea>
 
+      <button id="uploadCoverBtn">Upload Cover</button>
+      <p id="coverStatus"></p>
+
+      <button id="uploadPdfBtn">Upload PDF</button>
+      <p id="pdfStatus"></p>
+
+      <label>
+        <input type="checkbox" id="rights"> I own the rights
+      </label>
+
+      <button id="saveBookBtn" onclick="saveBook()" disabled>Save Book</button>
+    </div>
+
+    <h3>All Books</h3>
+    <div id="books" class="books"></div>
+  </div>
+
+  <!-- PURCHASES -->
+  <div id="purchases" class="tab-content">
+    <h3>My Purchased Books</h3>
+    <div id="myBooks" class="books"></div>
+  </div>
+
+  <!-- SALES -->
+  <div id="sales" class="tab-content">
+    <h3>My Sales</h3>
+    <div id="mySalesBooks"></div>
+    <div id="totalEarnings"></div>
+    <button onclick="requestPayout()">Request Payout</button>
+  </div>
+</div>
 <script>
 /* ================= CONFIG ================= */
 const API = "https://pi-backend-c8nz.onrender.com";
+Pi.init({ version: "2.0", sandbox: false });
+
 let user = null;
 let userUid = null;
 
-/* ================= PI ================= */
-Pi.init({ version: "2.0", sandbox: false });
-
+/* ================= LOGIN ================= */
 loginBtn.onclick = async () => {
   const auth = await Pi.authenticate(["username","payments"]);
   user = auth.user;
@@ -73,86 +99,64 @@ loginBtn.onclick = async () => {
   welcome.innerText = "Welcome " + user.username;
 
   loadBooks();
+  loadMyPurchases();
+  loadMySales();
 };
 
 /* ================= CLOUDINARY ================= */
-let coverUrl = "";
-let pdfUrl = "";
+let coverUrl="", pdfUrl="";
 
 const coverWidget = cloudinary.createUploadWidget({
-  cloudName: "dkb0phegf",
-  uploadPreset: "spicy1998",
-  folder: "covers",
-  resourceType: "image"
-}, (_, result) => {
-  if (result?.event === "success") {
-    coverUrl = result.info.secure_url;
-    coverStatus.innerText = "Cover uploaded";
-    checkReady();
-  }
-});
+  cloudName:"dkb0phegf", uploadPreset:"spicy1998", folder:"covers"
+},(_,r)=>{ if(r?.event==="success"){coverUrl=r.info.secure_url;coverStatus.innerText="Cover OK";check();}});
 
 const pdfWidget = cloudinary.createUploadWidget({
-  cloudName: "dkb0phegf",
-  uploadPreset: "spicy1998",
-  folder: "pdfs",
-  resourceType: "raw"
-}, (_, result) => {
-  if (result?.event === "success") {
-    pdfUrl = result.info.secure_url;
-    pdfStatus.innerText = "PDF uploaded";
-    checkReady();
-  }
-});
+  cloudName:"dkb0phegf", uploadPreset:"spicy1998", folder:"pdfs", resourceType:"raw"
+},(_,r)=>{ if(r?.event==="success"){pdfUrl=r.info.secure_url;pdfStatus.innerText="PDF OK";check();}});
 
-uploadCoverBtn.onclick = () => coverWidget.open();
-uploadPdfBtn.onclick = () => pdfWidget.open();
+uploadCoverBtn.onclick=()=>coverWidget.open();
+uploadPdfBtn.onclick=()=>pdfWidget.open();
 
-function checkReady(){
-  saveBookBtn.disabled = !(coverUrl && pdfUrl);
-}
+function check(){ saveBookBtn.disabled=!(coverUrl&&pdfUrl); }
 
-/* ================= SAVE BOOK (BACKEND) ================= */
+/* ================= SAVE BOOK ================= */
 async function saveBook(){
   if(!rights.checked) return alert("Confirm rights");
 
-  const res = await fetch(API + "/save-book", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      title: title.value,
-      price: price.value,
-      description: description.value,
-      cover: coverUrl,
-      pdf: pdfUrl,
-      owner: user.username
+  const res = await fetch(API+"/save-book",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      title:title.value,
+      price:price.value,
+      description:description.value,
+      cover:coverUrl,
+      pdf:pdfUrl,
+      owner:user.username
     })
   });
 
   const data = await res.json();
   if(data.success){
-    alert("Book saved!");
-    addBook.classList.add("hidden");
+    alert("Book added");
+    toggleAdd();
     loadBooks();
-  } else {
-    alert(data.error);
+    loadMySales();
   }
 }
 
-/* ================= LOAD BOOKS (BACKEND) ================= */
+/* ================= LOAD BOOKS ================= */
 async function loadBooks(){
-  books.innerHTML = "Loading...";
-  const res = await fetch(API + "/books");
+  const res = await fetch(API+"/books");
   const data = await res.json();
-
-  books.innerHTML = "";
-  data.books.forEach(b => {
-    books.innerHTML += `
+  books.innerHTML="";
+  data.books.forEach(b=>{
+    books.innerHTML+=`
       <div class="book">
         <img src="${b.cover}">
         <h4>${b.title}</h4>
         <p>${b.price} Pi</p>
-        <button onclick="buy('${b.id}', ${b.price})">Buy</button>
+        <button onclick="buy('${b.id}',${b.price})">Buy</button>
       </div>`;
   });
 }
@@ -160,30 +164,37 @@ async function loadBooks(){
 /* ================= BUY ================= */
 async function buy(bookId, price){
   await Pi.createPayment(
-    { amount: price, currency: "Pi", metadata:{bookId} },
+    {amount:price,currency:"Pi",metadata:{bookId}},
     {
-      onReadyForServerApproval: async (paymentId) => {
-        await fetch(API + "/approve-payment", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body:JSON.stringify({ paymentId })
-        });
-      },
-      onReadyForServerCompletion: async (paymentId, txid) => {
-        const res = await fetch(API + "/complete-payment", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body:JSON.stringify({ paymentId, txid, bookId, userUid })
-        });
-        const data = await res.json();
-        window.open(data.pdfUrl, "_blank");
+      onReadyForServerApproval:(pid)=>fetch(API+"/approve-payment",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({paymentId:pid})}),
+      onReadyForServerCompletion:async(pid,txid)=>{
+        const r=await fetch(API+"/complete-payment",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({paymentId:pid,txid,bookId,userUid})});
+        const d=await r.json();
+        window.open(d.pdfUrl,"_blank");
+        loadMyPurchases(); loadMySales();
       }
     }
   );
 }
 
-function toggleAdd(){ addBook.classList.toggle("hidden"); }
-function logout(){ location.reload(); }
+/* ================= PURCHASES ================= */
+async function loadMyPurchases(){
+  const r=await fetch(API+"/get-pdf",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
+}
+
+/* ================= SALES ================= */
+async function loadMySales(){
+  const box=mySalesBooks;
+  box.innerHTML="(sales calculated on backend later)";
+}
+
+/* ================= UI ================= */
+function toggleAdd(){addBook.classList.toggle("hidden");}
+function logout(){location.reload();}
+function openTab(t){
+  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+  document.getElementById(t).classList.add('active');
+}
 </script>
 
 </body>
