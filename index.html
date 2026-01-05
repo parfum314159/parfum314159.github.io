@@ -167,10 +167,28 @@ function checkSaveReady() {
 
 // ================= HANDLE PENDING PAYMENT =================
 async function onIncompletePaymentFound(incompletePayment) {
-  alert("You have a pending payment that cannot be automatically completed.\nPlease complete or cancel it manually via the Pi Developer Dashboard (developers.minepi.com).");
-  console.log("Incomplete payment detected (manual action required):", incompletePayment);
-}
+  console.log("Incomplete payment detected:", incompletePayment);
 
+  try {
+    const response = await fetch(`${BACKEND_URL}/resolve-pending`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentId: incompletePayment.identifier, userUid: userUid })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("Failed to resolve pending payment:", err);
+      alert("Failed to automatically complete the pending payment. Please complete manually.");
+      return;
+    }
+
+    alert("Pending payment resolved successfully! You can now make new purchases.");
+  } catch (err) {
+    console.error("Error resolving pending payment:", err);
+    alert("Error completing pending payment. Try again later.");
+  }
+}
 
 // ================= LOGIN =================
 document.getElementById("loginBtn").onclick = async () => {
