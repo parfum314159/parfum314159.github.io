@@ -294,8 +294,10 @@ async function buy(bookId, price) {
     await Pi.createPayment({
       amount: price,
       memo: "Spicy Library - Book Purchase",
+      // 🔐 metadata فقط (يستخدمها backend)
       metadata: { bookId, userUid }
     }, {
+      // 🔹 الموافقة من السيرفر
       onReadyForServerApproval: async (paymentId) => {
         await fetch(`${BACKEND_URL}/approve-payment`, {
           method: "POST",
@@ -303,11 +305,16 @@ async function buy(bookId, price) {
           body: JSON.stringify({ paymentId })
         });
       },
+
+      // 🔹 الإكمال من السيرفر (بدون bookId و userUid)
       onReadyForServerCompletion: async (paymentId, txid) => {
         const res = await fetch(`${BACKEND_URL}/complete-payment`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId, txid, bookId, userUid })
+          body: JSON.stringify({
+            paymentId,
+            txid
+          })
         });
 
         if (!res.ok) {
@@ -319,9 +326,10 @@ async function buy(bookId, price) {
         window.open(data.pdfUrl, "_blank");
         alert("Payment successful! The book is now open 📚");
 
-        // ✅ إعادة تحميل الصفحة لتأكيد الدفع نهائيًا وإزالة أي pending
+        // ✅ تنظيف أي pending نهائيًا
         location.reload();
       },
+
       onCancel: () => alert("Payment cancelled"),
       onError: (err) => alert("Payment error: " + err.message)
     });
