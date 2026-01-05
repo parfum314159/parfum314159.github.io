@@ -165,10 +165,22 @@ function checkSaveReady() {
   document.getElementById("saveBookBtn").disabled = !(coverUrl && pdfUrl && user);
 }
 
-// ================= IGNORE PENDING PAYMENT =================
-function onIncompletePaymentFound(payment) {
-  console.log("Pending payment ignored:", payment);
-  return true;
+// ================= HANDLE PENDING PAYMENT =================
+async function onIncompletePaymentFound(payment) {
+  console.log("Pending payment found:", payment);
+  try {
+    await fetch(`${BACKEND_URL}/resolve-pending`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentId: payment.id })
+    });
+    console.log("Pending payment resolved:", payment.id);
+    return true; // السماح للمستخدم بالاستمرار
+  } catch (e) {
+    console.log("Failed to resolve pending payment:", e.message);
+    alert("Pending payment needs manual handling.");
+    return false; // تمنع المعاملة الجديدة حتى تُحل
+  }
 }
 
 // ================= LOGIN =================
