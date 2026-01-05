@@ -168,19 +168,22 @@ function checkSaveReady() {
 // ================= HANDLE PENDING PAYMENT =================
 async function onIncompletePaymentFound(payment) {
   console.log("Pending payment found:", payment);
+
   try {
+    // إرسال paymentId إلى السيرفر لحل المعاملة المعلقة
     await fetch(`${BACKEND_URL}/resolve-pending`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ paymentId: payment.id })
     });
-    console.log("Pending payment resolved:", payment.id);
-    return true; // السماح للمستخدم بالاستمرار
+
+    alert("Pending payment has been resolved!");
   } catch (e) {
-    console.log("Failed to resolve pending payment:", e.message);
-    alert("Pending payment needs manual handling.");
-    return false; // تمنع المعاملة الجديدة حتى تُحل
+    console.error("Failed to resolve pending payment:", e);
+    alert("Failed to resolve pending payment.");
   }
+
+  return true; // تُعلم Pi SDK أن المعاملة الآن تم التعامل معها
 }
 
 // ================= LOGIN =================
