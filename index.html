@@ -38,7 +38,16 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
 .payout-note{font-size:14px;color:#aaa;margin:15px 0;padding:10px;background:#222;border-radius:8px;}
 </style>
 </head>
-<body>
+<!-- Modal for Privacy Policy / Terms -->
+<div id="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999;">
+  <div style="background:#fff;margin:50px auto;padding:20px;border-radius:8px;width:90%;max-width:500px;height:80%;overflow-y:auto;">
+    <h2 id="modal-title"></h2>
+    <pre id="modal-content" style="white-space:pre-wrap;"></pre>
+    <button onclick="closeModal()" style="padding:10px 20px;margin-top:10px;background:#ff4500;color:#fff;border:none;border-radius:6px;cursor:pointer;">Close</button>
+  </div>
+</div>
+
+  <body>
 
 <div id="login">
   <h1>📚 Spicy Library</h1>
@@ -116,6 +125,64 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
 </div>
 
 <script>
+  // ================= LEGAL TEXT =================
+const PrivacyPolicyText = `
+Privacy Policy - Spicy Library
+
+We respect your privacy and protect your data. We collect:
+- Pi Network UID and username
+- Purchase history
+- Sales data for authors
+- Pi wallet addresses (for withdrawals)
+
+We DO NOT collect passwords or private keys.
+
+Your data is used for:
+- Login and app functionality
+- Payment processing
+- Delivering books
+- Author earnings and withdrawals
+
+We do not share your data with third parties unless required by law.
+
+Contact: spicy3423@gmail.com
+`;
+
+const TermsOfServiceText = `
+Terms of Service - Spicy Library
+
+By using Spicy Library, you agree to:
+- Use Pi Network for login
+- Be responsible for your account activity
+- Ensure all content you upload respects copyright
+
+Purchases:
+- Made in Pi currency only
+- Are final and non-refundable
+
+Authors:
+- Receive 70% of each sale
+- Minimum withdrawal: 5 Pi
+- Processing may take 1–30 days
+
+Prohibited:
+- Uploading stolen content
+- Manipulating payments
+- Hacking attempts
+
+Contact: spicy3423@gmail.com
+`;
+
+// ================= MODAL =================
+function openModal(title, content) {
+  document.getElementById('modal-title').innerText = title;
+  document.getElementById('modal-content').innerText = content;
+  document.getElementById('modal').style.display = 'block';
+}
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+</script>
 // ================= BACKEND URL =================
 const BACKEND_URL = "https://pi-backend-c8nz.onrender.com";
 
@@ -588,4 +655,9 @@ function toggleAdd() {
 }
 </script>
 </body>
+    <div style="margin:20px;">
+  <button onclick="openModal('Privacy Policy', PrivacyPolicyText)" style="padding:10px 20px;margin:5px;">Privacy Policy</button>
+  <button onclick="openModal('Terms of Service', TermsOfServiceText)" style="padding:10px 20px;margin:5px;">Terms of Service</button>
+</div>
+
 </html>
