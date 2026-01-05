@@ -166,33 +166,38 @@ function checkSaveReady() {
 }
 
 // ================= HANDLE PENDING PAYMENT =================
-async function onIncompletePaymentFound(payment) {
-  console.log("Pending payment found:", payment);
+async function onIncompletePaymentFound(incompletePayment) {
+  console.log("Incomplete payment found:", incompletePayment);
+
+  if (!incompletePayment.transaction || !incompletePayment.metadata) {
+    alert("Pending payment detected, but cannot complete automatically.");
+    return false;
+  }
+
+  const { bookId } = incompletePayment.metadata;
+  const txid = incompletePayment.transaction.txid;
 
   try {
-    const res = await fetch(`${BACKEND_URL}/resolve-pending`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentId: payment.id })
+    // Update purchases in Firestore
+    await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({
+      purchasedAt: Date.now()
     });
-    const data = await res.json();
 
-    if (res.ok && data.success) {
-      console.log("✅ Pending payment fully resolved:", payment.id);
-      alert("Pending payment has been resolved successfully!");
-      return true; // الآن المستخدم يمكنه المتابعة بأمان
-    } else {
-      console.log("⚠️ Payment not fully resolved:", data.error);
-      alert("Pending payment could not be resolved. Contact support.");
-      return false; // تمنع المستخدم من المتابعة
-    }
-  } catch (e) {
-    console.log("❌ Failed to resolve pending payment:", e.message);
-    alert("Pending payment requires manual handling.");
-    return false; // تمنع المستخدم من المتابعة
+    const bookRef = db.collection("books").doc(bookId);
+    await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(bookRef);
+      if (!doc.exists) throw "Book not found";
+      transaction.update(bookRef, { salesCount: (doc.data().salesCount || 0) + 1 });
+    });
+
+    alert("Pending payment completed! You can now access your book.");
+    return true;
+  } catch (err) {
+    console.error("Failed to resolve pending payment:", err);
+    alert("Failed to automatically complete the pending payment.");
+    return false;
   }
 }
-
 
 // ================= LOGIN =================
 document.getElementById("loginBtn").onclick = async () => {
