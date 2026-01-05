@@ -515,20 +515,33 @@ async function requestPayout() {
   payoutBtn.disabled = true;
 
   try {
-    await db.collection("payout_requests").add({
-      username: user.username,
-      earnings: totalEarnings.toFixed(2),
-      walletAddress: walletAddress.trim(),
-      requestedAt: Date.now(),
-      status: "pending"
-    });
+    const res = await fetch("https://pi-backend-c8nz.onrender.com/request-payout", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    username: user.username,
+    walletAddress: walletAddress.trim(),
+    earnings: totalEarnings.toFixed(2)
+  })
+});
 
-    const booksSnap = await db.collection("books").where("owner", "==", user.username).get();
-    const batch = db.batch();
-    booksSnap.forEach(doc => {
-      batch.update(doc.ref, { salesCount: 0 });
-    });
-    await batch.commit();
+const data = await res.json();
+
+if (!res.ok || !data.success) {
+  throw new Error(data.error || "Request failed");
+}
+
+alert(
+  "Payout request sent successfully!\n\n" +
+  "• Status: Pending\n" +
+  "• Minimum processing time: 1–30 days\n\n" +
+  "You will be contacted if needed."
+);
+
+loadMySales();
+
 
     alert("Payout request sent successfully!\nYour earnings have been reset to zero.\nPayment will be processed within 1-30 days (usually 1-2 days).");
 
