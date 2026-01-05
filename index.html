@@ -170,21 +170,29 @@ async function onIncompletePaymentFound(payment) {
   console.log("Pending payment found:", payment);
 
   try {
-    // إرسال paymentId إلى السيرفر لحل المعاملة المعلقة
-    await fetch(`${BACKEND_URL}/resolve-pending`, {
+    const res = await fetch(`${BACKEND_URL}/resolve-pending`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ paymentId: payment.id })
     });
+    const data = await res.json();
 
-    alert("Pending payment has been resolved!");
+    if (res.ok && data.success) {
+      console.log("✅ Pending payment fully resolved:", payment.id);
+      alert("Pending payment has been resolved successfully!");
+      return true; // الآن المستخدم يمكنه المتابعة بأمان
+    } else {
+      console.log("⚠️ Payment not fully resolved:", data.error);
+      alert("Pending payment could not be resolved. Contact support.");
+      return false; // تمنع المستخدم من المتابعة
+    }
   } catch (e) {
-    console.error("Failed to resolve pending payment:", e);
-    alert("Failed to resolve pending payment.");
+    console.log("❌ Failed to resolve pending payment:", e.message);
+    alert("Pending payment requires manual handling.");
+    return false; // تمنع المستخدم من المتابعة
   }
-
-  return true; // تُعلم Pi SDK أن المعاملة الآن تم التعامل معها
 }
+
 
 // ================= LOGIN =================
 document.getElementById("loginBtn").onclick = async () => {
