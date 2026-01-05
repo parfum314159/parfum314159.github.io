@@ -165,49 +165,32 @@ function checkSaveReady() {
   document.getElementById("saveBookBtn").disabled = !(coverUrl && pdfUrl && user);
 }
 
-// ==================== PENDING PAYMENTS ====================
-async function resolvePendingPayments() {
-  try {
-    const res = await fetch(`${BACKEND_URL}/pending-payments?userUid=${userUid}`);
-    const data = await res.json();
-
-    if (data.success && data.pendingPayments.length > 0) {
-      for (const p of data.pendingPayments) {
-        await fetch(`${BACKEND_URL}/complete-payment`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId: p.id })
-        });
-      }
-      alert("Pending payments resolved!");
-    }
-  } catch (e) {
-    console.error("Error resolving pending payments:", e);
-  }
+// ================= IGNORE PENDING PAYMENT =================
+function onIncompletePaymentFound(payment) {
+  console.log("Pending payment ignored:", payment);
+  return true;
 }
 
-// ==================== LOGIN ====================
-loginBtn.onclick = async () => {
+// ================= LOGIN =================
+document.getElementById("loginBtn").onclick = async () => {
   try {
-    const auth = await Pi.authenticate(["username","payments"]);
-user = auth.user;
-userUid = auth.user.uid;
-login.classList.add("hidden");
-app.classList.remove("hidden");
-welcome.innerText = "Welcome " + user.username;
+    const authResult = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
+    user = authResult.user;
+    userUid = user.uid;
 
-// ✅ بعد تسجيل الدخول، حل المعاملات المعلقة
-await resolvePendingPayments();
+    document.getElementById("welcome").innerText = `Welcome, ${user.username}!`;
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
 
-loadBooks();
-loadMyPurchases();
-loadMySales();
-  } catch (e) {
-    alert("Please open this app inside the Pi Browser only!");
+    loadBooks();
+    loadMyPurchases();
+    loadMySales();
+  } catch (err) {
+    alert("Login failed. Open in Pi Browser.");
   }
 };
 
-function logout(){
+function logout() {
   location.reload();
 }
 
@@ -279,91 +262,51 @@ async function rateBook(bookId, voteType, button) {
   }
 }
 
-/* ================= BUY ================= */
-async function buy(bookId, price){
-  if(!confirm(`Do you want to buy this book for ${price} Pi?`)) return;
+// ================= BUY =================
+async function buy(bookId, price) {
+  if (!userUid) return alert("Login required");
+  if (!confirm(`Buy this book for ${price} Pi?`)) return;
 
   try {
-    await Pi.createPayment(
-      {
-        amount: price,
-        currency: "Pi",
-        memo: "Book purchase from Spicy Library",
-        metadata: { bookId }
+    await Pi.createPayment({
+      amount: price,
+      memo: "Spicy Library - Book Purchase",
+      metadata: { bookId, userUid }
+    }, {
+      onReadyForServerApproval: async (paymentId) => {
+        await fetch(`${BACKEND_URL}/approve-payment`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId })
+        });
       },
-      {
-        onReadyForServerApproval: async (paymentId) => {
-          console.log("Approving payment:", paymentId);
-          try {
-            const res = await fetch("https://pi-backend-c8nz.onrender.com/approve-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ paymentId })
-            });
-            if (!res.ok) throw new Error(await res.text());
-          } catch (err) {
-            console.error("Approve failed:", err);
-          }
-        },
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        const res = await fetch(`${BACKEND_URL}/complete-payment`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId, txid, bookId, userUid })
+        });
 
-        onReadyForServerCompletion: async (paymentId, txid) => {
-          console.log("Completing payment:", paymentId, "txid:", txid);
-          try {
-            const response = await fetch("https://pi-backend-c8nz.onrender.com/complete-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ paymentId, txid })
-            });
-
-            if (!response.ok) {
-              const errorData = await response.json();
-              console.error("Completion failed:", errorData);
-              alert("Payment completion failed!\nDetails: " + JSON.stringify(errorData));
-              return;
-            }
-
-            await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({
-              purchasedAt: Date.now()
-            });
-
-            const bookRef = db.collection("books").doc(bookId);
-            await db.runTransaction(async (transaction) => {
-              const bookDoc = await transaction.get(bookRef);
-              if (!bookDoc.exists) throw "Book does not exist!";
-              const newSales = (bookDoc.data().salesCount || 0) + 1;
-              transaction.update(bookRef, { salesCount: newSales });
-            });
-
-            const bookDoc = await db.collection("books").doc(bookId).get();
-            if (bookDoc.exists) {
-              const pdfUrl = bookDoc.data().pdf;
-              window.open(pdfUrl, "_blank");
-            }
-
-            alert("Payment successful! The book is now open 📚");
-
-            loadBooks();
-            loadMyPurchases();
-            loadMySales();
-          } catch (err) {
-            console.error("Completion error:", err);
-            alert("Server connection error during payment completion.");
-          }
-        },
-
-        onCancel: () => alert("Payment cancelled"),
-
-        onError: (error, payment) => {
-          console.error("Pi Payment Error:", error, payment);
-          alert("Payment error: " + error.message);
+        if (!res.ok) {
+          alert("Payment failed");
+          return;
         }
-      }
-    );
+
+        const data = await res.json();
+        window.open(data.pdfUrl, "_blank");
+        alert("Payment successful! The book is now open 📚");
+        loadBooks();
+        loadMyPurchases();
+        loadMySales();
+      },
+      onCancel: () => alert("Payment cancelled"),
+      onError: (err) => alert("Payment error: " + err.message)
+    });
   } catch (e) {
-    console.error("Payment initiation failed:", e);
-    alert("Failed to start payment process. Make sure you are using the Pi Browser.");
+    alert("Use Pi Browser for payment.");
   }
 }
+
 // ================= DOWNLOAD PDF =================
 async function downloadPdf(bookId) {
   const res = await fetch(`${BACKEND_URL}/get-pdf`, {
