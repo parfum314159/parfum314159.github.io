@@ -194,26 +194,25 @@ async function onIncompletePaymentFound(incompletePayment) {
   }
 }
 // ==================== LOGIN ====================
-document.getElementById("loginBtn").onclick = async () => {
+loginBtn.onclick = async () => {
   try {
-    const authResult = await Pi.authenticate(["username", "payments"]);
-    user = authResult.user;
-    userUid = user.uid;
-    document.getElementById("welcome").innerText = `Welcome, ${user.username}!`;
-    document.getElementById("login").classList.add("hidden");
-    document.getElementById("app").classList.remove("hidden");
-
-    await resolvePendingPayments(); // ✅ حل المعاملات المعلقة بعد login
-
+    const auth = await Pi.authenticate(["username","payments"], onIncompletePaymentFound);
+    user = auth.user;
+    userUid = auth.user.uid;
+    login.classList.add("hidden");
+    app.classList.remove("hidden");
+    welcome.innerText = "Welcome " + user.username;
     loadBooks();
     loadMyPurchases();
     loadMySales();
-  } catch (err) {
-    alert("Login failed. Open in Pi Browser.");
+  } catch (e) {
+    alert("Please open this app inside the Pi Browser only!");
   }
 };
 
-function logout() { location.reload(); }
+function logout(){
+  location.reload();
+}
 
 // ================= SAVE BOOK =================
 async function saveBook() {
