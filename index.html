@@ -166,11 +166,33 @@ function checkSaveReady() {
 }
 
 // ================= تجاهل الدفع المعلق =================
-function onIncompletePaymentFound(payment) {
-  console.log("Pending payment detected and ignored:", payment);
-  return true; // تجاهل الرسالة وسمح بالدفع الجديد
-}
+async function onIncompletePaymentFound(incompletePayment) {
+  alert("A previous pending payment was detected... Attempting to complete it automatically");
+  console.log("Incomplete payment found:", incompletePayment);
 
+  try {
+    const response = await fetch("https://pi-backend-c8nz.onrender.com/complete-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paymentId: incompletePayment.identifier,
+        txid: incompletePayment.transaction?.txid
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("Failed to complete pending payment:", err);
+      alert("Failed to automatically complete the pending payment.\nPlease go to developers.minepi.com to complete or cancel it manually.");
+      return;
+    }
+
+    alert("Pending payment completed successfully!\nYou can now make new purchases.");
+  } catch (err) {
+    console.error("Error completing pending payment:", err);
+    alert("Error completing pending payment.\nPlease try again or complete it manually from the developer dashboard.");
+  }
+}
 // ================= LOGIN =================
 document.getElementById("loginBtn").onclick = async () => {
   try {
@@ -474,30 +496,47 @@ async function loadMySales() {
 
 // ================= REQUEST PAYOUT =================
 async function requestPayout() {
-  const totalText = document.getElementById("totalEarnings").innerText;
-  const totalEarnings = parseFloat(totalText.replace("Total earnings: ", "").replace(" Pi", "")) || 0;
+  const totalEarnings = parseFloat(document.getElementById("totalEarnings").innerText.replace("Total earnings: ", "").replace(" Pi", "")) || 0;
 
-  if (totalEarnings < 5) return alert("Minimum payout is 5 Pi");
+  if (totalEarnings < 5) {
+    alert("Minimum payout is 5 Pi.\nWait for more sales before requesting withdrawal.");
+    return;
+  }
 
-  const wallet = prompt(`Your earnings: ${totalEarnings.toFixed(2)} Pi\nEnter your Pi Wallet address:`);
-  if (!wallet || wallet.trim() === "") return alert("Wallet address required");
+  const walletAddress = prompt(`Your current earnings: ${totalEarnings.toFixed(2)} Pi\n\nEnter your Pi Wallet address to request payout:`);
 
-  const btn = document.getElementById("payoutBtn");
-  btn.disabled = true;
+  if (!walletAddress || walletAddress.trim() === "") {
+    alert("Wallet address is required.");
+    return;
+  }
+
+  const payoutBtn = document.getElementById("payoutBtn");
+  payoutBtn.disabled = true;
 
   try {
-    await fetch(`${BACKEND_URL}/reset-sales`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: user.username })
+    await db.collection("payout_requests").add({
+      username: user.username,
+      earnings: totalEarnings.toFixed(2),
+      walletAddress: walletAddress.trim(),
+      requestedAt: Date.now(),
+      status: "pending"
     });
 
-    alert("Payout request sent successfully!\nYour earnings have been reset to zero.");
+    const booksSnap = await db.collection("books").where("owner", "==", user.username).get();
+    const batch = db.batch();
+    booksSnap.forEach(doc => {
+      batch.update(doc.ref, { salesCount: 0 });
+    });
+    await batch.commit();
+
+    alert("Payout request sent successfully!\nYour earnings have been reset to zero.\nPayment will be processed within 1-30 days (usually 1-2 days).");
+
     loadMySales();
   } catch (e) {
-    alert("Payout request failed");
+    console.error("Payout request error:", e);
+    alert("Failed to send request. Check your connection and try again.\nYour earnings are safe and not reset.");
   } finally {
-    btn.disabled = false;
+    payoutBtn.disabled = false;
   }
 }
 
