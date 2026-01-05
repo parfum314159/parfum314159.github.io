@@ -167,37 +167,10 @@ function checkSaveReady() {
 
 // ================= HANDLE PENDING PAYMENT =================
 async function onIncompletePaymentFound(incompletePayment) {
-  console.log("Incomplete payment found:", incompletePayment);
-
-  if (!incompletePayment.transaction || !incompletePayment.metadata) {
-    alert("Pending payment detected, but cannot complete automatically.");
-    return false;
-  }
-
-  const { bookId } = incompletePayment.metadata;
-  const txid = incompletePayment.transaction.txid;
-
-  try {
-    // Update purchases in Firestore
-    await db.collection("purchases").doc(userUid).collection("books").doc(bookId).set({
-      purchasedAt: Date.now()
-    });
-
-    const bookRef = db.collection("books").doc(bookId);
-    await db.runTransaction(async (transaction) => {
-      const doc = await transaction.get(bookRef);
-      if (!doc.exists) throw "Book not found";
-      transaction.update(bookRef, { salesCount: (doc.data().salesCount || 0) + 1 });
-    });
-
-    alert("Pending payment completed! You can now access your book.");
-    return true;
-  } catch (err) {
-    console.error("Failed to resolve pending payment:", err);
-    alert("Failed to automatically complete the pending payment.");
-    return false;
-  }
+  alert("You have a pending payment that cannot be automatically completed.\nPlease complete or cancel it manually via the Pi Developer Dashboard (developers.minepi.com).");
+  console.log("Incomplete payment detected (manual action required):", incompletePayment);
 }
+
 
 // ================= LOGIN =================
 document.getElementById("loginBtn").onclick = async () => {
