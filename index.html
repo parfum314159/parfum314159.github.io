@@ -217,7 +217,8 @@ function logout() {
 }
 
 // ================= SAVE BOOK =================
-async function saveBook() {
+document.getElementById("saveBookBtn").onclick = saveBook;
+  async function saveBook() {
   if (!user) return alert("Login required");
   if (!document.getElementById("rights").checked) return alert("Confirm rights");
 
