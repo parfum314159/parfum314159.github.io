@@ -23,6 +23,22 @@ input, textarea, select{padding:8px;margin:5px;width:90%;}
 .tab-btn.active{background:#ff4500;}
 .tab-content{display:none;}
 .tab-content.active{display:block;}
+.description{font-size:12px;color:#ccc;height:60px;overflow:hidden;margin:8px 0;}
+.owner{font-size:12px;color:#ff4500;}
+.language{font-size:12px;color:#aaa;}
+.pages{font-size:12px;color:#0f9;font-weight:bold;}
+.sales{font-size:12px;color:#ffd700;font-weight:bold;}
+.ratings{font-size:14px;margin:8px 0;}
+.like-btn, .dislike-btn{background:none;border:none;font-size:18px;cursor:pointer;margin:0 5px;}
+.like-btn.liked, .dislike-btn.disliked{opacity:0.6;}
+.notice{font-size:14px;color:#ccc;}
+.disclaimer{font-size:12px;color:#ccc;margin-top:20px;padding:10px;border-top:1px solid #333;}
+.upload-status{font-size:14px;color:#0f9;margin:10px 0;}
+.sales-book{background:#222;border:1px solid #444;border-radius:8px;padding:15px;margin:20px auto;width:90%;max-width:500px;}
+.profit{font-size:16px;color:#0f9;font-weight:bold;}
+.total-profit{font-size:18px;color:#ffd700;font-weight:bold;margin:20px 0;}
+#payoutBtn{background:#00aaff;margin-top:20px;}
+.payout-note{font-size:14px;color:#aaa;margin:15px 0;padding:10px;background:#222;border-radius:8px;}
 </style>
 </head>
 <body>
@@ -48,6 +64,17 @@ input, textarea, select{padding:8px;margin:5px;width:90%;}
       <input id="title" placeholder="Book title">
       <input id="price" type="number" placeholder="Price (Pi)">
       <textarea id="description" placeholder="Description"></textarea>
+      <select id="language">
+        <option value="">Select language</option>
+        <option value="English">English</option>
+        <option value="Arabic">Arabic</option>
+        <option value="French">French</option>
+        <option value="Spanish">Spanish</option>
+        <option value="German">German</option>
+        <option value="Other">Other</option>
+      </select>
+      <p>Number of pages (optional)</p>
+      <input id="manualPages" type="number" placeholder="e.g. 250" min="1">
 
       <button id="uploadCoverBtn">Upload Cover</button>
       <p id="coverStatus"></p>
@@ -63,7 +90,11 @@ input, textarea, select{padding:8px;margin:5px;width:90%;}
     </div>
 
     <h3>All Books</h3>
+    <input type="text" id="searchInput" placeholder="Search by book title..." oninput="searchBooks()">
     <div id="books" class="books"></div>
+    <div class="disclaimer">
+      Disclaimer: The website is not responsible for any copyright issues. Each user is fully responsible for the books they upload.
+    </div>
   </div>
 
   <!-- PURCHASES -->
@@ -75,14 +106,19 @@ input, textarea, select{padding:8px;margin:5px;width:90%;}
   <!-- SALES -->
   <div id="sales" class="tab-content">
     <h3>My Sales</h3>
+    <p>Platform fee: 30% – You get 70% of each sale</p>
+    <p>Minimum payout: 5 Pi</p>
+    <div class="payout-note">
+      <strong>Payout processing time:</strong> Payments are processed manually and can take from 1-2 days up to a maximum of 30 days, depending on volume.
+    </div>
     <div id="mySalesBooks"></div>
     <div id="totalEarnings"></div>
-    <button onclick="requestPayout()">Request Payout</button>
+    <button id="payoutBtn" onclick="requestPayout()" disabled>Request Payout</button>
   </div>
 </div>
 <script>
 /* ================= CONFIG ================= */
-const API = "https://pi-backend-c8nz.onrender.com";
+const BACKEND_URL = "https://pi-backend-c8nz.onrender.com";
 Pi.init({ version: "2.0", sandbox: false });
 
 let user = null;
@@ -90,7 +126,7 @@ let userUid = null;
 
 /* ================= LOGIN ================= */
 loginBtn.onclick = async () => {
-  const auth = await Pi.authenticate(["username","payments"]);
+  const auth = await Pi.authenticate(["username","payments"], onIncompletePaymentFound);
   user = auth.user;
   userUid = auth.user.uid;
 
@@ -104,88 +140,265 @@ loginBtn.onclick = async () => {
 };
 
 /* ================= CLOUDINARY ================= */
-let coverUrl="", pdfUrl="";
+let coverUrl="", pdfUrl="", pageCount = "Unknown";
 
 const coverWidget = cloudinary.createUploadWidget({
   cloudName:"dkb0phegf", uploadPreset:"spicy1998", folder:"covers"
-},(_,r)=>{ if(r?.event==="success"){coverUrl=r.info.secure_url;coverStatus.innerText="Cover OK";check();}});
+},(_,r)=>{ if(r?.event==="success"){coverUrl=r.info.secure_url;coverStatus.innerText="Cover OK";checkSaveReady();}});
 
 const pdfWidget = cloudinary.createUploadWidget({
   cloudName:"dkb0phegf", uploadPreset:"spicy1998", folder:"pdfs", resourceType:"raw"
-},(_,r)=>{ if(r?.event==="success"){pdfUrl=r.info.secure_url;pdfStatus.innerText="PDF OK";check();}});
+},(_,r)=>{ if(r?.event==="success"){pdfUrl=r.info.secure_url;pageCount = r.info.pages || "Unknown";pdfStatus.innerText="PDF OK";checkSaveReady();}});
 
 uploadCoverBtn.onclick=()=>coverWidget.open();
 uploadPdfBtn.onclick=()=>pdfWidget.open();
 
-function check(){ saveBookBtn.disabled=!(coverUrl&&pdfUrl); }
+function checkSaveReady(){ saveBookBtn.disabled=!(coverUrl&&pdfUrl); }
+
+/* ================= HANDLE INCOMPLETE PAYMENT ================= */
+function onIncompletePaymentFound(payment) {
+  console.log("Pending payment detected and ignored:", payment);
+  return true;
+}
 
 /* ================= SAVE BOOK ================= */
 async function saveBook(){
   if(!rights.checked) return alert("Confirm rights");
 
-  const res = await fetch(API+"/save-book",{
+  const res = await fetch(BACKEND_URL+"/save-book",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body:JSON.stringify({
       title:title.value,
-      price:price.value,
+      price:Number(price.value),
       description:description.value,
+      language:language.value,
+      pageCount: pageCount,
       cover:coverUrl,
       pdf:pdfUrl,
-      owner:user.username
+      owner:user.username,
+      ownerUid:userUid
     })
   });
 
-  const data = await res.json();
-  if(data.success){
-    alert("Book added");
-    toggleAdd();
-    loadBooks();
-    loadMySales();
-  }
+  if(!res.ok) throw new Error("Upload failed");
+
+  alert("Book added");
+  toggleAdd();
+  loadBooks();
+  loadMySales();
 }
 
 /* ================= LOAD BOOKS ================= */
 async function loadBooks(){
-  const res = await fetch(API+"/books");
+  const res = await fetch(BACKEND_URL+"/books");
   const data = await res.json();
   books.innerHTML="";
-  data.books.forEach(b=>{
+  if(data.books.length === 0) books.innerHTML = "<p>No books available</p>";
+  for (const b of data.books) {
+    const ratingsRes = await fetch(BACKEND_URL + "/book-ratings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookId: b.id, userUid })
+    });
+    const ratingsData = await ratingsRes.json();
+    const likes = ratingsData.likes || 0;
+    const dislikes = ratingsData.dislikes || 0;
+    const userVote = ratingsData.userVote || null;
+
+    const desc = b.description ? b.description.substring(0, 100) + "..." : "No description";
+    const lang = b.language ? `Language: ${b.language}` : "";
+    const owner = `By: ${b.owner}`;
+    const pages = b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
+    const sales = b.salesCount > 0 ? `Sales: ${b.salesCount}` : "";
+
     books.innerHTML+=`
       <div class="book">
         <img src="${b.cover}">
         <h4>${b.title}</h4>
         <p>${b.price} Pi</p>
+        <div class="description">${desc}</div>
+        <div class="owner">${owner}</div>
+        <div class="language">${lang}</div>
+        <div class="pages">${pages}</div>
+        <div class="sales">${sales}</div>
+        <div class="ratings">
+          <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${b.id}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
+          <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${b.id}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
+        </div>
         <button onclick="buy('${b.id}',${b.price})">Buy</button>
       </div>`;
-  });
+  }
 }
 
 /* ================= BUY ================= */
 async function buy(bookId, price){
   await Pi.createPayment(
-    {amount:price,currency:"Pi",metadata:{bookId}},
+    {amount:price,memo:"Book purchase from Spicy Library",metadata:{bookId}},
     {
-      onReadyForServerApproval:(pid)=>fetch(API+"/approve-payment",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({paymentId:pid})}),
+      onReadyForServerApproval:async(pid)=>{
+        await fetch(BACKEND_URL+"/approve-payment",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({paymentId:pid})});
+      },
       onReadyForServerCompletion:async(pid,txid)=>{
-        const r=await fetch(API+"/complete-payment",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({paymentId:pid,txid,bookId,userUid})});
+        const r=await fetch(BACKEND_URL+"/complete-payment",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({paymentId:pid,txid,bookId,userUid})});
         const d=await r.json();
         window.open(d.pdfUrl,"_blank");
         loadMyPurchases(); loadMySales();
-      }
+      },
+      onCancel:()=>alert("Cancelled"),
+      onError:(e)=>alert("Error: "+e.message)
     }
   );
 }
 
-/* ================= PURCHASES ================= */
+/* ================= LOAD MY PURCHASES ================= */
 async function loadMyPurchases(){
-  const r=await fetch(API+"/get-pdf",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
+  const box = document.getElementById("myBooks");
+  box.innerHTML = "<p>Loading...</p>";
+  try {
+    const res = await fetch(BACKEND_URL + "/my-purchases", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({userUid})
+    });
+    const data = await res.json();
+    box.innerHTML = "";
+    if (data.books.length === 0) box.innerHTML = "<p>No purchases yet</p>";
+    for (const b of data.books) {
+      const ratingsRes = await fetch(BACKEND_URL + "/book-ratings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookId: b.id, userUid })
+      });
+      const ratingsData = await ratingsRes.json();
+      const likes = ratingsData.likes || 0;
+      const dislikes = ratingsData.dislikes || 0;
+      const userVote = ratingsData.userVote || null;
+
+      const desc = b.description ? b.description.substring(0, 100) + "..." : "No description";
+      const lang = b.language ? `Language: ${b.language}` : "";
+      const owner = `By: ${b.owner}`;
+      const pages = b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
+      const sales = b.salesCount > 0 ? `Sales: ${b.salesCount}` : "";
+
+      box.innerHTML += `
+        <div class="book">
+          <img src="${b.cover}">
+          <h4>${b.title}</h4>
+          <div class="description">${desc}</div>
+          <div class="owner">${owner}</div>
+          <div class="language">${lang}</div>
+          <div class="pages">${pages}</div>
+          <div class="sales">${sales}</div>
+          <div class="ratings">
+            <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${b.id}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
+            <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${b.id}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
+          </div>
+          <button onclick="downloadPdf('${b.id}')">Download PDF</button>
+        </div>`;
+    }
+  } catch (e) {
+    box.innerHTML = "<p>Error loading purchases</p>";
+  }
 }
 
-/* ================= SALES ================= */
+/* ================= DOWNLOAD PDF ================= */
+async function downloadPdf(bookId) {
+  const res = await fetch(BACKEND_URL + "/get-pdf", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({bookId, userUid})
+  });
+  const data = await res.json();
+  if (data.success) {
+    window.open(data.pdfUrl, "_blank");
+  } else {
+    alert("Access denied");
+  }
+}
+
+/* ================= LOAD MY SALES ================= */
 async function loadMySales(){
-  const box=mySalesBooks;
-  box.innerHTML="(sales calculated on backend later)";
+  const box = document.getElementById("mySalesBooks");
+  const totalBox = document.getElementById("totalEarnings");
+  box.innerHTML = "<p>Loading...</p>";
+  totalBox.innerHTML = "";
+  if (!user) return box.innerHTML = "<p>Login required</p>";
+  try {
+    const res = await fetch(BACKEND_URL + "/my-sales", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({username: user.username})
+    });
+    const data = await res.json();
+    box.innerHTML = "";
+    if (data.books.length === 0) {
+      box.innerHTML = "<p>No books uploaded</p>";
+      totalBox.innerHTML = "Total earnings: 0 Pi";
+      payoutBtn.disabled = true;
+      return;
+    }
+    let total = 0;
+    for (const b of data.books) {
+      const profit = (b.salesCount || 0) * b.price * 0.7;
+      total += profit;
+      box.innerHTML += `
+        <div class="sales-book">
+          <img src="${b.cover}" style="width:150px;border-radius:6px;">
+          <h4>${b.title}</h4>
+          <p>Price: ${b.price} Pi</p>
+          <p>Sales: ${b.salesCount || 0}</p>
+          <div class="profit">Earnings: ${profit.toFixed(2)} Pi (70%)</div>
+        </div>`;
+    }
+    totalBox.innerHTML = "Total earnings: " + total.toFixed(2) + " Pi";
+    payoutBtn.disabled = total < 5;
+  } catch (e) {
+    box.innerHTML = "<p>Error loading sales</p>";
+  }
+}
+
+/* ================= REQUEST PAYOUT ================= */
+async function requestPayout() {
+  const total = parseFloat(totalEarnings.innerText.replace("Total earnings: ", "").replace(" Pi", "")) || 0;
+  if (total < 5) return alert("Minimum 5 Pi");
+
+  const wallet = prompt(`Earnings: ${total.toFixed(2)} Pi\nEnter Pi Wallet address:`);
+  if (!wallet) return;
+
+  payoutBtn.disabled = true;
+  try {
+    await fetch(BACKEND_URL + "/reset-sales", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({username: user.username})
+    });
+    alert("Payout requested! Reset to zero.");
+    loadMySales();
+  } catch (e) {
+    alert("Payout failed");
+  } finally {
+    payoutBtn.disabled = false;
+  }
+}
+
+/* ================= RATE BOOK ================= */
+async function rateBook(bookId, voteType, button) {
+  try {
+    await fetch(BACKEND_URL + "/rate-book", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({bookId, voteType, userUid})
+    });
+    button.disabled = true;
+    button.classList.add(voteType === 'like' ? 'liked' : 'disliked');
+    const sibling = button.parentNode.querySelector(voteType === 'like' ? '.dislike-btn' : '.like-btn');
+    sibling.disabled = true;
+    loadBooks();
+    loadMyPurchases();
+  } catch (e) {
+    alert("Rating failed");
+  }
 }
 
 /* ================= UI ================= */
@@ -194,8 +407,17 @@ function logout(){location.reload();}
 function openTab(t){
   document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
   document.getElementById(t).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active'));
+  document.querySelector(`button[onclick="openTab('${t}')"]`).classList.add('active');
+}
+function searchBooks() {
+  const input = searchInput.value.toLowerCase();
+  const books = document.querySelectorAll("#books .book");
+  books.forEach(book => {
+    const title = book.querySelector("h4").textContent.toLowerCase();
+    book.style.display = title.includes(input) ? "block" : "none";
+  });
 }
 </script>
-
 </body>
 </html>
