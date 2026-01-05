@@ -165,41 +165,34 @@ function checkSaveReady() {
   document.getElementById("saveBookBtn").disabled = !(coverUrl && pdfUrl && user);
 }
 
-// ================= HANDLE PENDING PAYMENT =================
-async function onIncompletePaymentFound(incompletePayment) {
-  console.log("Incomplete payment detected:", incompletePayment);
-
+// ==================== PENDING PAYMENTS ====================
+async function resolvePendingPayments() {
   try {
-    const response = await fetch(`${BACKEND_URL}/resolve-pending`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentId: incompletePayment.identifier, userUid: userUid })
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      console.error("Failed to resolve pending payment:", err);
-      alert("Failed to automatically complete the pending payment. Please complete manually.");
-      return;
+    const res = await fetch(`${BACKEND_URL}/pending-payments?userUid=${userUid}`);
+    const data = await res.json();
+    if (data.success && data.pendingPayments.length > 0) {
+      for (const p of data.pendingPayments) {
+        await fetch(`${BACKEND_URL}/resolve-pending`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId: p.id })
+        });
+      }
+      alert("Pending payments resolved!");
     }
-
-    alert("Pending payment resolved successfully! You can now make new purchases.");
-  } catch (err) {
-    console.error("Error resolving pending payment:", err);
-    alert("Error completing pending payment. Try again later.");
-  }
+  } catch (e) { console.error("Error resolving pending payments:", e); }
 }
-
-// ================= LOGIN =================
+// ==================== LOGIN ====================
 document.getElementById("loginBtn").onclick = async () => {
   try {
-    const authResult = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
+    const authResult = await Pi.authenticate(["username", "payments"]);
     user = authResult.user;
     userUid = user.uid;
-
     document.getElementById("welcome").innerText = `Welcome, ${user.username}!`;
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
+
+    await resolvePendingPayments(); // ✅ حل المعاملات المعلقة بعد login
 
     loadBooks();
     loadMyPurchases();
@@ -209,9 +202,7 @@ document.getElementById("loginBtn").onclick = async () => {
   }
 };
 
-function logout() {
-  location.reload();
-}
+function logout() { location.reload(); }
 
 // ================= SAVE BOOK =================
 async function saveBook() {
@@ -281,7 +272,7 @@ async function rateBook(bookId, voteType, button) {
   }
 }
 
-// ================= BUY =================
+// ==================== BUY ====================
 async function buy(bookId, price) {
   if (!userUid) return alert("Login required");
   if (!confirm(`Buy this book for ${price} Pi?`)) return;
@@ -296,7 +287,7 @@ async function buy(bookId, price) {
         await fetch(`${BACKEND_URL}/approve-payment`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId })
+          body: JSON.stringify({ paymentId, bookId, userUid }) // ✅ bookId + userUid
         });
       },
       onReadyForServerCompletion: async (paymentId, txid) => {
@@ -305,11 +296,7 @@ async function buy(bookId, price) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ paymentId, txid, bookId, userUid })
         });
-
-        if (!res.ok) {
-          alert("Payment failed");
-          return;
-        }
+        if (!res.ok) return alert("Payment failed");
 
         const data = await res.json();
         window.open(data.pdfUrl, "_blank");
@@ -321,9 +308,7 @@ async function buy(bookId, price) {
       onCancel: () => alert("Payment cancelled"),
       onError: (err) => alert("Payment error: " + err.message)
     });
-  } catch (e) {
-    alert("Use Pi Browser for payment.");
-  }
+  } catch { alert("Use Pi Browser for payment."); }
 }
 
 // ================= DOWNLOAD PDF =================
