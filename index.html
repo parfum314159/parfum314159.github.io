@@ -166,45 +166,42 @@ function checkSaveReady() {
 }
 
 // ==================== PENDING PAYMENTS ====================
-async function onIncompletePaymentFound(incompletePayment) {
-  alert("A previous pending payment was detected... Attempting to complete it automatically");
-  console.log("Incomplete payment found:", incompletePayment);
-
+async function resolvePendingPayments() {
   try {
-    const response = await fetch("https://pi-backend-c8nz.onrender.com/complete-payment", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        paymentId: incompletePayment.identifier,
-        txid: incompletePayment.transaction?.txid
-      })
-    });
+    const res = await fetch(`${BACKEND_URL}/pending-payments?userUid=${userUid}`);
+    const data = await res.json();
 
-    if (!response.ok) {
-      const err = await response.json();
-      console.error("Failed to complete pending payment:", err);
-      alert("Failed to automatically complete the pending payment.\nPlease go to developers.minepi.com to complete or cancel it manually.");
-      return;
+    if (data.success && data.pendingPayments.length > 0) {
+      for (const p of data.pendingPayments) {
+        await fetch(`${BACKEND_URL}/complete-payment`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId: p.id })
+        });
+      }
+      alert("Pending payments resolved!");
     }
-
-    alert("Pending payment completed successfully!\nYou can now make new purchases.");
-  } catch (err) {
-    console.error("Error completing pending payment:", err);
-    alert("Error completing pending payment.\nPlease try again or complete it manually from the developer dashboard.");
+  } catch (e) {
+    console.error("Error resolving pending payments:", e);
   }
 }
+
 // ==================== LOGIN ====================
 loginBtn.onclick = async () => {
   try {
-    const auth = await Pi.authenticate(["username","payments"], onIncompletePaymentFound);
-    user = auth.user;
-    userUid = auth.user.uid;
-    login.classList.add("hidden");
-    app.classList.remove("hidden");
-    welcome.innerText = "Welcome " + user.username;
-    loadBooks();
-    loadMyPurchases();
-    loadMySales();
+    const auth = await Pi.authenticate(["username","payments"]);
+user = auth.user;
+userUid = auth.user.uid;
+login.classList.add("hidden");
+app.classList.remove("hidden");
+welcome.innerText = "Welcome " + user.username;
+
+// ✅ بعد تسجيل الدخول، حل المعاملات المعلقة
+await resolvePendingPayments();
+
+loadBooks();
+loadMyPurchases();
+loadMySales();
   } catch (e) {
     alert("Please open this app inside the Pi Browser only!");
   }
