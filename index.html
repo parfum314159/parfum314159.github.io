@@ -372,7 +372,10 @@ async function loadBooks() {
       const ratingsJson = await ratingsRes.json();
       const { likes = 0, dislikes = 0, userVote = null } = ratingsJson.success ? ratingsJson : {};
 
-      const desc = b.description ? b.description.substring(0, 100) + "..." : "No description";
+      const fullDesc = b.description || "No description";
+      const shortDesc = fullDesc.length > 100 ? fullDesc.substring(0, 100) + "..." : fullDesc;
+      const showReadMore = fullDesc.length > 100;
+
       const lang = b.language ? `Language: ${b.language}` : "";
       const owner = `By: ${b.owner}`;
       const pages = b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
@@ -383,7 +386,8 @@ async function loadBooks() {
           <img src="${b.cover}" alt="Cover">
           <h4>${b.title}</h4>
           <p><strong>${b.price} Pi</strong></p>
-          <div class="description">${desc}</div>
+          <div class="description" id="desc-${b.id}" data-full="${fullDesc}">${shortDesc}</div>
+          ${showReadMore ? `<button class="read-more-btn" onclick="toggleReadMore('${b.id}')">Read more</button>` : ""}
           <div class="owner">${owner}</div>
           <div class="language">${lang}</div>
           <div class="pages">${pages}</div>
@@ -400,6 +404,20 @@ async function loadBooks() {
     setTimeout(loadBooks, 5000);
   }
 }
+
+// ================= Read More Toggle =================
+function toggleReadMore(bookId) {
+  const descEl = document.getElementById(`desc-${bookId}`);
+  if (!descEl) return;
+
+  const fullText = descEl.getAttribute("data-full");
+  if (descEl.innerText.endsWith("...")) {
+    descEl.innerText = fullText;
+  } else {
+    descEl.innerText = fullText.substring(0, 100) + "...";
+  }
+}
+</script>
 
 // ================= LOAD MY PURCHASES =================
 async function loadMyPurchases() {
