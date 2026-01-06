@@ -15,7 +15,26 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
 .book{background:#1c1c1c;border:1px solid #333;border-radius:8px;padding:15px;width:220px;font-size:14px;}
 .book img{width:200px;border-radius:6px;}
 .book h4{margin:10px 0 5px;}
-.description{font-size:12px;color:#ccc;height:60px;overflow:hidden;margin:8px 0;}
+.description {
+  font-size: 12px;
+  color: #ccc;
+  max-height: 60px;       /* ارتفاع مبدئي */
+  overflow: hidden;       /* يخفي النص الزائد */
+  margin: 8px 0;
+  position: relative;     /* لتتمكن من وضع زر "اقرأ المزيد" */
+  transition: max-height 0.3s ease;
+}
+.description.expanded {
+  max-height: 500px;      /* ارتفاع كافٍ لعرض النص كامل عند التوسيع */
+}
+.read-more {
+  display: block;
+  color: #ff4500;
+  cursor: pointer;
+  font-size: 12px;
+  margin-top: 4px;
+  text-align: right;
+}
 .owner{font-size:12px;color:#ff4500;}
 .language{font-size:12px;color:#aaa;}
 .pages{font-size:12px;color:#0f9;font-weight:bold;}
@@ -383,7 +402,8 @@ async function loadBooks() {
           <img src="${b.cover}" alt="Cover">
           <h4>${b.title}</h4>
           <p><strong>${b.price} Pi</strong></p>
-          <div class="description">${desc}</div>
+         <div class="description">${desc}</div>
+<span class="read-more">Read more</span>
           <div class="owner">${owner}</div>
           <div class="language">${lang}</div>
           <div class="pages">${pages}</div>
@@ -642,6 +662,33 @@ function openModal(title, content) {
 }
 function closeModal() {
   document.getElementById('modal').style.display = 'none';
+}
+// تفعيل زر "اقرأ المزيد"
+function setupReadMore() {
+  document.querySelectorAll('.read-more').forEach(btn => {
+    btn.onclick = () => {
+      const desc = btn.previousElementSibling; // العنصر السابق (الوصف)
+      desc.classList.toggle('expanded');
+      btn.innerText = desc.classList.contains('expanded') ? 'Show less' : 'Read more';
+    };
+  });
+}
+
+// بعد تحميل الكتب أو المشتريات، استدعي الدالة
+function loadBooks() {
+  const box = document.getElementById("books");
+  box.innerHTML = "<p>Loading books...</p>";
+  // ... باقي الكود ...
+  // بعد إنشاء كل البطاقات:
+  setupReadMore();
+}
+
+function loadMyPurchases() {
+  const box = document.getElementById("myBooks");
+  box.innerHTML = "<p>Loading purchases...</p>";
+  // ... باقي الكود ...
+  // بعد إنشاء كل البطاقات:
+  setupReadMore();
 }
 
 </script>
