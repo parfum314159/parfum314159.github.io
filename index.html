@@ -15,26 +15,7 @@ input, textarea, select{padding:8px;margin:5px;width:90%;max-width:400px;}
 .book{background:#1c1c1c;border:1px solid #333;border-radius:8px;padding:15px;width:220px;font-size:14px;}
 .book img{width:200px;border-radius:6px;}
 .book h4{margin:10px 0 5px;}
-.description {
-  font-size: 12px;
-  color: #ccc;
-  max-height: 60px;       /* ارتفاع مبدئي */
-  overflow: hidden;       /* يخفي النص الزائد */
-  margin: 8px 0;
-  position: relative;     /* لتتمكن من وضع زر "اقرأ المزيد" */
-  transition: max-height 0.3s ease;
-}
-.description.expanded {
-  max-height: 500px;      /* ارتفاع كافٍ لعرض النص كامل عند التوسيع */
-}
-.read-more {
-  display: block;
-  color: #ff4500;
-  cursor: pointer;
-  font-size: 12px;
-  margin-top: 4px;
-  text-align: right;
-}
+.description{font-size:12px;color:#ccc;height:60px;overflow:hidden;margin:8px 0;}
 .owner{font-size:12px;color:#ff4500;}
 .language{font-size:12px;color:#aaa;}
 .pages{font-size:12px;color:#0f9;font-weight:bold;}
@@ -391,10 +372,7 @@ async function loadBooks() {
       const ratingsJson = await ratingsRes.json();
       const { likes = 0, dislikes = 0, userVote = null } = ratingsJson.success ? ratingsJson : {};
 
-      const fullDesc = b.description || "No description";
-      const shortDesc = fullDesc.length > 100 ? fullDesc.substring(0, 100) + "..." : fullDesc;
-      const showReadMore = fullDesc.length > 100;
-
+      const desc = b.description ? b.description.substring(0, 100) + "..." : "No description";
       const lang = b.language ? `Language: ${b.language}` : "";
       const owner = `By: ${b.owner}`;
       const pages = b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
@@ -405,8 +383,7 @@ async function loadBooks() {
           <img src="${b.cover}" alt="Cover">
           <h4>${b.title}</h4>
           <p><strong>${b.price} Pi</strong></p>
-          <div class="description" id="desc-${b.id}" data-full="${fullDesc}">${shortDesc}</div>
-          ${showReadMore ? `<button class="read-more-btn" onclick="toggleReadMore('${b.id}')">Read more</button>` : ""}
+          <div class="description">${desc}</div>
           <div class="owner">${owner}</div>
           <div class="language">${lang}</div>
           <div class="pages">${pages}</div>
@@ -423,20 +400,6 @@ async function loadBooks() {
     setTimeout(loadBooks, 5000);
   }
 }
-
-// ================= Read More Toggle =================
-function toggleReadMore(bookId) {
-  const descEl = document.getElementById(`desc-${bookId}`);
-  if (!descEl) return;
-
-  const fullText = descEl.getAttribute("data-full");
-  if (descEl.innerText.endsWith("...")) {
-    descEl.innerText = fullText;
-  } else {
-    descEl.innerText = fullText.substring(0, 100) + "...";
-  }
-}
-
 
 // ================= LOAD MY PURCHASES =================
 async function loadMyPurchases() {
@@ -623,104 +586,6 @@ function toggleAdd() {
   if (!user) return alert("Login required");
   document.getElementById("addBook").classList.toggle("hidden");
 }
-  // ================= LEGAL TEXT =================
-const PrivacyPolicyText = `
-Privacy Policy - Spicy Library
-
-We respect your privacy and protect your data. We collect:
-- Pi Network UID and username
-- Purchase history
-- Sales data for authors
-- Pi wallet addresses (for withdrawals)
-
-We DO NOT collect passwords or private keys.
-
-Your data is used for:
-- Login and app functionality
-- Payment processing
-- Delivering books
-- Author earnings and withdrawals
-
-We do not share your data with third parties unless required by law.
-
-Contact: spicy3423@gmail.com
-`;
-
-const TermsOfServiceText = `
-Terms of Service - Spicy Library
-
-By using Spicy Library, you agree to:
-- Use Pi Network for login
-- Be responsible for your account activity
-- Ensure all content you upload respects copyright
-
-Purchases:
-- Made in Pi currency only
-- Are final and non-refundable
-
-Authors:
-- Receive 70% of each sale
-- Minimum withdrawal: 5 Pi
-- Processing may take 1–30 days
-
-Prohibited:
-- Uploading stolen content
-- Manipulating payments
-- Hacking attempts
-
-Contact: spicy3423@gmail.com
-`;
-
-// ================= MODAL =================
-function openModal(title, content) {
-  document.getElementById('modal-title').innerText = title;
-  document.getElementById('modal-content').innerText = content;
-  document.getElementById('modal').style.display = 'block';
-}
-function closeModal() {
-  document.getElementById('modal').style.display = 'none';
-}
-// تفعيل زر "اقرأ المزيد"
-function setupReadMore() {
-  document.querySelectorAll('.read-more').forEach(btn => {
-    btn.onclick = () => {
-      const desc = btn.previousElementSibling; // العنصر السابق (الوصف)
-      desc.classList.toggle('expanded');
-      btn.innerText = desc.classList.contains('expanded') ? 'Show less' : 'Read more';
-    };
-  });
-}
-
-// بعد تحميل الكتب أو المشتريات، استدعي الدالة
-function loadBooks() {
-  const box = document.getElementById("books");
-  box.innerHTML = "<p>Loading books...</p>";
-  // ... باقي الكود ...
-  // بعد إنشاء كل البطاقات:
-  setupReadMore();
-}
-
-function loadMyPurchases() {
-  const box = document.getElementById("myBooks");
-  box.innerHTML = "<p>Loading purchases...</p>";
-  // ... باقي الكود ...
-  // بعد إنشاء كل البطاقات:
-  setupReadMore();
-}
-
 </script>
-  <!-- Modal for Privacy Policy / Terms -->
-<div id="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999;">
-  <div style="background:#111;color:#fff;margin:50px auto;padding:20px;border-radius:8px;width:90%;max-width:500px;height:80%;overflow-y:auto;">
-    <h2 id="modal-title"></h2>
-    <pre id="modal-content" style="white-space:pre-wrap;"></pre>
-    <button onclick="closeModal()" style="padding:10px 20px;margin-top:10px;background:#ff4500;color:#fff;border:none;border-radius:6px;cursor:pointer;">Close</button>
-  </div>
-</div>
 </body>
-  <div style="margin:20px;">
-  <button onclick="openModal('Privacy Policy', PrivacyPolicyText)">Privacy Policy</button>
-  <button onclick="openModal('Terms of Service', TermsOfServiceText)">Terms of Service</button>
-</div>
-
 </html>
