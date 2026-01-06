@@ -586,6 +586,78 @@ function toggleAdd() {
   if (!user) return alert("Login required");
   document.getElementById("addBook").classList.toggle("hidden");
 }
+  // ================= LEGAL TEXT =================
+const PrivacyPolicyText = `
+Privacy Policy - Spicy Library
+
+We respect your privacy and protect your data. We collect:
+- Pi Network UID and username
+- Purchase history
+- Sales data for authors
+- Pi wallet addresses (for withdrawals)
+
+We DO NOT collect passwords or private keys.
+
+Your data is used for:
+- Login and app functionality
+- Payment processing
+- Delivering books
+- Author earnings and withdrawals
+
+We do not share your data with third parties unless required by law.
+
+Contact: spicy3423@gmail.com
+`;
+
+const TermsOfServiceText = `
+Terms of Service - Spicy Library
+
+By using Spicy Library, you agree to:
+- Use Pi Network for login
+- Be responsible for your account activity
+- Ensure all content you upload respects copyright
+
+Purchases:
+- Made in Pi currency only
+- Are final and non-refundable
+
+Authors:
+- Receive 70% of each sale
+- Minimum withdrawal: 5 Pi
+- Processing may take 1–30 days
+
+Prohibited:
+- Uploading stolen content
+- Manipulating payments
+- Hacking attempts
+
+Contact: spicy3423@gmail.com
+`;
+
+// ================= MODAL =================
+function openModal(title, content) {
+  document.getElementById('modal-title').innerText = title;
+  document.getElementById('modal-content').innerText = content;
+  document.getElementById('modal').style.display = 'block';
+}
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+
 </script>
+  <!-- Modal for Privacy Policy / Terms -->
+<div id="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999;">
+  <div style="background:#111;color:#fff;margin:50px auto;padding:20px;border-radius:8px;width:90%;max-width:500px;height:80%;overflow-y:auto;">
+    <h2 id="modal-title"></h2>
+    <pre id="modal-content" style="white-space:pre-wrap;"></pre>
+    <button onclick="closeModal()" style="padding:10px 20px;margin-top:10px;background:#ff4500;color:#fff;border:none;border-radius:6px;cursor:pointer;">Close</button>
+  </div>
+</div>
+
 </body>
+  <div style="margin:20px;">
+  <button onclick="openModal('Privacy Policy', PrivacyPolicyText)">Privacy Policy</button>
+  <button onclick="openModal('Terms of Service', TermsOfServiceText)">Terms of Service</button>
+</div>
+
 </html>
