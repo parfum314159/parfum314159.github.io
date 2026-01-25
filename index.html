@@ -537,14 +537,20 @@ async function requestPayout() {
   }
 
   try {
-    await Pi.createPayment({
-      amount: amount,
-      memo: "Spicy Library - Earnings Withdrawal",
-      metadata: {
-        type: "payout",
-        username: user.username
-      }
-    }, {
+    await async function requestPayout() {
+  const res = await fetch(`${BACKEND_URL}/request-payout`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    }
+  });
+
+  const data = await res.json();
+  if (!res.ok) return alert(data.error || "Payout failed");
+
+  alert("✅ تم إرسال طلب السحب بنجاح");
+}
+
       // 🔹 موافقة السيرفر
       onReadyForServerApproval: async (paymentId) => {
         await fetch(`${BACKEND_URL}/approve-payment`, {
