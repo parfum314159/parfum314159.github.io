@@ -522,71 +522,28 @@ async function loadMySales() {
 
 // ================= REQUEST PAYOUT =================
 async function requestPayout() {
-  if (!user) {
-    alert("Login required");
-    return;
-  }
+  if (!user) return alert("Login required");
 
   // 🔹 استخراج الأرباح من النص
   const text = document.getElementById("totalEarnings").innerText;
   const amount = parseFloat(text.replace(/[^\d.]/g, ""));
-
   if (isNaN(amount) || amount < 5) {
     alert("Minimum payout is 5 Pi");
     return;
   }
 
   try {
-    await async function requestPayout() {
-  const res = await fetch(`${BACKEND_URL}/request-payout`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    }
-  });
-
-  const data = await res.json();
-  if (!res.ok) return alert(data.error || "Payout failed");
-
-  alert("✅ تم إرسال طلب السحب بنجاح");
-}
-
-      // 🔹 موافقة السيرفر
-      onReadyForServerApproval: async (paymentId) => {
-        await fetch(`${BACKEND_URL}/approve-payment`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ paymentId })
-        });
-      },
-
-      // 🔹 إكمال الدفع
-      onReadyForServerCompletion: async (paymentId, txid) => {
-        await fetch(`${BACKEND_URL}/complete-payment`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ paymentId, txid })
-        });
-
-        alert("✅ Earnings withdrawn successfully!");
-        loadMySales();
-      },
-
-      onCancel: () => {
-        alert("❌ Withdrawal cancelled");
-      },
-
-      onError: (e) => {
-        console.error(e);
-        alert("Payment error");
-      }
+    const res = await fetch(`${BACKEND_URL}/request-payout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
     });
+    const data = await res.json();
+    if (!res.ok) return alert(data.error || "Payout failed");
 
+    alert("✅ تم إرسال طلب السحب بنجاح");
+    loadMySales();
   } catch (e) {
+    console.error(e);
     alert("Open the app in Pi Browser");
   }
 }
