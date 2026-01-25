@@ -166,8 +166,13 @@ function checkSaveReady() {
 }
 
 // ================= تجاهل الدفع المعلق =================
-async function onIncompletePaymentFound(incompletePayment) {
-  const pendingRes = await fetch(`${BACKEND_URL}/pending-payments?userUid=${userUid}`);
+function onIncompletePaymentFound(incompletePayment) {
+  fetch(`${BACKEND_URL}/pending-payments?userUid=${userUid}`)
+    .then(res => res.json())
+    .then(data => console.log(data))
+    .catch(err => console.error(err));
+}
+
   const pendingData = await pendingRes.json();
 
   if (pendingData.pendingPayments.length > 0) {
