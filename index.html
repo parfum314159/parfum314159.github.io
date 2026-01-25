@@ -194,19 +194,20 @@ async function onIncompletePaymentFound(incompletePayment) {
   }
 }
 // ================= LOGIN =================
-const pendingRes = await fetch(`${BACKEND_URL}/pending-payments?userUid=${userUid}`);
-const pendingData = await pendingRes.json();
-
-if (pendingData.pendingPayments.length > 0) {
-  pendingData.pendingPayments.forEach(p => onIncompletePayment({ identifier: p.id }));
-}
-
-  
-  document.getElementById("loginBtn").onclick = async () => {
+document.getElementById("loginBtn").onclick = async () => {
   try {
     const authResult = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
     user = authResult.user;
     userUid = user.uid;
+
+    // ======= معالجة الدفعات المعلقة =======
+    const pendingRes = await fetch(`${BACKEND_URL}/pending-payments?userUid=${userUid}`);
+    const pendingData = await pendingRes.json();
+
+    if (pendingData.pendingPayments.length > 0) {
+      pendingData.pendingPayments.forEach(p => onIncompletePayment({ identifier: p.id }));
+    }
+    // =====================================
 
     document.getElementById("welcome").innerText = `Welcome, ${user.username}!`;
     document.getElementById("login").classList.add("hidden");
@@ -219,6 +220,7 @@ if (pendingData.pendingPayments.length > 0) {
     alert("Login failed. Open in Pi Browser.");
   }
 };
+
 
 function logout() {
   location.reload();
