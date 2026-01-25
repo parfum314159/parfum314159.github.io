@@ -505,57 +505,60 @@ async function loadMySales() {
 
 // ================= REQUEST PAYOUT =================
 async function requestPayout() {
-  const totalEarnings = parseFloat(
-    document.getElementById("totalEarnings")
-      .innerText.replace("Total earnings: ", "")
-      .replace(" Pi", "")
-  );
+  const totalEarnings = parseFloat(document.getElementById("totalEarnings").innerText.replace("Total earnings: ", "").replace(" Pi", "")) || 0;
 
   if (totalEarnings < 5) {
-    alert("Minimum payout is 5 Pi");
+    alert("Minimum payout is 5 Pi.\nWait for more sales before requesting withdrawal.");
     return;
   }
 
-  const walletAddress = prompt(
-    `You will receive ${totalEarnings.toFixed(2)} Pi\n\nEnter your Pi Wallet address:`
-  );
+  const walletAddress = prompt(`Your current earnings: ${totalEarnings.toFixed(2)} Pi\n\nEnter your Pi Wallet address to request payout:`);
 
-  if (!walletAddress) return;
+  if (!walletAddress || walletAddress.trim() === "") {
+    alert("Wallet address is required.");
+    return;
+  }
+
+  const payoutBtn = document.getElementById("payoutBtn");
+  payoutBtn.disabled = true;
 
   try {
-    const res = await fetch(`${BACKEND_URL}/create-payout-payment`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: user.username,
-        walletAddress,
-        amount: totalEarnings.toFixed(2)
-      })
-    });
+    const res = await fetch("https://pi-backend-c8nz.onrender.com/request-payout", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    username: user.username,
+    walletAddress: walletAddress.trim(),
+    earnings: totalEarnings.toFixed(2)
+  })
+});
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+const data = await res.json();
 
-    // 🔐 المستخدم يوافق فقط – لا خصم منه
-    Pi.createPayment(
-      {
-        amount: totalEarnings,
-        memo: "Spicy Library Earnings Withdrawal",
-        metadata: { payout: true }
-      },
-      {
-        onReadyForServerApproval: () => {},
-        onReadyForServerCompletion: () => {
-          alert("✅ Payout successful! Pi sent to your wallet.");
-          location.reload();
-        },
-        onCancel: () => alert("Payout cancelled"),
-        onError: (err) => alert(err.message)
-      }
-    );
+if (!res.ok || !data.success) {
+  throw new Error(data.error || "Request failed");
+}
 
+alert(
+  "Payout request sent successfully!\n\n" +
+  "• Status: Pending\n" +
+  "• Minimum processing time: 1–30 days\n\n" +
+  "You will be contacted if needed."
+);
+
+loadMySales();
+
+
+    alert("Payout request sent successfully!\nYour earnings have been reset to zero.\nPayment will be processed within 1-30 days (usually 1-2 days).");
+
+    loadMySales();
   } catch (e) {
-    alert("Payout failed: " + e.message);
+    console.error("Payout request error:", e);
+    alert("Failed to send request. Check your connection and try again.\nYour earnings are safe and not reset.");
+  } finally {
+    payoutBtn.disabled = false;
   }
 }
 
