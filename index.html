@@ -194,7 +194,15 @@ async function onIncompletePaymentFound(incompletePayment) {
   }
 }
 // ================= LOGIN =================
-document.getElementById("loginBtn").onclick = async () => {
+const pendingRes = await fetch(`${BACKEND_URL}/pending-payments?userUid=${userUid}`);
+const pendingData = await pendingRes.json();
+
+if (pendingData.pendingPayments.length > 0) {
+  pendingData.pendingPayments.forEach(p => onIncompletePayment({ identifier: p.id }));
+}
+
+  
+  document.getElementById("loginBtn").onclick = async () => {
   try {
     const authResult = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
     user = authResult.user;
