@@ -166,35 +166,23 @@ function checkSaveReady() {
 }
 
 // ================= تجاهل الدفع المعلق =================
-function onIncompletePaymentFound(incompletePayment) {
-  fetch(`${BACKEND_URL}/pending-payments?userUid=${userUid}`)
-    .then(res => res.json())
-    .then(data => console.log(data))
-    .catch(err => console.error(err));
-}
+async function onIncompletePaymentFound(incompletePayment) {
+  alert("A previous pending payment was detected... Attempting to complete it automatically");
+  console.log("Incomplete payment found:", incompletePayment);
 
-  const pendingData = await pendingRes.json();
-
-  if (pendingData.pendingPayments.length > 0) {
-    pendingData.pendingPayments.forEach(async p => {
-      try {
-        await fetch(`${BACKEND_URL}/complete-payment`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            paymentId: p.id,
-            bookId: p.bookId,
-            userUid
-          })
-        });
-        console.log("Pending payment completed:", p.id);
-      } catch (err) {
-        console.error("Failed to complete pending payment:", err);
-      }
+  try {
+    const response = await fetch("https://pi-backend-c8nz.onrender.com/complete-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paymentId: incompletePayment.identifier,
+        txid: incompletePayment.transaction?.txid
+      })
     });
-  }
-}
 
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("Failed to complete pending payment:", err);
       alert("Failed to automatically complete the pending payment.\nPlease go to developers.minepi.com to complete or cancel it manually.");
       return;
     }
@@ -212,15 +200,6 @@ document.getElementById("loginBtn").onclick = async () => {
     user = authResult.user;
     userUid = user.uid;
 
-    // ======= معالجة الدفعات المعلقة =======
-    const pendingRes = await fetch(`${BACKEND_URL}/pending-payments?userUid=${userUid}`);
-    const pendingData = await pendingRes.json();
-
-    if (pendingData.pendingPayments.length > 0) {
-      pendingData.pendingPayments.forEach(p => onIncompletePayment({ identifier: p.id }));
-    }
-    // =====================================
-
     document.getElementById("welcome").innerText = `Welcome, ${user.username}!`;
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
@@ -232,7 +211,6 @@ document.getElementById("loginBtn").onclick = async () => {
     alert("Login failed. Open in Pi Browser.");
   }
 };
-
 
 function logout() {
   location.reload();
@@ -544,33 +522,62 @@ async function loadMySales() {
 
 // ================= REQUEST PAYOUT =================
 async function requestPayout() {
-  if (!user) return alert("Login required");
+  const totalEarnings = parseFloat(document.getElementById("totalEarnings").innerText.replace("Total earnings: ", "").replace(" Pi", "")) || 0;
 
-  const text = document.getElementById("totalEarnings").innerText;
-  const amount = parseFloat(text.replace(/[^\d.]/g, ""));
-  if (isNaN(amount) || amount < 5) {
-    alert("Minimum payout is 5 Pi");
+  if (totalEarnings < 5) {
+    alert("Minimum payout is 5 Pi.\nWait for more sales before requesting withdrawal.");
     return;
   }
 
-  try {
-    const res = await fetch(`${BACKEND_URL}/request-payout`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: user.username, userUid }) // <-- أرسل البيانات هنا
-    });
+  const walletAddress = prompt(`Your current earnings: ${totalEarnings.toFixed(2)} Pi\n\nEnter your Pi Wallet address to request payout:`);
 
-    const data = await res.json();
-    if (!res.ok) return alert(data.error || "Payout failed");
-
-    alert("✅ تم إرسال طلب السحب بنجاح");
-    loadMySales();
-  } catch (e) {
-    console.error(e);
-    alert("Open the app in Pi Browser");
+  if (!walletAddress || walletAddress.trim() === "") {
+    alert("Wallet address is required.");
+    return;
   }
+
+  const payoutBtn = document.getElementById("payoutBtn");
+  payoutBtn.disabled = true;
+
+  try {
+    const res = await fetch("https://pi-backend-c8nz.onrender.com/request-payout", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    username: user.username,
+    walletAddress: walletAddress.trim(),
+    earnings: totalEarnings.toFixed(2)
+  })
+});
+
+const data = await res.json();
+
+if (!res.ok || !data.success) {
+  throw new Error(data.error || "Request failed");
 }
 
+alert(
+  "Payout request sent successfully!\n\n" +
+  "• Status: Pending\n" +
+  "• Minimum processing time: 1–30 days\n\n" +
+  "You will be contacted if needed."
+);
+
+loadMySales();
+
+
+    alert("Payout request sent successfully!\nYour earnings have been reset to zero.\nPayment will be processed within 1-30 days (usually 1-2 days).");
+
+    loadMySales();
+  } catch (e) {
+    console.error("Payout request error:", e);
+    alert("Failed to send request. Check your connection and try again.\nYour earnings are safe and not reset.");
+  } finally {
+    payoutBtn.disabled = false;
+  }
+}
 
 // ================= TABS & SEARCH & TOGGLE =================
 function openTab(tabName) {
