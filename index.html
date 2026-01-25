@@ -534,7 +534,6 @@ async function loadMySales() {
 async function requestPayout() {
   if (!user) return alert("Login required");
 
-  // 🔹 استخراج الأرباح من النص
   const text = document.getElementById("totalEarnings").innerText;
   const amount = parseFloat(text.replace(/[^\d.]/g, ""));
   if (isNaN(amount) || amount < 5) {
@@ -545,8 +544,10 @@ async function requestPayout() {
   try {
     const res = await fetch(`${BACKEND_URL}/request-payout`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: user.username, userUid }) // <-- أرسل البيانات هنا
     });
+
     const data = await res.json();
     if (!res.ok) return alert(data.error || "Payout failed");
 
@@ -557,6 +558,7 @@ async function requestPayout() {
     alert("Open the app in Pi Browser");
   }
 }
+
 
 // ================= TABS & SEARCH & TOGGLE =================
 function openTab(tabName) {
