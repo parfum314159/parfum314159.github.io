@@ -167,22 +167,29 @@ function checkSaveReady() {
 
 // ================= تجاهل الدفع المعلق =================
 async function onIncompletePaymentFound(incompletePayment) {
-  alert("A previous pending payment was detected... Attempting to complete it automatically");
-  console.log("Incomplete payment found:", incompletePayment);
+  const pendingRes = await fetch(`${BACKEND_URL}/pending-payments?userUid=${userUid}`);
+  const pendingData = await pendingRes.json();
 
-  try {
-    const response = await fetch("https://pi-backend-c8nz.onrender.com/complete-payment", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        paymentId: incompletePayment.identifier,
-        txid: incompletePayment.transaction?.txid
-      })
+  if (pendingData.pendingPayments.length > 0) {
+    pendingData.pendingPayments.forEach(async p => {
+      try {
+        await fetch(`${BACKEND_URL}/complete-payment`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            paymentId: p.id,
+            bookId: p.bookId,
+            userUid
+          })
+        });
+        console.log("Pending payment completed:", p.id);
+      } catch (err) {
+        console.error("Failed to complete pending payment:", err);
+      }
     });
+  }
+}
 
-    if (!response.ok) {
-      const err = await response.json();
-      console.error("Failed to complete pending payment:", err);
       alert("Failed to automatically complete the pending payment.\nPlease go to developers.minepi.com to complete or cancel it manually.");
       return;
     }
