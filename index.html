@@ -167,36 +167,32 @@ function checkSaveReady() {
 
 // ================= تجاهل الدفع المعلق =================
 async function onIncompletePaymentFound(incompletePayment) {
-  console.log("Recovered completed payment:", incompletePayment);
-
-  // إذا لم يوجد txid → لا تفعل شيئًا
-  if (!incompletePayment.transaction || !incompletePayment.transaction.txid) {
-    console.log("No txid yet, skipping");
-    return;
-  }
+  alert("A previous pending payment was detected... Attempting to complete it automatically");
+  console.log("Incomplete payment found:", incompletePayment);
 
   try {
-    const res = await fetch(`${BACKEND_URL}/complete-payment`, {
+    const response = await fetch("https://pi-backend-c8nz.onrender.com/complete-payment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         paymentId: incompletePayment.identifier,
-        txid: incompletePayment.transaction.txid
+        txid: incompletePayment.transaction?.txid
       })
     });
 
-    if (!res.ok) {
-      const err = await res.json();
-      console.error("Recover failed:", err);
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("Failed to complete pending payment:", err);
+      alert("Failed to automatically complete the pending payment.\nPlease go to developers.minepi.com to complete or cancel it manually.");
       return;
     }
 
-    console.log("Recovered payment successfully");
-  } catch (e) {
-    console.error("Recover error:", e);
+    alert("Pending payment completed successfully!\nYou can now make new purchases.");
+  } catch (err) {
+    console.error("Error completing pending payment:", err);
+    alert("Error completing pending payment.\nPlease try again or complete it manually from the developer dashboard.");
   }
 }
-
 // ================= LOGIN =================
 document.getElementById("loginBtn").onclick = async () => {
   try {
