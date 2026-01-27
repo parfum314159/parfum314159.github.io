@@ -53,48 +53,21 @@ async function loadBook() {
     if (!data.success) throw new Error();
 
     const b = data.book;
+
+    // إنشاء محتوى الكتاب
     document.getElementById("content").innerHTML = `
       <img src="${b.cover}">
       <h2>${b.title}</h2>
       <p>${b.description || ""}</p>
       <p><strong>${b.price} Pi</strong></p>
       <p>By ${b.owner}</p>
-      document.getElementById("buyBtn").onclick = () => {
-  // فتح الصفحة الرئيسية مع نفس الكتاب
-  window.location.href = `https://parfum314159.github.io/index.html?buyBookId=${bookId}`;
-};
-
+      <button id="buyBtn">Buy with Pi 🪙</button>
       <button id="shareBtn" class="share">Share Link 🔗</button>
     `;
 
-    // شراء الكتاب مباشرة
-    document.getElementById("buyBtn").onclick = async () => {
-      if (!window.Pi) return alert("Open in Pi Browser to buy.");
-      try {
-        const payment = await Pi.createPayment({
-          amount: b.price,
-          memo: `Purchase book: ${b.title}`,
-          metadata: { bookId: b.id }
-        });
-
-        // إرسال الدفع للسيرفر للموافقة
-        const res = await fetch(`${BACKEND_URL}/completePayment`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId: payment.id, bookId: b.id })
-        });
-        const result = await res.json();
-
-        if(result.success) {
-          alert("✅ Payment successful! Opening book...");
-          window.open(result.pdfUrl, "_blank");
-        } else {
-          alert("❌ Payment failed. Please try again.");
-        }
-      } catch (e) {
-        alert("❌ Payment failed or canceled.");
-        console.error(e);
-      }
+    // عند الضغط على زر الشراء، انتقل إلى الصفحة الرئيسية مع نفس الكتاب
+    document.getElementById("buyBtn").onclick = () => {
+      window.location.href = `https://parfum314159.github.io/index.html?buyBookId=${bookId}`;
     };
 
     // زر مشاركة الرابط
