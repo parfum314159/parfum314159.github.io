@@ -59,7 +59,11 @@ async function loadBook() {
       <p>${b.description || ""}</p>
       <p><strong>${b.price} Pi</strong></p>
       <p>By ${b.owner}</p>
-      <button id="buyBtn">Buy with Pi 🪙</button>
+      document.getElementById("buyBtn").onclick = () => {
+  // فتح الصفحة الرئيسية مع نفس الكتاب
+  window.location.href = `https://parfum314159.github.io/index.html?buyBookId=${bookId}`;
+};
+
       <button id="shareBtn" class="share">Share Link 🔗</button>
     `;
 
