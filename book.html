@@ -5,9 +5,30 @@
 <title>Book</title>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <style>
-body{background:#111;color:#fff;font-family:Arial;text-align:center;padding:20px;}
-img{width:250px;border-radius:8px;}
-button{padding:10px 20px;background:#ff4500;color:#fff;border:none;border-radius:6px;cursor:pointer;margin:10px;}
+body {
+  background: #111;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding: 20px;
+}
+img {
+  width: 250px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+button {
+  padding: 10px 20px;
+  background: #ff4500;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin: 10px;
+}
+button.share {
+  background: #00aaff;
+}
 </style>
 </head>
 <body>
@@ -16,7 +37,6 @@ button{padding:10px 20px;background:#ff4500;color:#fff;border:none;border-radius
 
 <script>
 const BACKEND_URL = "https://pi-backend-c8nz.onrender.com";
-const ALLOWED_ORIGIN = "https://parfum314159.github.io"; // موقعك
 
 const params = new URLSearchParams(window.location.search);
 const bookId = params.get("id");
@@ -40,40 +60,61 @@ async function loadBook() {
       <p><strong>${b.price} Pi</strong></p>
       <p>By ${b.owner}</p>
       <button id="buyBtn">Buy with Pi 🪙</button>
+      <button id="shareBtn" class="share">Share Link 🔗</button>
     `;
 
-    document.getElementById("buyBtn").onclick = () => {
-      // إرسال طلب الدفع لـ index.html
-      if (window.opener) {
-        window.opener.postMessage({
-          type: "BUY_BOOK",
-          bookId: b.id,
-          price: b.price
-        }, ALLOWED_ORIGIN);
+    // شراء الكتاب مباشرة
+    document.getElementById("buyBtn").onclick = async () => {
+      if (!window.Pi) return alert("Open in Pi Browser to buy.");
+      try {
+        const payment = await Pi.createPayment({
+          amount: b.price,
+          memo: `Purchase book: ${b.title}`,
+          metadata: { bookId: b.id }
+        });
+
+        // إرسال الدفع للسيرفر للموافقة
+        const res = await fetch(`${BACKEND_URL}/completePayment`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId: payment.id, bookId: b.id })
+        });
+        const result = await res.json();
+
+        if(result.success) {
+          alert("✅ Payment successful! Opening book...");
+          window.open(result.pdfUrl, "_blank");
+        } else {
+          alert("❌ Payment failed. Please try again.");
+        }
+      } catch (e) {
+        alert("❌ Payment failed or canceled.");
+        console.error(e);
+      }
+    };
+
+    // زر مشاركة الرابط
+    document.getElementById("shareBtn").onclick = () => {
+      const bookUrl = window.location.href;
+      if (navigator.share) {
+        navigator.share({
+          title: b.title,
+          url: bookUrl
+        }).catch(console.error);
       } else {
-        alert("Open this book from main site to buy.");
+        navigator.clipboard.writeText(bookUrl)
+          .then(() => alert("✅ Link copied to clipboard"))
+          .catch(() => alert("⚠️ Copy manually: " + bookUrl));
       }
     };
 
   } catch(e) {
+    console.error(e);
     document.getElementById("content").innerText = "Error loading book";
   }
 }
 
 loadBook();
-
-// استقبال الرد بعد الدفع
-window.addEventListener("message", (event) => {
-  if (event.origin !== ALLOWED_ORIGIN) return; // تأكد من المصدر
-  const msg = event.data;
-
-  if(msg.type === "PAYMENT_SUCCESS" && msg.bookId === bookId) {
-    alert("✅ Payment successful! Opening book...");
-    window.open(msg.pdfUrl, "_blank");
-  } else if(msg.type === "PAYMENT_FAILED") {
-    alert("❌ Payment failed. Please try again.");
-  }
-});
 </script>
 
 </body>
