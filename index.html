@@ -393,6 +393,8 @@ async function loadBooks() {
             <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${b.id}', 'dislike', this)" ${userVote || !user ? 'disabled' : ''}>👎</button> ${dislikes}
           </div>
           <button onclick="buy('${b.id}', ${b.price})" ${!user ? 'disabled' : ''}>Buy with Pi</button>
+          <button onclick="openBook('${b.id}')">View 📖</button>
+
         </div>`;
     }
   } catch (e) {
