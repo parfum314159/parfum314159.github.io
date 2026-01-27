@@ -3,177 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <title>Book</title>
-
-<!-- ✅ Pi SDK -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-
-<!-- 🔴 Meta للمشاركة -->
-<meta property="og:title" content="Spicy Library Book">
-<meta property="og:description" content="Discover this book on Spicy Library">
-<meta property="og:image" content="">
-<meta property="og:type" content="website">
-
 <style>
-body{
-  background:#111;
-  color:#fff;
-  font-family:Arial;
-  text-align:center;
-  padding:20px;
-}
-img{
-  width:250px;
-  border-radius:8px;
-}
-button{
-  padding:10px 20px;
-  background:#ff4500;
-  color:#fff;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-  margin:10px;
-}
+body{background:#111;color:#fff;font-family:Arial;text-align:center;padding:20px;}
+img{width:250px;border-radius:8px;}
+button{padding:10px 20px;background:#ff4500;color:#fff;border:none;border-radius:6px;cursor:pointer;margin:10px;}
 </style>
 </head>
-
 <body>
 
 <div id="content">Loading book...</div>
 
 <script>
-// ================= CONFIG =================
 const BACKEND_URL = "https://pi-backend-c8nz.onrender.com";
+const ALLOWED_ORIGIN = "https://parfum314159.github.io"; // موقعك
 
-// ================= PI SDK =================
-Pi.init({ version: "2.0", sandbox: false });
-
-// ================= USER UID =================
 const params = new URLSearchParams(window.location.search);
-let userUid = params.get("uid") || localStorage.getItem("userUid");
-
-async function ensureLogin() {
-  if (!userUid) {
-    if (!window.Pi) {
-      alert("Please open this page in Pi Browser");
-      return false;
-    }
-
-    try {
-      const user = await Pi.getUser();
-      userUid = user.uid;
-      localStorage.setItem("userUid", userUid);
-      console.log("Logged in as", userUid);
-      return true;
-    } catch (e) {
-      console.error(e);
-      alert("❌ You must log in via Pi Network to continue");
-      return false;
-    }
-  }
-  return true;
-}
-
-// ================= GET BOOK ID =================
 const bookId = params.get("id");
+
 if (!bookId) {
   document.getElementById("content").innerText = "Book not found";
 }
 
-// ================= LOAD BOOK =================
+// جلب بيانات الكتاب من السيرفر
 async function loadBook() {
   try {
     const res = await fetch(`${BACKEND_URL}/book/${bookId}`);
     const data = await res.json();
-    if (!data.success) throw new Error("Book not found");
+    if (!data.success) throw new Error();
 
     const b = data.book;
-
-    // تحديث meta tags
-    document.querySelector("meta[property='og:title']").content = b.title;
-    document.querySelector("meta[property='og:description']").content = b.description || "Book on Spicy Library";
-    document.querySelector("meta[property='og:image']").content = b.cover;
-
     document.getElementById("content").innerHTML = `
       <img src="${b.cover}">
       <h2>${b.title}</h2>
       <p>${b.description || ""}</p>
       <p><strong>${b.price} Pi</strong></p>
       <p>By ${b.owner}</p>
-
       <button id="buyBtn">Buy with Pi 🪙</button>
-      <br>
-      <button onclick="share()">Share 🔗</button>
     `;
 
-    document.getElementById("buyBtn").onclick = () => buyBook(b.id, b.price);
+    document.getElementById("buyBtn").onclick = () => {
+      // إرسال طلب الدفع لـ index.html
+      if (window.opener) {
+        window.opener.postMessage({
+          type: "BUY_BOOK",
+          bookId: b.id,
+          price: b.price
+        }, ALLOWED_ORIGIN);
+      } else {
+        alert("Open this book from main site to buy.");
+      }
+    };
 
-  } catch (e) {
-    console.error(e);
+  } catch(e) {
     document.getElementById("content").innerText = "Error loading book";
   }
 }
 
 loadBook();
 
-// ================= SHARE =================
-function share() {
-  const url = window.location.href;
-  if (navigator.share) {
-    navigator.share({ title: "Spicy Library Book", url });
-  } else {
-    prompt("Copy this link:", url);
+// استقبال الرد بعد الدفع
+window.addEventListener("message", (event) => {
+  if (event.origin !== ALLOWED_ORIGIN) return; // تأكد من المصدر
+  const msg = event.data;
+
+  if(msg.type === "PAYMENT_SUCCESS" && msg.bookId === bookId) {
+    alert("✅ Payment successful! Opening book...");
+    window.open(msg.pdfUrl, "_blank");
+  } else if(msg.type === "PAYMENT_FAILED") {
+    alert("❌ Payment failed. Please try again.");
   }
-}
-
-// ================= BUY BOOK =================
-async function buyBook(bookId, price) {
-  if (!await ensureLogin()) return;
-
-  try {
-    await Pi.createPayment({
-      amount: price,
-      memo: "Spicy Library - Book Purchase",
-      metadata: { bookId, userUid }
-    }, {
-      onReadyForServerApproval: async (paymentId) => {
-        await fetch(`${BACKEND_URL}/approve-payment`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId, bookId, userUid })
-        });
-      },
-
-      onReadyForServerCompletion: async (paymentId, txid) => {
-        const res = await fetch(`${BACKEND_URL}/complete-payment`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId, txid, bookId, userUid })
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          alert("Payment failed: " + (err.error || ""));
-          return;
-        }
-
-        const data = await res.json();
-        alert("✅ Purchase successful!");
-        window.open(data.pdfUrl, "_blank");
-      },
-
-      onCancel: () => alert("❌ Payment cancelled"),
-      onError: (err) => {
-        console.error(err);
-        alert("❌ Payment error");
-      }
-    });
-  } catch (e) {
-    console.error(e);
-    alert("Error during payment. Use Pi Browser.");
-  }
-}
-
+});
 </script>
 
 </body>
