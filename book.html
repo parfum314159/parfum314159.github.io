@@ -46,14 +46,21 @@ fetch(`${BACKEND_URL}/book/${bookId}`)
     document.querySelector("meta[property='og:image']").content = b.cover;
 
     document.getElementById("content").innerHTML = `
-      <img src="${b.cover}">
-      <h2>${b.title}</h2>
-      <p>${b.description || ""}</p>
-      <p><strong>${b.price} Pi</strong></p>
-      <p>By ${b.owner}</p>
+  <img src="${b.cover}">
+  <h2>${b.title}</h2>
+  <p>${b.description || ""}</p>
+  <p><strong>${b.price} Pi</strong></p>
+  <p>By ${b.owner}</p>
 
-      <button onclick="share()">Share 🔗</button>
-    `;
+  <button onclick="buyBook('${b.id}', ${b.price})">
+    Buy with Pi 🪙
+  </button>
+
+  <br><br>
+
+  <button onclick="share()">Share 🔗</button>
+`;
+
   })
   .catch(() => {
     document.getElementById("content").innerText = "Error loading book";
@@ -71,6 +78,57 @@ function share() {
     prompt("Copy this link:", url);
   }
 }
+
+<script>
+async function buyBook(bookId, price) {
+  if (!window.Pi) {
+    alert("Please open this page in Pi Browser");
+    return;
+  }
+
+  try {
+    // 1️⃣ إنشاء الدفع
+    const payment = await Pi.createPayment({
+      amount: price,
+      memo: `Buy book ${bookId}`,
+      metadata: { bookId }
+    }, {
+      onReadyForServerApproval: async (paymentId) => {
+        await fetch(`${BACKEND_URL}/approve`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId })
+        });
+      },
+
+      onReadyForServerCompletion: async (paymentId) => {
+        await fetch(`${BACKEND_URL}/complete`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId })
+        });
+
+        alert("✅ Purchase successful!");
+      },
+
+      onCancel: () => {
+        alert("❌ Payment cancelled");
+      },
+
+      onError: (err) => {
+        console.error(err);
+        alert("❌ Payment failed");
+      }
+    });
+
+  } catch (e) {
+    console.error(e);
+    alert("❌ Error during payment");
+  }
+}
+
+
+  
 </script>
 
 </body>
