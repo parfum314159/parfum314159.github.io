@@ -653,6 +653,61 @@ function closeModal() {
   document.getElementById('modal').style.display = 'none';
 }
 
+
+
+// استمع لرسائل من book.html
+window.addEventListener("message", async (event) => {
+  // تأكد أن الرسالة من موقعك فقط
+  if(event.origin !== "https://parfum314159.github.io") return;
+
+  const msg = event.data;
+
+  if(msg.type === "BUY_BOOK") {
+    // فتح نافذة الكتاب للإشارة لاحقًا
+    window.openedBook = event.source;
+
+    try {
+      const paymentResult = await Pi.createPayment({
+        amount: msg.price,
+        memo: "Purchase Book",
+        metadata: { bookId: msg.bookId, userUid } // userUid من تسجيل دخول المستخدم
+      }, {
+        onReadyForServerApproval: async (paymentId) => {
+          await fetch(`${BACKEND_URL}/approve-payment`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId, bookId: msg.bookId, userUid })
+          });
+        },
+        onReadyForServerCompletion: async (paymentId, txid) => {
+          const res = await fetch(`${BACKEND_URL}/complete-payment`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId, txid, bookId: msg.bookId, userUid })
+          });
+
+          const data = await res.json();
+
+          // إرسال نتيجة الدفع مرة أخرى لـ book.html
+          window.openedBook.postMessage({
+            type: "PAYMENT_SUCCESS",
+            bookId: msg.bookId,
+            pdfUrl: data.pdfUrl
+          }, "https://parfum314159.github.io");
+        },
+        onCancel: () => alert("Payment cancelled"),
+        onError: (err) => alert("Payment error: " + err.message)
+      });
+
+    } catch(e) {
+      // إرسال فشل الدفع إذا حدث خطأ
+      window.openedBook.postMessage({ type:"PAYMENT_FAILED", bookId: msg.bookId }, "https://parfum314159.github.io");
+    }
+  }
+});
+
+
+  
 </script>
   <!-- Modal for Privacy Policy / Terms -->
 <div id="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999;">
@@ -663,6 +718,9 @@ function closeModal() {
   </div>
 </div>
 
+
+
+  
 </body>
   <div style="margin:20px;">
   <button onclick="openModal('Privacy Policy', PrivacyPolicyText)">Privacy Policy</button>
