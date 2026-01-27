@@ -4,16 +4,36 @@
 <meta charset="UTF-8">
 <title>Book</title>
 
-<!-- 🔴 مهم جدًا للمشاركة -->
+<!-- ✅ Pi SDK (ضروري جدًا) -->
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<!-- 🔴 Meta للمشاركة -->
 <meta property="og:title" content="Spicy Library Book">
 <meta property="og:description" content="Discover this book on Spicy Library">
 <meta property="og:image" content="">
 <meta property="og:type" content="website">
 
 <style>
-body{background:#111;color:#fff;font-family:Arial;text-align:center;padding:20px;}
-img{width:250px;border-radius:8px;}
-button{padding:10px 20px;background:#ff4500;color:#fff;border:none;border-radius:6px;cursor:pointer;}
+body{
+  background:#111;
+  color:#fff;
+  font-family:Arial;
+  text-align:center;
+  padding:20px;
+}
+img{
+  width:250px;
+  border-radius:8px;
+}
+button{
+  padding:10px 20px;
+  background:#ff4500;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  margin:10px;
+}
 </style>
 </head>
 
@@ -22,9 +42,13 @@ button{padding:10px 20px;background:#ff4500;color:#fff;border:none;border-radius
 <div id="content">Loading book...</div>
 
 <script>
+// ================= CONFIG =================
 const BACKEND_URL = "https://pi-backend-c8nz.onrender.com";
 
-// 1️⃣ نأخذ id من الرابط
+// ✅ تهيئة Pi SDK
+Pi.init({ version: "2.0", sandbox: false });
+
+// ================= GET BOOK ID =================
 const params = new URLSearchParams(window.location.search);
 const bookId = params.get("id");
 
@@ -32,7 +56,7 @@ if (!bookId) {
   document.getElementById("content").innerText = "Book not found";
 }
 
-// 2️⃣ جلب بيانات الكتاب
+// ================= LOAD BOOK =================
 fetch(`${BACKEND_URL}/book/${bookId}`)
   .then(res => res.json())
   .then(data => {
@@ -40,46 +64,43 @@ fetch(`${BACKEND_URL}/book/${bookId}`)
 
     const b = data.book;
 
-    // 🔴 تحديث meta tags (للمشاركة)
+    // تحديث meta tags
     document.querySelector("meta[property='og:title']").content = b.title;
-    document.querySelector("meta[property='og:description']").content = b.description || "Book on Spicy Library";
+    document.querySelector("meta[property='og:description']").content =
+      b.description || "Book on Spicy Library";
     document.querySelector("meta[property='og:image']").content = b.cover;
 
     document.getElementById("content").innerHTML = `
-  <img src="${b.cover}">
-  <h2>${b.title}</h2>
-  <p>${b.description || ""}</p>
-  <p><strong>${b.price} Pi</strong></p>
-  <p>By ${b.owner}</p>
+      <img src="${b.cover}">
+      <h2>${b.title}</h2>
+      <p>${b.description || ""}</p>
+      <p><strong>${b.price} Pi</strong></p>
+      <p>By ${b.owner}</p>
 
-  <button onclick="buyBook('${b.id}', ${b.price})">
-    Buy with Pi 🪙
-  </button>
+      <button onclick="buyBook('${b.id}', ${b.price})">
+        Buy with Pi 🪙
+      </button>
 
-  <br><br>
+      <br>
 
-  <button onclick="share()">Share 🔗</button>
-`;
-
+      <button onclick="share()">Share 🔗</button>
+    `;
   })
   .catch(() => {
     document.getElementById("content").innerText = "Error loading book";
   });
 
+// ================= SHARE =================
 function share() {
   const url = window.location.href;
-
   if (navigator.share) {
-    navigator.share({
-      title: "Spicy Library Book",
-      url: url
-    });
+    navigator.share({ title: "Spicy Library Book", url });
   } else {
     prompt("Copy this link:", url);
   }
 }
 
-
+// ================= BUY BOOK =================
 async function buyBook(bookId, price) {
   if (!window.Pi) {
     alert("Please open this page in Pi Browser");
@@ -87,48 +108,49 @@ async function buyBook(bookId, price) {
   }
 
   try {
-    // 1️⃣ إنشاء الدفع
-    const payment = await Pi.createPayment({
+    await Pi.createPayment({
       amount: price,
-      memo: `Buy book ${bookId}`,
+      memo: "Spicy Library - Book Purchase",
       metadata: { bookId }
     }, {
+      // 🔹 موافقة السيرفر
       onReadyForServerApproval: async (paymentId) => {
-        await fetch(`${BACKEND_URL}/approve`, {
+        await fetch(`${BACKEND_URL}/approve-payment`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ paymentId })
         });
       },
 
-      onReadyForServerCompletion: async (paymentId) => {
-        await fetch(`${BACKEND_URL}/complete`, {
+      // 🔹 إكمال السيرفر
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        const res = await fetch(`${BACKEND_URL}/complete-payment`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId })
+          body: JSON.stringify({ paymentId, txid })
         });
 
+        if (!res.ok) {
+          alert("Payment failed");
+          return;
+        }
+
+        const data = await res.json();
         alert("✅ Purchase successful!");
+        window.open(data.pdfUrl, "_blank");
       },
 
-      onCancel: () => {
-        alert("❌ Payment cancelled");
-      },
-
+      onCancel: () => alert("❌ Payment cancelled"),
       onError: (err) => {
         console.error(err);
-        alert("❌ Payment failed");
+        alert("❌ Payment error");
       }
     });
-
   } catch (e) {
     console.error(e);
     alert("❌ Error during payment");
   }
 }
-
-
-  
 </script>
 
 </body>
