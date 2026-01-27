@@ -586,6 +586,13 @@ function toggleAdd() {
   if (!user) return alert("Login required");
   document.getElementById("addBook").classList.toggle("hidden");
 }
+
+function openBook(bookId) {
+  window.open(`book.html?id=${bookId}`, "_blank");
+}
+
+
+  
   // ================= LEGAL TEXT =================
 const PrivacyPolicyText = `
 Privacy Policy - Spicy Library
