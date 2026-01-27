@@ -29,6 +29,16 @@ button {
 button.share {
   background: #00aaff;
 }
+.info {
+  font-size: 14px;
+  color: #ccc;
+  margin: 5px 0;
+}
+.stats {
+  font-size: 14px;
+  color: #0f9;
+  margin: 5px 0;
+}
 </style>
 </head>
 <body>
@@ -37,6 +47,7 @@ button.share {
 
 <script>
 const BACKEND_URL = "https://pi-backend-c8nz.onrender.com";
+const ALLOWED_ORIGIN = "https://parfum314159.github.io"; // موقعك
 
 const params = new URLSearchParams(window.location.search);
 const bookId = params.get("id");
@@ -54,18 +65,37 @@ async function loadBook() {
 
     const b = data.book;
 
-    // إنشاء محتوى الكتاب
+    // جلب التقييمات (لايك و غير لايك)
+    let likes = 0, dislikes = 0;
+    try {
+      const ratingsRes = await fetch(`${BACKEND_URL}/book-ratings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookId: b.id })
+      });
+      const ratingsJson = await ratingsRes.json();
+      if (ratingsJson.success) {
+        likes = ratingsJson.likes || 0;
+        dislikes = ratingsJson.dislikes || 0;
+      }
+    } catch(e) {
+      console.error("Error loading ratings:", e);
+    }
+
     document.getElementById("content").innerHTML = `
-      <img src="${b.cover}">
+      <img src="${b.cover}" alt="Cover">
       <h2>${b.title}</h2>
-      <p>${b.description || ""}</p>
-      <p><strong>${b.price} Pi</strong></p>
-      <p>By ${b.owner}</p>
+      <p class="info"><strong>Description:</strong> ${b.description || "No description"}</p>
+      <p class="info"><strong>Author:</strong> ${b.owner}</p>
+      <p class="info"><strong>Language:</strong> ${b.language || "Unknown"}</p>
+      <p class="info"><strong>Pages:</strong> ${b.pageCount || "Unknown"}</p>
+      <p class="info"><strong>Price:</strong> ${b.price} Pi</p>
+      <p class="stats">👍 Likes: ${likes} | 👎 Dislikes: ${dislikes}</p>
       <button id="buyBtn">Buy with Pi 🪙</button>
       <button id="shareBtn" class="share">Share Link 🔗</button>
     `;
 
-    // عند الضغط على زر الشراء، انتقل إلى الصفحة الرئيسية مع نفس الكتاب
+    // فتح الصفحة الرئيسية مع نفس الكتاب عند الشراء
     document.getElementById("buyBtn").onclick = () => {
       window.location.href = `https://parfum314159.github.io/index.html?buyBookId=${bookId}`;
     };
@@ -92,7 +122,7 @@ async function loadBook() {
 }
 
 loadBook();
-</script>
 
+</script>
 </body>
 </html>
