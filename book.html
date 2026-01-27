@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Book</title>
+
+<!-- 🔴 مهم جدًا للمشاركة -->
+<meta property="og:title" content="Spicy Library Book">
+<meta property="og:description" content="Discover this book on Spicy Library">
+<meta property="og:image" content="">
+<meta property="og:type" content="website">
+
+<style>
+body{background:#111;color:#fff;font-family:Arial;text-align:center;padding:20px;}
+img{width:250px;border-radius:8px;}
+button{padding:10px 20px;background:#ff4500;color:#fff;border:none;border-radius:6px;cursor:pointer;}
+</style>
+</head>
+
+<body>
+
+<div id="content">Loading book...</div>
+
+<script>
+const BACKEND_URL = "https://pi-backend-c8nz.onrender.com";
+
+// 1️⃣ نأخذ id من الرابط
+const params = new URLSearchParams(window.location.search);
+const bookId = params.get("id");
+
+if (!bookId) {
+  document.getElementById("content").innerText = "Book not found";
+}
+
+// 2️⃣ جلب بيانات الكتاب
+fetch(`${BACKEND_URL}/book/${bookId}`)
+  .then(res => res.json())
+  .then(data => {
+    if (!data.success) throw new Error();
+
+    const b = data.book;
+
+    // 🔴 تحديث meta tags (للمشاركة)
+    document.querySelector("meta[property='og:title']").content = b.title;
+    document.querySelector("meta[property='og:description']").content = b.description || "Book on Spicy Library";
+    document.querySelector("meta[property='og:image']").content = b.cover;
+
+    document.getElementById("content").innerHTML = `
+      <img src="${b.cover}">
+      <h2>${b.title}</h2>
+      <p>${b.description || ""}</p>
+      <p><strong>${b.price} Pi</strong></p>
+      <p>By ${b.owner}</p>
+
+      <button onclick="share()">Share 🔗</button>
+    `;
+  })
+  .catch(() => {
+    document.getElementById("content").innerText = "Error loading book";
+  });
+
+function share() {
+  const url = window.location.href;
+
+  if (navigator.share) {
+    navigator.share({
+      title: "Spicy Library Book",
+      url: url
+    });
+  } else {
+    prompt("Copy this link:", url);
+  }
+}
+</script>
+
+</body>
+</html>
