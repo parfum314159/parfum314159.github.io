@@ -107,18 +107,24 @@ async function buyBook(bookId, price) {
     return;
   }
 
+  const userUid = localStorage.getItem("userUid"); // ✅ إضافة
+  if (!userUid) {
+    alert("You must log in first!");
+    return;
+  }
+
   try {
     await Pi.createPayment({
       amount: price,
       memo: "Spicy Library - Book Purchase",
-      metadata: { bookId }
+      metadata: { bookId, userUid } // ✅ أضف userUid هنا
     }, {
       // 🔹 موافقة السيرفر
       onReadyForServerApproval: async (paymentId) => {
         await fetch(`${BACKEND_URL}/approve-payment`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId })
+          body: JSON.stringify({ paymentId, bookId, userUid }) // ✅ أضف userUid
         });
       },
 
@@ -127,7 +133,7 @@ async function buyBook(bookId, price) {
         const res = await fetch(`${BACKEND_URL}/complete-payment`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId, txid })
+          body: JSON.stringify({ paymentId, txid, bookId, userUid }) // ✅ أضف userUid
         });
 
         if (!res.ok) {
@@ -151,6 +157,7 @@ async function buyBook(bookId, price) {
     alert("❌ Error during payment");
   }
 }
+
 </script>
 
 </body>
