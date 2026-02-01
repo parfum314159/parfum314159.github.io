@@ -554,36 +554,42 @@ async function loadMySales() {
 
 // ================= REQUEST PAYOUT =================
 async function requestPayout() {
-  if (totalEarnings < 5) return alert("Minimum payout is 5 Pi");
-
-  await Pi.createPayment({
-    amount: totalEarnings,
-    memo: "Spicy Library - Earnings Withdrawal",
-    metadata: {
-      type: "payout",
-      username: user.username
+  try {
+    if (totalEarnings < 5) {
+      alert("Minimum payout is 5 Pi");
+      return;
     }
-  }, {
-    onReadyForServerApproval: async (paymentId) => {
-      await fetch(`${BACKEND_URL}/approve-payout`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId })
-      });
-    },
-    onReadyForServerCompletion: async (paymentId, txid) => {
-      await fetch(`${BACKEND_URL}/complete-payout`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId, txid })
-      });
-      alert("Payout successful 🎉");
-      loadMySales();
-    }
-  });
-}
 
-    
+    payoutBtn.disabled = true;
+
+    await Pi.createPayment(
+      {
+        amount: totalEarnings,
+        memo: "Spicy Library - Earnings Withdrawal",
+        metadata: {
+          type: "payout",
+          username: user.username
+        }
+      },
+      {
+        onReadyForServerApproval: async (paymentId) => {
+          await fetch(`${BACKEND_URL}/approve-payout`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId })
+          });
+        },
+
+        onReadyForServerCompletion: async (paymentId, txid) => {
+          await fetch(`${BACKEND_URL}/complete-payout`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId, txid })
+          });
+
+          alert("Payout successful 🎉");
+          loadMySales();
+        },
 
         onCancel: () => {
           alert("تم إلغاء عملية السحب");
@@ -603,6 +609,7 @@ async function requestPayout() {
     payoutBtn.disabled = false;
   }
 }
+
 
 // ================= TABS & SEARCH & TOGGLE =================
 function openTab(tabName) {
