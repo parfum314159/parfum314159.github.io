@@ -134,14 +134,19 @@ async function resolvePendingPayments() {
     if (!data.success || data.pendingPayments.length === 0) return;
 
     for (const p of data.pendingPayments) {
-      await fetch(`${BACKEND_URL}/resolve-pending`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId: p.id })
-      });
+      try {
+        await fetch(`${BACKEND_URL}/resolve-pending`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId: p.id })
+        });
+      } catch (err) {
+        console.warn(`Failed to complete pending payment ${p.id}, deleting anyway.`);
+        // حذف الدفع المعلق نهائيًا حتى لو فشل
+        await fetch(`${BACKEND_URL}/pendingPayments/${p.id}`, { method: "DELETE" });
+      }
     }
-    console.log("✅ All pending payments resolved");
-    alert("All pending payments were automatically completed!");
+    console.log("✅ All pending payments resolved or removed");
   } catch (err) {
     console.error("Pending payments error:", err);
   }
@@ -225,19 +230,26 @@ document.getElementById("loginBtn").onclick = async () => {
     const authResult = await Pi.authenticate(["username", "payments"]);
     user = authResult.user;
 
-    // 👇 تجاهل أي بيانات سابقة
-    userUid = "new-" + Date.now(); // UID مؤقت جديد لكل تسجيل دخول
-    console.log("Temporary UID:", userUid);
+    // UID فعلي من Pi لتجنب تعارضات مؤقتة
+    userUid = user.uid;
 
     document.getElementById("welcome").innerText = `Welcome, ${user.username}!`;
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
 
-    // لا تقم بتحميل بيانات سابقة من Firebase
+    //  ✅ فحص ومعالجة الدفعات المعلقة مباشرة بعد تسجيل الدخول
+    await resolvePendingPayments();
+
+    // تحميل الكتب والمبيعات والمشتريات
+    loadBooks();
+    loadMyPurchases();
+    loadMySales();
+    
   } catch (err) {
     alert("Login failed. Open in Pi Browser.");
   }
 };
+
 
 
 function logout() {
@@ -318,38 +330,34 @@ async function rateBook(bookId, voteType, button) {
 // ================= BUY =================
 async function buy(bookId, price) {
   if (!userUid) return alert("Login required");
+
+  // ✅ إزالة أي دفعات معلقة قبل الدفع
   await resolvePendingPayments();
+
   if (!confirm(`Buy this book for ${price} Pi?`)) return;
 
   try {
     await Pi.createPayment({
       amount: price,
       memo: "Spicy Library - Book Purchase",
-      // 🔐 metadata فقط (يستخدمها backend)
       metadata: { bookId, userUid }
     }, {
-      // 🔹 الموافقة من السيرفر
       onReadyForServerApproval: async (paymentId) => {
         await fetch(`${BACKEND_URL}/approve-payment`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId })
+          body: JSON.stringify({ paymentId, bookId, userUid })
         });
       },
-
-      // 🔹 الإكمال من السيرفر (بدون bookId و userUid)
       onReadyForServerCompletion: async (paymentId, txid) => {
         const res = await fetch(`${BACKEND_URL}/complete-payment`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            paymentId,
-            txid
-          })
+          body: JSON.stringify({ paymentId, txid })
         });
 
         if (!res.ok) {
-          alert("Payment failed");
+          alert("Payment failed, pending payment removed.");
           return;
         }
 
@@ -357,10 +365,8 @@ async function buy(bookId, price) {
         window.open(data.pdfUrl, "_blank");
         alert("Payment successful! The book is now open 📚");
 
-        // ✅ تنظيف أي pending نهائيًا
-        location.reload();
+        location.reload(); // تنظيف أي pending نهائيًا
       },
-
       onCancel: () => alert("Payment cancelled"),
       onError: (err) => alert("Payment error: " + err.message)
     });
@@ -368,6 +374,7 @@ async function buy(bookId, price) {
     alert("Use Pi Browser for payment.");
   }
 }
+
 
 // ================= DOWNLOAD PDF =================
 async function downloadPdf(bookId) {
