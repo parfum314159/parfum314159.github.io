@@ -554,58 +554,36 @@ async function loadMySales() {
 
 // ================= REQUEST PAYOUT =================
 async function requestPayout() {
-  const totalEarnings =
-    parseFloat(
-      document.getElementById("totalEarnings")
-        .innerText
-        .replace("Total earnings: ", "")
-        .replace(" Pi", "")
-    ) || 0;
+  if (totalEarnings < 5) return alert("Minimum payout is 5 Pi");
 
-  if (totalEarnings < 5) {
-    alert("Minimum payout is 5 Pi");
-    return;
-  }
+  await Pi.createPayment({
+    amount: totalEarnings,
+    memo: "Spicy Library - Earnings Withdrawal",
+    metadata: {
+      type: "payout",
+      username: user.username
+    }
+  }, {
+    onReadyForServerApproval: async (paymentId) => {
+      await fetch(`${BACKEND_URL}/approve-payout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId })
+      });
+    },
+    onReadyForServerCompletion: async (paymentId, txid) => {
+      await fetch(`${BACKEND_URL}/complete-payout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId, txid })
+      });
+      alert("Payout successful 🎉");
+      loadMySales();
+    }
+  });
+}
 
-  const payoutBtn = document.getElementById("payoutBtn");
-  payoutBtn.disabled = true;
-
-  try {
-    // 1️⃣ إنشاء دفع عبر Pi SDK
-    const payment = await Pi.createPayment(
-      {
-        amount: totalEarnings.toFixed(2),
-        memo: "Earnings payout",
-        metadata: {
-          type: "payout",
-          username: user.username
-        }
-      },
-      {
-        onReadyForServerApproval: async (paymentId) => {
-          await fetch("https://pi-backend-c8nz.onrender.com/approve-payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paymentId })
-          });
-        },
-
-        onReadyForServerCompletion: async (paymentId, txid) => {
-          await fetch("https://pi-backend-c8nz.onrender.com/complete-payout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              paymentId,
-              txid,
-              username: user.username
-            })
-          });
-
-          alert(`✅ تم سحب الأرباح بنجاح!
-المبلغ: ${totalEarnings.toFixed(2)} Pi`);
-
-          loadMySales();
-        },
+    
 
         onCancel: () => {
           alert("تم إلغاء عملية السحب");
