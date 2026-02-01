@@ -295,6 +295,8 @@ document.getElementById("saveBookBtn").onclick = saveBook;
 // ================= RATE BOOK =================
 async function rateBook(bookId, voteType, button) {
   if (!userUid) return alert("Login required");
+
+  
   try {
     await fetch(`${BACKEND_URL}/rate-book`, {
       method: "POST",
@@ -316,6 +318,7 @@ async function rateBook(bookId, voteType, button) {
 // ================= BUY =================
 async function buy(bookId, price) {
   if (!userUid) return alert("Login required");
+  await resolvePendingPayments();
   if (!confirm(`Buy this book for ${price} Pi?`)) return;
 
   try {
