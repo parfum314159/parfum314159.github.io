@@ -124,9 +124,35 @@ Pi.init({ version: "2.0", sandbox: false });
 
 let user = null;
 let userUid = null;
+
+  // 🔹 فحص وإتمام أي دفعات معلقة تلقائياً
+async function resolvePendingPayments() {
+  if (!userUid) return;
+  try {
+    const res = await fetch(`${BACKEND_URL}/pending-payments?userUid=${userUid}`);
+    const data = await res.json();
+    if (!data.success || data.pendingPayments.length === 0) return;
+
+    for (const p of data.pendingPayments) {
+      await fetch(`${BACKEND_URL}/resolve-pending`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId: p.id })
+      });
+    }
+    console.log("✅ All pending payments resolved");
+    alert("All pending payments were automatically completed!");
+  } catch (err) {
+    console.error("Pending payments error:", err);
+  }
+}
+
+  
 let coverUrl = "";
 let pdfUrl = "";
 let pageCount = "Unknown";
+
+         
 
 // ================= CLOUDINARY =================
 const coverWidget = cloudinary.createUploadWidget({
@@ -199,6 +225,9 @@ document.getElementById("loginBtn").onclick = async () => {
     const authResult = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
     user = authResult.user;
     userUid = user.uid;
+
+  // 🔹 تحقق من أي دفعات معلقة
+await resolvePendingPayments();
 
     document.getElementById("welcome").innerText = `Welcome, ${user.username}!`;
     document.getElementById("login").classList.add("hidden");
