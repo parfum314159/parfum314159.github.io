@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title> Spicy Library</title>
+<title>📚 Spicy Library</title>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
 <style>
@@ -572,25 +572,37 @@ async function requestPayout() {
   payoutBtn.disabled = true;
 
   try {
-   const res = await fetch("https://pi-backend-c8nz.onrender.com/payout-user", {
+    const res = await fetch("https://pi-backend-c8nz.onrender.com/request-payout", {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ username: user.username, walletAddress })
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    username: user.username,
+    walletAddress: walletAddress.trim(),
+    earnings: totalEarnings.toFixed(2)
+  })
 });
-const data = await res.json();
-if (data.success) alert(`تم إرسال Pi بنجاح!\nالمبلغ: ${data.amount} Pi\nTxid: ${data.txid}`);
 
- if (!data.success) {
-  alert(data.error || "Payout failed");
-  return;
+const data = await res.json();
+
+if (!res.ok || !data.success) {
+  throw new Error(data.error || "Request failed");
 }
 
-alert(`✅ تم إرسال Pi بنجاح!
-المبلغ: ${data.amount} Pi
-TxID: ${data.txid}`);
+alert(
+  "Payout request sent successfully!\n\n" +
+  "• Status: Pending\n" +
+  "• Minimum processing time: 1–30 days\n\n" +
+  "You will be contacted if needed."
+);
 
 loadMySales();
 
+
+    alert("Payout request sent successfully!\nYour earnings have been reset to zero.\nPayment will be processed within 1-30 days (usually 1-2 days).");
+
+    loadMySales();
   } catch (e) {
     console.error("Payout request error:", e);
     alert("Failed to send request. Check your connection and try again.\nYour earnings are safe and not reset.");
