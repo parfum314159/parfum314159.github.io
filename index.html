@@ -556,56 +556,41 @@ document.getElementById("payoutBtn").disabled = totalEarnings < 5;
   }
 }
 
-// ================= REQUEST PAYOUT =================
+
+// ================= REQUEST PAYOUT (SIMULATED) =================
 async function requestPayout() {
   if (totalEarnings < 5) {
     alert("Minimum payout is 5 Pi");
     return;
   }
 
+  const ok = confirm(
+    `You are requesting a payout of ${totalEarnings.toFixed(2)} Pi.\n\n` +
+    `⚠️ This is a TESTNET simulation.\n` +
+    `No real Pi will be transferred.\n\nContinue?`
+  );
+
+  if (!ok) return;
+
   try {
-    await Pi.createPayment(
-      {
-        amount: Number(totalEarnings.toFixed(2)),
-        memo: "Spicy Library - Earnings Withdrawal",
-        metadata: {
-          type: "payout",
-          username: user.username
-        }
-      },
-      {
-        onReadyForServerApproval: async (paymentId) => {
-          await fetch(`${BACKEND_URL}/approve-payout`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paymentId })
-          });
-        },
+    const res = await fetch(`${BACKEND_URL}/withdraw-simulated`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: user.username,
+        amount: Number(totalEarnings.toFixed(2))
+      })
+    });
 
-        onReadyForServerCompletion: async (paymentId, txid) => {
-          await fetch(`${BACKEND_URL}/complete-payout`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paymentId, txid })
-          });
+    const data = await res.json();
+    if (!data.success) throw new Error("Withdraw failed");
 
-          alert("✅ تم السحب بنجاح");
-          loadMySales();
-        },
+    alert("✅ Withdrawal request processed (simulation)");
+    loadMySales();
 
-        onCancel: () => {
-          alert("تم إلغاء عملية السحب");
-        },
-
-        onError: (err) => {
-          console.error(err);
-          alert("حدث خطأ أثناء السحب");
-        }
-      }
-    );
   } catch (err) {
     console.error(err);
-    alert("فشل تنفيذ السحب");
+    alert("Withdrawal failed");
   }
 }
 
