@@ -572,21 +572,14 @@ async function requestPayout() {
   payoutBtn.disabled = true;
 
   try {
-    const res = await fetch("https://pi-backend-c8nz.onrender.com/request-payout", {
+   const res = await fetch("https://pi-backend-c8nz.onrender.com/payout-user", {
   method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    username: user.username,
-    walletAddress: walletAddress.trim(),
-    earnings: totalEarnings.toFixed(2)
-  })
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ username: user.username, walletAddress })
 });
-
 const data = await res.json();
+if (data.success) alert(`تم إرسال Pi بنجاح!\nالمبلغ: ${data.amount} Pi\nTxid: ${data.txid}`);
 
-if (!res.ok || !data.success) {
   throw new Error(data.error || "Request failed");
 }
 
