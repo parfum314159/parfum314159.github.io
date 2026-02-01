@@ -222,24 +222,23 @@ async function onIncompletePaymentFound(incompletePayment) {
 // ================= LOGIN =================
 document.getElementById("loginBtn").onclick = async () => {
   try {
-    const authResult = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
+    const authResult = await Pi.authenticate(["username", "payments"]);
     user = authResult.user;
-    userUid = user.uid;
 
-  // 🔹 تحقق من أي دفعات معلقة
-await resolvePendingPayments();
+    // 👇 تجاهل أي بيانات سابقة
+    userUid = "new-" + Date.now(); // UID مؤقت جديد لكل تسجيل دخول
+    console.log("Temporary UID:", userUid);
 
     document.getElementById("welcome").innerText = `Welcome, ${user.username}!`;
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
 
-    loadBooks();
-    loadMyPurchases();
-    loadMySales();
+    // لا تقم بتحميل بيانات سابقة من Firebase
   } catch (err) {
     alert("Login failed. Open in Pi Browser.");
   }
 };
+
 
 function logout() {
   location.reload();
