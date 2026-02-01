@@ -124,40 +124,9 @@ Pi.init({ version: "2.0", sandbox: false });
 
 let user = null;
 let userUid = null;
-
-  // 🔹 فحص وإتمام أي دفعات معلقة تلقائياً
-async function resolvePendingPayments() {
-  if (!userUid) return;
-  try {
-    const res = await fetch(`${BACKEND_URL}/pending-payments?userUid=${userUid}`);
-    const data = await res.json();
-    if (!data.success || data.pendingPayments.length === 0) return;
-
-    for (const p of data.pendingPayments) {
-      try {
-        await fetch(`${BACKEND_URL}/resolve-pending`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId: p.id })
-        });
-      } catch (err) {
-        console.warn(`Failed to complete pending payment ${p.id}, deleting anyway.`);
-        // حذف الدفع المعلق نهائيًا حتى لو فشل
-        await fetch(`${BACKEND_URL}/pendingPayments/${p.id}`, { method: "DELETE" });
-      }
-    }
-    console.log("✅ All pending payments resolved or removed");
-  } catch (err) {
-    console.error("Pending payments error:", err);
-  }
-}
-
-  
 let coverUrl = "";
 let pdfUrl = "";
 let pageCount = "Unknown";
-
-         
 
 // ================= CLOUDINARY =================
 const coverWidget = cloudinary.createUploadWidget({
@@ -227,30 +196,21 @@ async function onIncompletePaymentFound(incompletePayment) {
 // ================= LOGIN =================
 document.getElementById("loginBtn").onclick = async () => {
   try {
-    const authResult = await Pi.authenticate(["username", "payments"]);
+    const authResult = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
     user = authResult.user;
-
-    // UID فعلي من Pi لتجنب تعارضات مؤقتة
     userUid = user.uid;
 
     document.getElementById("welcome").innerText = `Welcome, ${user.username}!`;
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
 
-    //  ✅ فحص ومعالجة الدفعات المعلقة مباشرة بعد تسجيل الدخول
-    await resolvePendingPayments();
-
-    // تحميل الكتب والمبيعات والمشتريات
     loadBooks();
     loadMyPurchases();
     loadMySales();
-    
   } catch (err) {
     alert("Login failed. Open in Pi Browser.");
   }
 };
-
-
 
 function logout() {
   location.reload();
@@ -307,8 +267,6 @@ document.getElementById("saveBookBtn").onclick = saveBook;
 // ================= RATE BOOK =================
 async function rateBook(bookId, voteType, button) {
   if (!userUid) return alert("Login required");
-
-  
   try {
     await fetch(`${BACKEND_URL}/rate-book`, {
       method: "POST",
@@ -330,34 +288,37 @@ async function rateBook(bookId, voteType, button) {
 // ================= BUY =================
 async function buy(bookId, price) {
   if (!userUid) return alert("Login required");
-
-  // ✅ إزالة أي دفعات معلقة قبل الدفع
-  await resolvePendingPayments();
-
   if (!confirm(`Buy this book for ${price} Pi?`)) return;
 
   try {
     await Pi.createPayment({
       amount: price,
       memo: "Spicy Library - Book Purchase",
+      // 🔐 metadata فقط (يستخدمها backend)
       metadata: { bookId, userUid }
     }, {
+      // 🔹 الموافقة من السيرفر
       onReadyForServerApproval: async (paymentId) => {
         await fetch(`${BACKEND_URL}/approve-payment`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId, bookId, userUid })
+          body: JSON.stringify({ paymentId })
         });
       },
+
+      // 🔹 الإكمال من السيرفر (بدون bookId و userUid)
       onReadyForServerCompletion: async (paymentId, txid) => {
         const res = await fetch(`${BACKEND_URL}/complete-payment`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId, txid })
+          body: JSON.stringify({
+            paymentId,
+            txid
+          })
         });
 
         if (!res.ok) {
-          alert("Payment failed, pending payment removed.");
+          alert("Payment failed");
           return;
         }
 
@@ -365,8 +326,10 @@ async function buy(bookId, price) {
         window.open(data.pdfUrl, "_blank");
         alert("Payment successful! The book is now open 📚");
 
-        location.reload(); // تنظيف أي pending نهائيًا
+        // ✅ تنظيف أي pending نهائيًا
+        location.reload();
       },
+
       onCancel: () => alert("Payment cancelled"),
       onError: (err) => alert("Payment error: " + err.message)
     });
@@ -374,7 +337,6 @@ async function buy(bookId, price) {
     alert("Use Pi Browser for payment.");
   }
 }
-
 
 // ================= DOWNLOAD PDF =================
 async function downloadPdf(bookId) {
@@ -610,16 +572,18 @@ async function requestPayout() {
   payoutBtn.disabled = true;
 
   try {
-    
-   const res = await fetch(`${BACKEND_URL}/payout`, {
+    const res = await fetch("https://pi-backend-c8nz.onrender.com/request-payout", {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json"
+  },
   body: JSON.stringify({
     username: user.username,
     walletAddress: walletAddress.trim(),
-    amount: totalEarnings.toFixed(2)
+    earnings: totalEarnings.toFixed(2)
   })
 });
+
 const data = await res.json();
 
 if (!res.ok || !data.success) {
