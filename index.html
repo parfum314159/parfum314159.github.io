@@ -580,22 +580,17 @@ async function requestPayout() {
 const data = await res.json();
 if (data.success) alert(`تم إرسال Pi بنجاح!\nالمبلغ: ${data.amount} Pi\nTxid: ${data.txid}`);
 
-  throw new Error(data.error || "Request failed");
+ if (!data.success) {
+  alert(data.error || "Payout failed");
+  return;
 }
 
-alert(
-  "Payout request sent successfully!\n\n" +
-  "• Status: Pending\n" +
-  "• Minimum processing time: 1–30 days\n\n" +
-  "You will be contacted if needed."
-);
+alert(`✅ تم إرسال Pi بنجاح!
+المبلغ: ${data.amount} Pi
+TxID: ${data.txid}`);
 
 loadMySales();
 
-
-    alert("Payout request sent successfully!\nYour earnings have been reset to zero.\nPayment will be processed within 1-30 days (usually 1-2 days).");
-
-    loadMySales();
   } catch (e) {
     console.error("Payout request error:", e);
     alert("Failed to send request. Check your connection and try again.\nYour earnings are safe and not reset.");
