@@ -127,6 +127,7 @@ let userUid = null;
 let coverUrl = "";
 let pdfUrl = "";
 let pageCount = "Unknown";
+  let totalEarnings = 0;
 
 // ================= CLOUDINARY =================
 const coverWidget = cloudinary.createUploadWidget({
@@ -531,11 +532,13 @@ async function loadMySales() {
       return;
     }
 
-    let total = 0;
+   totalEarnings = 0;
+
     box.innerHTML = "";
     for (const b of books) {
       const profit = (b.salesCount || 0) * b.price * 0.7;
-      total += profit;
+      totalEarnings += profit;
+
       box.innerHTML += `
         <div class="sales-book">
           <img src="${b.cover}" style="width:150px;border-radius:6px;">
@@ -545,8 +548,9 @@ async function loadMySales() {
           <div class="profit">Your earnings: ${profit.toFixed(2)} Pi (70%)</div>
         </div>`;
     }
-    totalBox.innerHTML = `<div class='total-profit'>Total earnings: ${total.toFixed(2)} Pi</div>`;
-    document.getElementById("payoutBtn").disabled = total < 5;
+    totalBox.innerHTML = `<div class='total-profit'>Total earnings: ${totalEarnings.toFixed(2)} Pi</div>`;
+document.getElementById("payoutBtn").disabled = totalEarnings < 5;
+
   } catch (e) {
     box.innerHTML = "<p>Error loading sales.</p>";
   }
@@ -554,17 +558,15 @@ async function loadMySales() {
 
 // ================= REQUEST PAYOUT =================
 async function requestPayout() {
+  if (totalEarnings < 5) {
+    alert("Minimum payout is 5 Pi");
+    return;
+  }
+
   try {
-    if (totalEarnings < 5) {
-      alert("Minimum payout is 5 Pi");
-      return;
-    }
-
-    payoutBtn.disabled = true;
-
     await Pi.createPayment(
       {
-        amount: totalEarnings,
+        amount: Number(totalEarnings.toFixed(2)),
         memo: "Spicy Library - Earnings Withdrawal",
         metadata: {
           type: "payout",
@@ -587,7 +589,7 @@ async function requestPayout() {
             body: JSON.stringify({ paymentId, txid })
           });
 
-          alert("Payout successful 🎉");
+          alert("✅ تم السحب بنجاح");
           loadMySales();
         },
 
@@ -597,18 +599,16 @@ async function requestPayout() {
 
         onError: (err) => {
           console.error(err);
-          alert("خطأ أثناء السحب");
+          alert("حدث خطأ أثناء السحب");
         }
       }
     );
-
   } catch (err) {
     console.error(err);
-    alert("Payout failed");
-  } finally {
-    payoutBtn.disabled = false;
+    alert("فشل تنفيذ السحب");
   }
 }
+
 
 
 // ================= TABS & SEARCH & TOGGLE =================
