@@ -580,10 +580,11 @@ async function requestPayout() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          username: user.username,
-          walletAddress
-        })
+body: JSON.stringify({
+  username: user.username,
+  userUid: userUid,
+  walletAddress
+})
       }
     );
 
