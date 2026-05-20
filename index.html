@@ -559,41 +559,54 @@ document.getElementById("payoutBtn").disabled = totalEarnings < 5;
 
 // ================= REQUEST PAYOUT (SIMULATED) =================
 async function requestPayout() {
+
   if (totalEarnings < 5) {
     alert("Minimum payout is 5 Pi");
     return;
   }
 
-  const ok = confirm(
-    `You are requesting a payout of ${totalEarnings.toFixed(2)} Pi.\n\n` +
-    `⚠️ This is a TESTNET simulation.\n` +
-    `No real Pi will be transferred.\n\nContinue?`
+  let walletAddress = prompt(
+    "Enter your Pi wallet address"
   );
 
-  if (!ok) return;
+  if (!walletAddress) return;
 
   try {
-    const res = await fetch(`${BACKEND_URL}/withdraw-simulated`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: user.username,
-        amount: Number(totalEarnings.toFixed(2))
-      })
-    });
+
+    const res = await fetch(
+      `${BACKEND_URL}/request-payout`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username: user.username,
+          walletAddress
+        })
+      }
+    );
 
     const data = await res.json();
-    if (!data.success) throw new Error("Withdraw failed");
 
-    alert("✅ Withdrawal request processed (simulation)");
+    if (!data.success) {
+      alert(data.error || "Payout failed");
+      return;
+    }
+
+    alert(
+      `✅ ${data.amount} Pi sent successfully!\n\nTXID:\n${data.txid}`
+    );
+
     loadMySales();
 
-  } catch (err) {
-    console.error(err);
-    alert("Withdrawal failed");
+  } catch (e) {
+
+    console.error(e);
+
+    alert("Payout failed");
   }
 }
-
 
 
 // ================= TABS & SEARCH & TOGGLE =================
