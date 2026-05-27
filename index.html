@@ -840,17 +840,70 @@ textarea{
     <div class="books" id="myBooks"></div>
   </div>
 
-  <div id="sales" class="tab-content">
-    <h3>My Sales & Earnings</h3>
-    <p>Platform fee: 30% – You get 70% of each sale</p>
-    <p>Minimum payout: 5 Pi</p>
-    <div class="payout-note">
-  <strong>Instant payout:</strong> Withdrawals are processed automatically and sent instantly to your Pi wallet after approval.
-</div>
-    <div id="mySalesBooks"></div>
-    <div id="totalEarnings" class="total-profit">Loading earnings...</div>
-    <button id="payoutBtn" onclick="requestPayout()" disabled>Request Payout</button>
+<div id="sales" class="tab-content">
+
+  <h3>My Sales & Earnings</h3>
+
+  <!-- TOP EARNINGS CARD -->
+  <div style="
+    width:90%;
+    max-width:650px;
+    margin:20px auto;
+    padding:25px;
+    border-radius:24px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.08);
+    backdrop-filter:blur(18px);
+    box-shadow:0 0 35px rgba(139,92,246,0.18);
+  ">
+
+    <div id="totalEarnings" class="total-profit">
+      Loading earnings...
+    </div>
+
+    <button
+      id="payoutBtn"
+      onclick="requestPayout()"
+      disabled
+      style="
+        margin-top:15px;
+        width:100%;
+        max-width:320px;
+      "
+    >
+      Request Payout
+    </button>
+
+    <p style="
+      margin-top:18px;
+      color:#cbd5e1;
+      font-size:14px;
+    ">
+      Platform fee: 30% – You get 70% of each sale
+    </p>
+
+    <p style="
+      color:#94a3b8;
+      font-size:13px;
+      margin-top:8px;
+    ">
+      Minimum payout: 5 Pi
+    </p>
+
   </div>
+
+  <!-- PAYOUT NOTE -->
+  <div class="payout-note">
+    <strong>Instant payout:</strong>
+    Withdrawals are processed automatically and sent instantly
+    to your Pi wallet after approval.
+  </div>
+
+  <!-- SALES BOOKS -->
+  <div id="mySalesBooks"></div>
+
+</div>
+  
 </div>
 
 <script>
