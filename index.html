@@ -782,18 +782,8 @@ textarea{
 </div>
 
 <div id="app" class="hidden">
-  <h3 id="welcome"></h3>
-  <button onclick="toggleAdd()">➕ Add Book</button>
-  <button onclick="logout()">Logout</button>
 
-  <div>
-    <button class="tab-btn active" onclick="openTab('store')">Store</button>
-    <button class="tab-btn" onclick="openTab('purchases')">My Purchases</button>
-    <button class="tab-btn" onclick="openTab('sales')">My Sales</button>
-  </div>
-
-  <div id="store" class="tab-content active">
-    <div id="addBook" class="hidden">
+   <div id="addBook" class="hidden">
       <h3>Add Book</h3>
       <input id="title" placeholder="Book title">
       <input id="price" type="number" min="0.1" step="0.1" placeholder="Price (Pi)">
@@ -823,6 +813,19 @@ textarea{
       <button id="saveBookBtn" disabled>Save Book</button>
     </div>
 
+  
+  <h3 id="welcome"></h3>
+  <button onclick="toggleAdd()">➕ Add Book</button>
+  <button onclick="logout()">Logout</button>
+
+  <div>
+    <button class="tab-btn active" onclick="openTab('store')">Store</button>
+    <button class="tab-btn" onclick="openTab('purchases')">My Purchases</button>
+    <button class="tab-btn" onclick="openTab('sales')">My Sales</button>
+  </div>
+
+  <div id="store" class="tab-content active">
+   
     <h3>All Books</h3>
     <input type="text" id="searchInput" placeholder="Search by book title..." oninput="searchBooks()">
     <div class="books" id="books"></div>
