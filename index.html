@@ -1239,7 +1239,14 @@ allBooksData.forEach(b => {
 
 // ================= RENDER BOOKS =================
 
+let isRenderingBooks = false;
+
 async function renderBooks(booksArray) {
+
+  // منع تشغيل الدالة مرتين بنفس الوقت
+  if (isRenderingBooks) return;
+
+  isRenderingBooks = true;
 
   const box = document.getElementById("books");
 
@@ -1247,8 +1254,11 @@ async function renderBooks(booksArray) {
 
   if (booksArray.length === 0) {
     box.innerHTML = "<p>No books found.</p>";
+    isRenderingBooks = false;
     return;
   }
+
+  let html = "";
 
   for (const b of booksArray) {
 
@@ -1284,7 +1294,7 @@ async function renderBooks(booksArray) {
       ? `Sales: ${b.salesCount}`
       : "";
 
-    box.innerHTML += `
+    html += `
       <div class="book">
 
         <img src="${b.cover}" alt="Cover">
@@ -1336,8 +1346,12 @@ async function renderBooks(booksArray) {
 
     b.likesCount = likes;
   }
+
+  // إضافة HTML مرة واحدة فقط
+  box.innerHTML = html;
+
+  isRenderingBooks = false;
 }
-  
 
 
 // ================= Check if redirected from book.html =================
