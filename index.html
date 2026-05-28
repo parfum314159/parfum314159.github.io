@@ -771,6 +771,50 @@ textarea{
 
 }
 
+  /* ===== FILTERS ===== */
+
+.filter-bar{
+
+  display:flex;
+
+  justify-content:center;
+
+  flex-wrap:wrap;
+
+  gap:12px;
+
+  margin:20px 0;
+}
+
+.filter-btn{
+
+  background:rgba(255,255,255,0.06);
+
+  border:1px solid rgba(255,255,255,0.08);
+
+  padding:12px 20px;
+
+  border-radius:14px;
+
+  color:white;
+
+  font-weight:700;
+
+  transition:0.3s;
+}
+
+.filter-btn.active{
+
+  background:linear-gradient(
+    135deg,
+    #00f5ff,
+    #8b5cf6,
+    #ff4ecd
+  );
+
+  box-shadow:0 0 20px rgba(139,92,246,0.35);
+}
+
 </style>
 </head>
 <body>
@@ -828,6 +872,26 @@ textarea{
    
     <h3>All Books</h3>
     <input type="text" id="searchInput" placeholder="Search by book title..." oninput="searchBooks()">
+
+<div class="filter-bar">
+  <button class="filter-btn active" onclick="filterBooks('all', this)">
+    All Books
+  </button>
+
+  <button class="filter-btn" onclick="filterBooks('likes', this)">
+    Most Liked
+  </button>
+
+  <button class="filter-btn" onclick="filterBooks('sales', this)">
+    Best Sellers
+  </button>
+
+  <button class="filter-btn" onclick="filterBooks('new', this)">
+    New Books
+  </button>
+</div>
+
+    
     <div class="books" id="books"></div>
 
     <div class="disclaimer">
@@ -1142,6 +1206,9 @@ async function downloadPdf(bookId) {
   window.open(data.pdfUrl, "_blank");
 }
 
+
+ let allBooksData = []; 
+  
 // ================= LOAD BOOKS =================
 async function loadBooks() {
   const box = document.getElementById("books");
@@ -1152,48 +1219,125 @@ async function loadBooks() {
     if (!json.success) throw new Error(json.error);
 
     const books = json.books;
+
+allBooksData = books;
+
+allBooksData.forEach(b => {
+  b.likesCount = b.likesCount || 0;
+});
+    
     box.innerHTML = "";
     if (books.length === 0) return box.innerHTML = "<p>No books available.</p>";
 
-    for (const b of books) {
-      const ratingsRes = await fetch(`${BACKEND_URL}/book-ratings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bookId: b.id, userUid })
-      });
-      const ratingsJson = await ratingsRes.json();
-      const { likes = 0, dislikes = 0, userVote = null } = ratingsJson.success ? ratingsJson : {};
-
-      const desc = b.description ? b.description.substring(0, 100) + "..." : "No description";
-      const lang = b.language ? `Language: ${b.language}` : "";
-      const owner = `By: ${b.owner}`;
-      const pages = b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
-      const sales = b.salesCount > 0 ? `Sales: ${b.salesCount}` : "";
-
-      box.innerHTML += `
-        <div class="book">
-          <img src="${b.cover}" alt="Cover">
-          <h4>${b.title}</h4>
-          <p><strong>${b.price} Pi</strong></p>
-          <div class="description">${desc}</div>
-          <div class="owner">${owner}</div>
-          <div class="language">${lang}</div>
-          <div class="pages">${pages}</div>
-          <div class="sales">${sales}</div>
-          <div class="ratings">
-            <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${b.id}', 'like', this)" ${userVote || !user ? 'disabled' : ''}>👍</button> ${likes}
-            <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${b.id}', 'dislike', this)" ${userVote || !user ? 'disabled' : ''}>👎</button> ${dislikes}
-          </div>
-          <button onclick="buy('${b.id}', ${b.price})" ${!user ? 'disabled' : ''}>Buy with Pi</button>
-          <button onclick="openBook('${b.id}')">View 📖</button>
-
-        </div>`;
-    }
+    renderBooks(books);
   } catch (e) {
     box.innerHTML = "<p>Error loading books. Retrying...</p>";
     setTimeout(loadBooks, 5000);
   }
 }
+
+
+// ================= RENDER BOOKS =================
+
+async function renderBooks(booksArray) {
+
+  const box = document.getElementById("books");
+
+  box.innerHTML = "";
+
+  if (booksArray.length === 0) {
+    box.innerHTML = "<p>No books found.</p>";
+    return;
+  }
+
+  for (const b of booksArray) {
+
+    const ratingsRes = await fetch(`${BACKEND_URL}/book-ratings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookId: b.id, userUid })
+    });
+
+    const ratingsJson = await ratingsRes.json();
+
+    const {
+      likes = 0,
+      dislikes = 0,
+      userVote = null
+    } = ratingsJson.success ? ratingsJson : {};
+
+    const desc = b.description
+      ? b.description.substring(0, 100) + "..."
+      : "No description";
+
+    const lang = b.language
+      ? `Language: ${b.language}`
+      : "";
+
+    const owner = `By: ${b.owner}`;
+
+    const pages = b.pageCount !== "Unknown"
+      ? `Pages: ${b.pageCount}`
+      : "";
+
+    const sales = b.salesCount > 0
+      ? `Sales: ${b.salesCount}`
+      : "";
+
+    box.innerHTML += `
+      <div class="book">
+
+        <img src="${b.cover}" alt="Cover">
+
+        <h4>${b.title}</h4>
+
+        <p><strong>${b.price} Pi</strong></p>
+
+        <div class="description">${desc}</div>
+
+        <div class="owner">${owner}</div>
+
+        <div class="language">${lang}</div>
+
+        <div class="pages">${pages}</div>
+
+        <div class="sales">${sales}</div>
+
+        <div class="ratings">
+          <button
+            class="like-btn ${userVote === 'like' ? 'liked' : ''}"
+            onclick="rateBook('${b.id}', 'like', this)"
+            ${userVote || !user ? 'disabled' : ''}
+          >
+            👍
+          </button> ${likes}
+
+          <button
+            class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}"
+            onclick="rateBook('${b.id}', 'dislike', this)"
+            ${userVote || !user ? 'disabled' : ''}
+          >
+            👎
+          </button> ${dislikes}
+        </div>
+
+        <button onclick="buy('${b.id}', ${b.price})"
+          ${!user ? 'disabled' : ''}
+        >
+          Buy with Pi
+        </button>
+
+        <button onclick="openBook('${b.id}')">
+          View 📖
+        </button>
+
+      </div>
+    `;
+
+    b.likesCount = likes;
+  }
+}
+  
 
 
 // ================= Check if redirected from book.html =================
@@ -1420,6 +1564,58 @@ function searchBooks() {
     book.style.display = title.includes(input) ? "block" : "none";
   });
 }
+
+
+// ================= FILTER BOOKS =================
+
+function filterBooks(type, btn) {
+
+  // تغيير الزر النشط
+  document.querySelectorAll(".filter-btn")
+    .forEach(b => b.classList.remove("active"));
+
+  btn.classList.add("active");
+
+  let filtered = [...allBooksData];
+
+  // ===== ALL =====
+  if (type === "all") {
+    renderBooks(filtered);
+    return;
+  }
+
+  // ===== MOST LIKED =====
+  if (type === "likes") {
+
+    filtered.sort((a, b) =>
+      (b.likesCount || 0) - (a.likesCount || 0)
+    );
+
+    renderBooks(filtered);
+    return;
+  }
+
+  // ===== BEST SELLERS =====
+  if (type === "sales") {
+
+    filtered.sort((a, b) =>
+      (b.salesCount || 0) - (a.salesCount || 0)
+    );
+
+    renderBooks(filtered);
+    return;
+  }
+
+  // ===== NEW BOOKS =====
+  if (type === "new") {
+
+    filtered.reverse();
+
+    renderBooks(filtered);
+    return;
+  }
+}
+  
 
 function toggleAdd() {
   if (!user) return alert("Login required");
