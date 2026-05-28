@@ -1401,59 +1401,146 @@ window.addEventListener("load", () => {
 
   
 // ================= LOAD MY PURCHASES =================
+
+let isLoadingPurchases = false;
+
 async function loadMyPurchases() {
+
+  // منع التكرار
+  if (isLoadingPurchases) return;
+
+  isLoadingPurchases = true;
+
   const box = document.getElementById("myBooks");
+
   box.innerHTML = "<p>Loading purchases...</p>";
-  if (!userUid) return box.innerHTML = "<p>Please log in.</p>";
+
+  if (!userUid) {
+    box.innerHTML = "<p>Please log in.</p>";
+    isLoadingPurchases = false;
+    return;
+  }
 
   try {
+
     const res = await fetch(`${BACKEND_URL}/my-purchases`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userUid })
     });
+
     const json = await res.json();
+
     if (!json.success) throw new Error(json.error);
 
     const books = json.books;
+
     box.innerHTML = "";
-    if (books.length === 0) return box.innerHTML = "<p>No purchases yet.</p>";
+
+    if (books.length === 0) {
+      box.innerHTML = "<p>No purchases yet.</p>";
+      isLoadingPurchases = false;
+      return;
+    }
+
+    let html = "";
 
     for (const b of books) {
+
       const ratingsRes = await fetch(`${BACKEND_URL}/book-ratings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookId: b.id, userUid })
       });
+
       const ratingsJson = await ratingsRes.json();
-      const { likes = 0, dislikes = 0, userVote = null } = ratingsJson.success ? ratingsJson : {};
 
-      const desc = b.description ? b.description.substring(0, 100) + "..." : "No description";
-      const lang = b.language ? `Language: ${b.language}` : "";
+      const {
+        likes = 0,
+        dislikes = 0,
+        userVote = null
+      } = ratingsJson.success ? ratingsJson : {};
+
+      const desc = b.description
+        ? b.description.substring(0, 100) + "..."
+        : "No description";
+
+      const lang = b.language
+        ? `Language: ${b.language}`
+        : "";
+
       const owner = `By: ${b.owner}`;
-      const pages = b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
-      const sales = b.salesCount > 0 ? `Sales: ${b.salesCount}` : "";
 
-      box.innerHTML += `
+      const pages = b.pageCount !== "Unknown"
+        ? `Pages: ${b.pageCount}`
+        : "";
+
+      const sales = b.salesCount > 0
+        ? `Sales: ${b.salesCount}`
+        : "";
+
+      html += `
         <div class="book">
+
           <img src="${b.cover}" alt="Cover">
+
           <h4>${b.title}</h4>
+
           <div class="description">${desc}</div>
+
           <div class="owner">${owner}</div>
+
           <div class="language">${lang}</div>
+
           <div class="pages">${pages}</div>
+
           <div class="sales">${sales}</div>
+
           <div class="ratings">
-            <button class="like-btn ${userVote === 'like' ? 'liked' : ''}" onclick="rateBook('${b.id}', 'like', this)" ${userVote ? 'disabled' : ''}>👍</button> ${likes}
-            <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}" onclick="rateBook('${b.id}', 'dislike', this)" ${userVote ? 'disabled' : ''}>👎</button> ${dislikes}
+
+            <button
+              class="like-btn ${userVote === 'like' ? 'liked' : ''}"
+              onclick="rateBook('${b.id}', 'like', this)"
+              ${userVote ? 'disabled' : ''}
+            >
+              👍
+            </button> ${likes}
+
+            <button
+              class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}"
+              onclick="rateBook('${b.id}', 'dislike', this)"
+              ${userVote ? 'disabled' : ''}
+            >
+              👎
+            </button> ${dislikes}
+
           </div>
-          <button onclick="downloadPdf('${b.id}')">Download PDF</button>
-        </div>`;
+
+          <button onclick="downloadPdf('${b.id}')">
+            Download PDF
+          </button>
+
+        </div>
+      `;
     }
+
+    // إضافة HTML مرة واحدة فقط
+    box.innerHTML = html;
+
   } catch (e) {
+
     box.innerHTML = "<p>Error loading purchases. Retrying...</p>";
-    setTimeout(loadMyPurchases, 5000);
+
+    setTimeout(() => {
+      isLoadingPurchases = false;
+      loadMyPurchases();
+    }, 5000);
+
+    return;
   }
+
+  // فتح القفل
+  isLoadingPurchases = false;
 }
 
 // ================= LOAD MY SALES =================
