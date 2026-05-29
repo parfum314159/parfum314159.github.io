@@ -1269,7 +1269,11 @@ async function downloadPdf(bookId) {
 // ================= LOAD BOOKS =================
 async function loadBooks() {
   const box = document.getElementById("books");
-  box.innerHTML = "<p>Loading books...</p>";
+ const lang =
+  localStorage.getItem("appLanguage") || "en";
+
+box.innerHTML =
+  `<p>${translations[lang].loadingBooks}</p>`;
   try {
     const res = await fetch(`${BACKEND_URL}/books`);
     const json = await res.json();
@@ -1284,7 +1288,8 @@ allBooksData.forEach(b => {
 });
     
     box.innerHTML = "";
-    if (books.length === 0) return box.innerHTML = "<p>No books available.</p>";
+    if (books.length === 0)
+  return box.innerHTML = `<p>${translations[lang].noBooks}</p>`;
 
     renderBooks(books);
   } catch (e) {
@@ -1296,7 +1301,16 @@ allBooksData.forEach(b => {
 
 // ================= RENDER BOOKS =================
 
+// ================= RENDER BOOKS =================
+
 let isRenderingBooks = false;
+
+async function renderBooks(booksArray) {
+
+  const lang =
+    localStorage.getItem("appLanguage") || "en";
+
+  const t = translations[lang];
 
 async function renderBooks(booksArray) {
 
@@ -1388,15 +1402,15 @@ async function renderBooks(booksArray) {
           </button> ${dislikes}
         </div>
 
-        <button onclick="buy('${b.id}', ${b.price})"
-          ${!user ? 'disabled' : ''}
-        >
-          Buy with Pi
-        </button>
+       <button onclick="buy('${b.id}', ${b.price})"
+  ${!user ? 'disabled' : ''}
+>
+  ${t.buy}
+</button>
 
-        <button onclick="openBook('${b.id}')">
-          View 📖
-        </button>
+<button onclick="openBook('${b.id}')">
+  ${t.view}
+</button>
 
       </div>
     `;
@@ -1909,7 +1923,34 @@ const translations = {
     logout: "Logout",
     store: "Store",
     purchases: "My Purchases",
-    sales: "My Sales"
+    sales: "My Sales",
+
+    allBooks: "All Books",
+    searchPlaceholder: "Search by book title...",
+
+    filterAll: "All Books",
+    filterLikes: "Most Liked",
+    filterSales: "Best Sellers",
+    filterNew: "Old Books",
+
+    addBookTitle: "Add Book",
+    bookTitle: "Book title",
+    price: "Price (Pi)",
+    description: "Book description",
+    selectLanguage: "Select language",
+    pages: "Number of pages",
+    uploadCover: "Upload Cover",
+    uploadPdf: "Upload PDF",
+    rights: "I confirm that I own all rights to this book",
+    saveBook: "Save Book",
+
+    buy: "Buy with Pi",
+    view: "View 📖",
+
+    download: "Download PDF",
+
+    loadingBooks: "Loading books...",
+    noBooks: "No books available."
   },
 
   ar: {
@@ -1919,7 +1960,34 @@ const translations = {
     logout: "تسجيل الخروج",
     store: "المتجر",
     purchases: "مشترياتي",
-    sales: "مبيعاتي"
+    sales: "مبيعاتي",
+
+    allBooks: "كل الكتب",
+    searchPlaceholder: "ابحث عن كتاب...",
+
+    filterAll: "كل الكتب",
+    filterLikes: "الأكثر إعجاباً",
+    filterSales: "الأكثر مبيعاً",
+    filterNew: "الكتب القديمة",
+
+    addBookTitle: "إضافة كتاب",
+    bookTitle: "عنوان الكتاب",
+    price: "السعر (Pi)",
+    description: "وصف الكتاب",
+    selectLanguage: "اختر اللغة",
+    pages: "عدد الصفحات",
+    uploadCover: "رفع الغلاف",
+    uploadPdf: "رفع PDF",
+    rights: "أؤكد أنني أملك جميع حقوق هذا الكتاب",
+    saveBook: "حفظ الكتاب",
+
+    buy: "شراء عبر Pi",
+    view: "عرض 📖",
+
+    download: "تحميل PDF",
+
+    loadingBooks: "جاري تحميل الكتب...",
+    noBooks: "لا توجد كتب."
   },
 
   fr: {
@@ -1929,7 +1997,34 @@ const translations = {
     logout: "Déconnexion",
     store: "Boutique",
     purchases: "Mes achats",
-    sales: "Mes ventes"
+    sales: "Mes ventes",
+
+    allBooks: "Tous les livres",
+    searchPlaceholder: "Rechercher un livre...",
+
+    filterAll: "Tous les livres",
+    filterLikes: "Les plus aimés",
+    filterSales: "Meilleures ventes",
+    filterNew: "Anciens livres",
+
+    addBookTitle: "Ajouter un livre",
+    bookTitle: "Titre du livre",
+    price: "Prix (Pi)",
+    description: "Description du livre",
+    selectLanguage: "Choisir la langue",
+    pages: "Nombre de pages",
+    uploadCover: "Télécharger la couverture",
+    uploadPdf: "Télécharger le PDF",
+    rights: "Je confirme posséder tous les droits",
+    saveBook: "Enregistrer le livre",
+
+    buy: "Acheter avec Pi",
+    view: "Voir 📖",
+
+    download: "Télécharger PDF",
+
+    loadingBooks: "Chargement des livres...",
+    noBooks: "Aucun livre disponible."
   },
 
   zh: {
@@ -1939,55 +2034,96 @@ const translations = {
     logout: "退出登录",
     store: "商店",
     purchases: "我的购买",
-    sales: "我的销售"
+    sales: "我的销售",
+
+    allBooks: "所有书籍",
+    searchPlaceholder: "搜索书籍...",
+
+    filterAll: "所有书籍",
+    filterLikes: "最受喜欢",
+    filterSales: "畅销书",
+    filterNew: "旧书",
+
+    addBookTitle: "添加书籍",
+    bookTitle: "书名",
+    price: "价格 (Pi)",
+    description: "书籍描述",
+    selectLanguage: "选择语言",
+    pages: "页数",
+    uploadCover: "上传封面",
+    uploadPdf: "上传 PDF",
+    rights: "我确认拥有本书的全部版权",
+    saveBook: "保存书籍",
+
+    buy: "使用 Pi 购买",
+    view: "查看 📖",
+
+    download: "下载 PDF",
+
+    loadingBooks: "正在加载书籍...",
+    noBooks: "暂无书籍。"
   }
 
 };
 
 function changeLanguage() {
 
-  const lang =
-    document.getElementById("languageSwitcher").value;
+  const lang = document.getElementById("languageSwitcher").value;
 
   localStorage.setItem("appLanguage", lang);
 
   const t = translations[lang];
 
-  // LOGIN PAGE
-  document.querySelector(".notice").innerText =
-    t.loginNotice;
+  // LOGIN
+  document.querySelector(".notice").innerText = t.loginNotice;
+  document.getElementById("loginBtn").innerText = t.loginBtn;
 
-  document.getElementById("loginBtn").innerText =
-    t.loginBtn;
+  // MAIN BUTTONS
+  document.querySelector('button[onclick="toggleAdd()"]').innerText = t.addBook;
+  document.querySelector('button[onclick="logout()"]').innerText = t.logout;
 
-  // APP BUTTONS
-  const buttons = document.querySelectorAll("button");
+  // TABS
+  document.querySelector('button[onclick="openTab(\'store\')"]').innerText = t.store;
+  document.querySelector('button[onclick="openTab(\'purchases\')"]').innerText = t.purchases;
+  document.querySelector('button[onclick="openTab(\'sales\')"]').innerText = t.sales;
 
-  buttons.forEach(btn => {
+  // STORE
+  document.querySelector("#store h3").innerText = t.allBooks;
 
-    if (btn.innerText.includes("Add Book"))
-      btn.innerText = t.addBook;
+  document.getElementById("searchInput").placeholder =
+    t.searchPlaceholder;
 
-    if (btn.innerText.includes("Logout"))
-      btn.innerText = t.logout;
+  // FILTERS
+  const filters = document.querySelectorAll(".filter-btn");
 
-    if (btn.innerText.includes("Store"))
-      btn.innerText = t.store;
+  filters[0].innerText = t.filterAll;
+  filters[1].innerText = t.filterLikes;
+  filters[2].innerText = t.filterSales;
+  filters[3].innerText = t.filterNew;
 
-    if (btn.innerText.includes("My Purchases"))
-      btn.innerText = t.purchases;
+  // ADD BOOK PANEL
+  document.querySelector("#addBook h3").innerText = t.addBookTitle;
 
-    if (btn.innerText.includes("My Sales"))
-      btn.innerText = t.sales;
+  document.getElementById("title").placeholder = t.bookTitle;
+  document.getElementById("price").placeholder = t.price;
+  document.getElementById("description").placeholder = t.description;
+  document.getElementById("manualPages").placeholder = "e.g. 250";
 
-  });
+  document.getElementById("uploadCoverBtn").innerText = t.uploadCover;
+  document.getElementById("uploadPdfBtn").innerText = t.uploadPdf;
 
-  // العربية RTL
-  if (lang === "ar") {
-    document.body.style.direction = "rtl";
-  } else {
-    document.body.style.direction = "ltr";
-  }
+  document.querySelector("#saveBookBtn").innerText = t.saveBook;
+
+  document.querySelector("#addBook label").lastChild.textContent =
+    " " + t.rights;
+
+  // RTL
+  document.body.style.direction =
+    lang === "ar" ? "rtl" : "ltr";
+
+  // إعادة رسم الكتب باللغة الجديدة
+  renderBooks(allBooksData);
+
 }
 
 // تحميل اللغة المحفوظة
