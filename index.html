@@ -2036,7 +2036,7 @@ function closeModal() {
 // استمع لرسائل من book.html
 window.addEventListener("message", async (event) => {
   // تأكد أن الرسالة من موقعك فقط
-  if(event.origin !== "https://parfum314159.github.io") return;
+  if(event.origin !== "https://spicylibrary.online") return;
 
   const msg = event.data;
 
@@ -2098,7 +2098,7 @@ window.addEventListener("message", async (event) => {
           window.openedBook.postMessage({
             type: "PAYMENT_SUCCESS",
             bookId: msg.bookId
-          }, "https://parfum314159.github.io");
+          }, "https://spicylibrary.online");
 
           // فتح تبويب المشتريات تلقائياً
           openTab("purchases");
@@ -2111,7 +2111,7 @@ window.addEventListener("message", async (event) => {
 
           window.openedBook.postMessage({
             type: "PAYMENT_CANCELLED"
-          }, "https://parfum314159.github.io");
+          }, "https://spicylibrary.online");
 
         },
 
@@ -2120,7 +2120,7 @@ window.addEventListener("message", async (event) => {
           window.openedBook.postMessage({
             type: "PAYMENT_FAILED",
             error: err.message
-          }, "https://parfum314159.github.io");
+          }, "https://spicylibrary.online");
 
         }
 
