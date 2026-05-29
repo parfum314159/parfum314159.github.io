@@ -1799,7 +1799,9 @@ function openBook(bookId) {
 
   
   // ================= LEGAL TEXT =================
-const PrivacyPolicyText = `
+const PrivacyPolicyText = {
+
+en: `
 Privacy Policy - Spicy Library
 
 We respect your privacy and protect your data. We collect:
@@ -1819,9 +1821,81 @@ Your data is used for:
 We do not share your data with third parties unless required by law.
 
 Contact: spicy3423@gmail.com
-`;
+`,
 
-const TermsOfServiceText = `
+ar: `
+سياسة الخصوصية - Spicy Library
+
+نحن نحترم خصوصيتك ونحمي بياناتك. نقوم بجمع:
+- معرف Pi Network واسم المستخدم
+- سجل المشتريات
+- بيانات المبيعات للمؤلفين
+- عناوين محافظ Pi للسحب
+
+نحن لا نجمع كلمات المرور أو المفاتيح الخاصة.
+
+يتم استخدام بياناتك من أجل:
+- تسجيل الدخول وتشغيل التطبيق
+- معالجة المدفوعات
+- تسليم الكتب
+- أرباح المؤلفين وعمليات السحب
+
+لا نقوم بمشاركة بياناتك مع أي طرف ثالث إلا إذا كان ذلك مطلوبًا قانونيًا.
+
+التواصل:
+spicy3423@gmail.com
+`,
+
+fr: `
+Politique de confidentialité - Spicy Library
+
+Nous respectons votre vie privée et protégeons vos données. Nous collectons :
+- UID et nom d'utilisateur Pi Network
+- Historique des achats
+- Données de ventes des auteurs
+- Adresses de portefeuille Pi (pour les retraits)
+
+Nous ne collectons PAS les mots de passe ni les clés privées.
+
+Vos données sont utilisées pour :
+- La connexion et le fonctionnement de l'application
+- Le traitement des paiements
+- La livraison des livres
+- Les revenus et retraits des auteurs
+
+Nous ne partageons pas vos données avec des tiers sauf obligation légale.
+
+Contact :
+spicy3423@gmail.com
+`,
+
+zh: `
+隐私政策 - Spicy Library
+
+我们尊重您的隐私并保护您的数据。我们会收集：
+- Pi Network 用户ID和用户名
+- 购买记录
+- 作者销售数据
+- Pi 钱包地址（用于提现）
+
+我们不会收集密码或私钥。
+
+您的数据将用于：
+- 登录和应用功能
+- 支付处理
+- 图书交付
+- 作者收益和提现
+
+除法律要求外，我们不会与第三方共享您的数据。
+
+联系方式：
+spicy3423@gmail.com
+`
+};
+
+const TermsOfServiceText = {
+
+en: `
 Terms of Service - Spicy Library
 
 By using Spicy Library, you agree to:
@@ -1844,7 +1918,86 @@ Prohibited:
 - Hacking attempts
 
 Contact: spicy3423@gmail.com
-`;
+`,
+
+ar: `
+شروط الاستخدام - Spicy Library
+
+باستخدامك لتطبيق Spicy Library فإنك توافق على:
+- استخدام Pi Network لتسجيل الدخول
+- تحمل المسؤولية الكاملة عن نشاط حسابك
+- التأكد من أن جميع المحتويات التي ترفعها تحترم حقوق النشر
+
+المشتريات:
+- تتم بعملة Pi فقط
+- نهائية وغير قابلة للاسترجاع
+
+المؤلفون:
+- يحصلون على 70٪ من كل عملية بيع
+- الحد الأدنى للسحب هو 5 Pi
+- تتم عمليات السحب تلقائيًا وإرسالها فورًا إلى محفظة Pi الخاصة بك بعد الموافقة.
+
+الممنوعات:
+- رفع محتوى مسروق
+- التلاعب بالمدفوعات
+- محاولات الاختراق
+
+التواصل:
+spicy3423@gmail.com
+`,
+
+fr: `
+Conditions d'utilisation - Spicy Library
+
+En utilisant Spicy Library, vous acceptez :
+- D'utiliser Pi Network pour vous connecter
+- D'être responsable de l'activité de votre compte
+- De garantir que le contenu téléchargé respecte les droits d'auteur
+
+Achats :
+- Effectués uniquement en monnaie Pi
+- Définitifs et non remboursables
+
+Auteurs :
+- Reçoivent 70 % de chaque vente
+- Retrait minimum : 5 Pi
+- Les retraits sont traités automatiquement et envoyés instantanément vers votre portefeuille Pi après approbation.
+
+Interdictions :
+- Télécharger du contenu volé
+- Manipuler les paiements
+- Tentatives de piratage
+
+Contact :
+spicy3423@gmail.com
+`,
+
+zh: `
+服务条款 - Spicy Library
+
+使用 Spicy Library 即表示您同意：
+- 使用 Pi Network 登录
+- 对您的账户活动负责
+- 确保上传内容符合版权规定
+
+购买：
+- 仅使用 Pi 货币
+- 交易最终且不可退款
+
+作者：
+- 每次销售获得 70%
+- 最低提现金额为 5 Pi
+- 提现会在批准后自动并即时发送到您的 Pi 钱包
+
+禁止行为：
+- 上传盗版内容
+- 操纵支付
+- 黑客攻击行为
+
+联系方式：
+spicy3423@gmail.com
+`
+};
 
 // ================= MODAL =================
 function openModal(title, content) {
@@ -2183,14 +2336,14 @@ window.addEventListener("load", () => {
 
   <button
     id="privacyBtn"
-    onclick="openModal(translations[currentLang].privacyTitle, PrivacyPolicyText)"
+   onclick="openModal(translations[currentLang].privacyTitle, PrivacyPolicyText[currentLang])"
   >
     Privacy Policy
   </button>
 
   <button
     id="termsBtn"
-    onclick="openModal(translations[currentLang].termsTitle, TermsOfServiceText)"
+   onclick="openModal(translations[currentLang].termsTitle, TermsOfServiceText[currentLang])"
   >
     Terms of Service
   </button>
