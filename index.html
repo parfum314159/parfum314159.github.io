@@ -2018,49 +2018,143 @@ window.addEventListener("message", async (event) => {
 
   const msg = event.data;
 
-  if(msg.type === "BUY_BOOK") {
-    // فتح نافذة الكتاب للإشارة لاحقًا
-    window.openedBook = event.source;
+  if (msg.type === "BUY_BOOK") {
+
+  // حفظ مرجع نافذة الكتاب
+  window.openedBook = event.source;
+
+  const startPurchase = async () => {
 
     try {
-      const paymentResult = await Pi.createPayment({
+
+      await Pi.createPayment({
         amount: msg.price,
-        memo: "Purchase Book",
-        metadata: { bookId: msg.bookId, userUid } // userUid من تسجيل دخول المستخدم
+        memo: "Spicy Library - Book Purchase",
+        metadata: {
+          bookId: msg.bookId,
+          userUid
+        }
+
       }, {
+
         onReadyForServerApproval: async (paymentId) => {
+
           await fetch(`${BACKEND_URL}/approve-payment`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paymentId, bookId: msg.bookId, userUid })
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              paymentId
+            })
           });
+
         },
+
         onReadyForServerCompletion: async (paymentId, txid) => {
-          const res = await fetch(`${BACKEND_URL}/complete-payment`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paymentId, txid, bookId: msg.bookId, userUid })
-          });
+
+          const res = await fetch(
+            `${BACKEND_URL}/complete-payment`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                paymentId,
+                txid
+              })
+            }
+          );
 
           const data = await res.json();
 
-          // إرسال نتيجة الدفع مرة أخرى لـ book.html
+          // تحديث المشتريات
+          loadMyPurchases();
+
+          // إرسال نجاح الدفع إلى صفحة الكتاب
           window.openedBook.postMessage({
             type: "PAYMENT_SUCCESS",
-            bookId: msg.bookId,
-            pdfUrl: data.pdfUrl
+            bookId: msg.bookId
           }, "https://parfum314159.github.io");
+
+          // فتح تبويب المشتريات تلقائياً
+          openTab("purchases");
+
+          alert("Payment successful!");
+
         },
-        onCancel: () => alert("Payment cancelled"),
-        onError: (err) => alert("Payment error: " + err.message)
+
+        onCancel: () => {
+
+          window.openedBook.postMessage({
+            type: "PAYMENT_CANCELLED"
+          }, "https://parfum314159.github.io");
+
+        },
+
+        onError: (err) => {
+
+          window.openedBook.postMessage({
+            type: "PAYMENT_FAILED",
+            error: err.message
+          }, "https://parfum314159.github.io");
+
+        }
+
       });
 
-    } catch(e) {
-      // إرسال فشل الدفع إذا حدث خطأ
-      window.openedBook.postMessage({ type:"PAYMENT_FAILED", bookId: msg.bookId }, "https://parfum314159.github.io");
+    } catch (e) {
+
+      alert("Payment failed");
+
     }
+
+  };
+
+  // إذا لم يسجل دخول → سجل دخول ثم اشترِ
+  if (!user) {
+
+    try {
+
+      const authResult = await Pi.authenticate(
+        ["username", "payments"],
+        onIncompletePaymentFound
+      );
+
+      user = authResult.user;
+      userUid = user.uid;
+
+      document.getElementById("welcome").innerText =
+        `Welcome, ${user.username}!`;
+
+      document.getElementById("login")
+        .classList.add("hidden");
+
+      document.getElementById("app")
+        .classList.remove("hidden");
+
+      loadBooks();
+      loadMyPurchases();
+      loadMySales();
+
+      // بعد تسجيل الدخول يبدأ الشراء مباشرة
+      startPurchase();
+
+    } catch (err) {
+
+      alert("Login failed");
+
+    }
+
+  } else {
+
+    // المستخدم مسجل أصلاً
+    startPurchase();
+
   }
-});
+
+}
 
 
 // ================= LANGUAGES =================
