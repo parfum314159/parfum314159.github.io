@@ -201,28 +201,12 @@ const t = translations[currentLang];
     `;
 
     // فتح الصفحة الرئيسية مع نفس الكتاب عند الشراء
-    document.getElementById("buyBtn").onclick = async () => {
+  document.getElementById("buyBtn").onclick = () => {
 
-  // فتح التطبيق في نافذة جديدة
-  const appWindow = window.open(
-    `https://parfum314159.github.io/index.html`,
-    "_blank"
-  );
-
-  // انتظر قليلاً حتى يفتح التطبيق
-  setTimeout(() => {
-
-    // أرسل طلب الشراء للتطبيق
-    appWindow.postMessage({
-      type: "BUY_BOOK",
-      bookId: b.id,
-      price: b.price
-    }, "https://parfum314159.github.io");
-
-  }, 2500);
+  window.location.href =
+    `https://parfum314159.github.io/index.html?buyBookId=${b.id}`;
 
 };
-
     // زر مشاركة الرابط
     document.getElementById("shareBtn").onclick = () => {
       const bookUrl = window.location.href;
