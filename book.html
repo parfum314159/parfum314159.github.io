@@ -260,6 +260,41 @@ window.addEventListener("load", () => {
   loadBook();
 });
 
+ 
+
+
+// استقبال نتيجة الدفع من index.html
+window.addEventListener("message", (event) => {
+
+  if (event.origin !== "https://parfum314159.github.io")
+    return;
+
+  const msg = event.data;
+
+  if (msg.type === "PAYMENT_SUCCESS") {
+
+    alert("✅ Payment successful!");
+
+    // تحويل المستخدم للتطبيق
+    window.location.href =
+      "https://parfum314159.github.io/index.html";
+
+  }
+
+  if (msg.type === "PAYMENT_FAILED") {
+
+    alert("❌ Payment failed");
+
+  }
+
+  if (msg.type === "PAYMENT_CANCELLED") {
+
+    alert("⚠️ Payment cancelled");
+
+  }
+
+});
+
 </script>
 </body>
 </html>
