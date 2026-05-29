@@ -1097,9 +1097,40 @@ async function onIncompletePaymentFound(incompletePayment) {
   }
 }
 // ================= LOGIN =================
-document.getElementById("loginBtn").onclick = async () => {
+async function login() {
+
   try {
-    const authResult = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
+
+    const authResult = await Pi.authenticate(
+      ["username", "payments"],
+      onIncompletePaymentFound
+    );
+
+    user = authResult.user;
+    userUid = user.uid;
+
+    document.getElementById("welcome").innerText =
+      `Welcome, ${user.username}!`;
+
+    document.getElementById("login")
+      .classList.add("hidden");
+
+    document.getElementById("app")
+      .classList.remove("hidden");
+
+    loadBooks();
+    loadMyPurchases();
+    loadMySales();
+
+  } catch (err) {
+
+    alert("Login failed. Open in Pi Browser.");
+
+  }
+
+}
+
+document.getElementById("loginBtn").onclick = login;
     user = authResult.user;
     userUid = user.uid;
 
@@ -1458,11 +1489,15 @@ window.addEventListener("load", () => {
       attemptBuy();
     } else {
       // إذا لم يسجل بعد الدخول، انتظر تسجيل الدخول ثم شراء
-      const originalLogin = document.getElementById("loginBtn").onclick;
-      document.getElementById("loginBtn").onclick = async () => {
-        await originalLogin();
-        attemptBuy();
-      };
+     document.getElementById("loginBtn").onclick = async () => {
+
+  await login();
+
+  if (userUid) {
+    attemptBuy();
+  }
+
+};
     }
   }
 });
