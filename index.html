@@ -859,10 +859,10 @@ textarea{
 
    <div id="addBook" class="hidden">
       <h3>Add Book</h3>
-      <input id="title" placeholder="Book title">
-      <input id="price" type="number" min="0.1" step="0.1" placeholder="Price (Pi)">
-      <textarea id="description" placeholder="Book description (optional)" rows="3"></textarea>
-      <select id="language">
+      <input id="title" placeholder="Book title" required>
+      <input id="price" type="number" min="0.1" step="0.1" placeholder="Price (Pi)" required>
+      <textarea id="description" placeholder="Book description" rows="3" required></textarea>
+      <select id="language" required>
         <option value="">Select language</option>
         <option value="English">English</option>
         <option value="Arabic">Arabic</option>
@@ -871,8 +871,8 @@ textarea{
         <option value="German">German</option>
         <option value="Other">Other</option>
       </select>
-      <p>Number of pages (optional)</p>
-      <input id="manualPages" type="number" placeholder="e.g. 250" min="1">
+     <p>Number of pages</p>
+      <input id="manualPages" type="number" placeholder="e.g. 250" min="1" required>
       <p>📷 Book Cover (images only)</p>
       <button id="uploadCoverBtn">Upload Cover</button>
       <p id="coverStatus" class="upload-status"></p>
@@ -1114,7 +1114,17 @@ document.getElementById("saveBookBtn").onclick = saveBook;
   const language = document.getElementById("language").value;
   const manualPages = document.getElementById("manualPages").value.trim();
 
-  if (!title || price <= 0 || !coverUrl || !pdfUrl) return alert("Complete all fields");
+  if (
+  !title ||
+  price <= 0 ||
+  !description ||
+  !language ||
+  !manualPages ||
+  !coverUrl ||
+  !pdfUrl
+) {
+  return alert("Please complete all required fields");
+}
 
   const finalPages = manualPages || pageCount;
 
