@@ -2153,11 +2153,14 @@ window.addEventListener("load", () => {
     savedLang;
 
   changeLanguage();
-document.getElementById("privacyBtn").innerText =
-  t.privacyPolicy;
 
-document.getElementById("termsBtn").innerText =
-  t.termsService;
+  const t = translations[savedLang];
+
+  document.getElementById("privacyBtn").innerText =
+    t.privacyPolicy;
+
+  document.getElementById("termsBtn").innerText =
+    t.termsService;
 });
 
     
