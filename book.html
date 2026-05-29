@@ -43,17 +43,117 @@ button.share {
 </head>
 <body>
 
+<select id="languageSwitcher" onchange="changeLanguage()" style="
+padding:8px 12px;
+border-radius:12px;
+margin:10px;
+background:#222;
+color:white;
+border:1px solid #444;
+">
+  <option value="en">English</option>
+  <option value="ar">العربية</option>
+  <option value="fr">Français</option>
+  <option value="zh">中文</option>
+</select>
+
 <div id="content">Loading book...</div>
 
 <script>
 const BACKEND_URL = "https://pi-backend-c8nz.onrender.com";
 const ALLOWED_ORIGIN = "https://parfum314159.github.io"; // موقعك
 
+// ================= LANGUAGES =================
+
+let currentLang =
+  localStorage.getItem("appLanguage") || "en";
+
+const translations = {
+
+  en: {
+    loading: "Loading book...",
+    notFound: "Book not found",
+    description: "Description",
+    author: "Author",
+    language: "Language",
+    pages: "Pages",
+    price: "Price",
+    likes: "Likes",
+    dislikes: "Dislikes",
+    buy: "Buy with Pi 🪙",
+    share: "Share Link 🔗",
+    copied: "✅ Link copied to clipboard",
+    copyManual: "⚠️ Copy manually:"
+  },
+
+  ar: {
+    loading: "جاري تحميل الكتاب...",
+    notFound: "الكتاب غير موجود",
+    description: "الوصف",
+    author: "المؤلف",
+    language: "اللغة",
+    pages: "الصفحات",
+    price: "السعر",
+    likes: "الإعجابات",
+    dislikes: "عدم الإعجاب",
+    buy: "شراء عبر Pi 🪙",
+    share: "مشاركة الرابط 🔗",
+    copied: "✅ تم نسخ الرابط",
+    copyManual: "⚠️ انسخ الرابط يدوياً:"
+  },
+
+  fr: {
+    loading: "Chargement du livre...",
+    notFound: "Livre introuvable",
+    description: "Description",
+    author: "Auteur",
+    language: "Langue",
+    pages: "Pages",
+    price: "Prix",
+    likes: "Likes",
+    dislikes: "Dislikes",
+    buy: "Acheter avec Pi 🪙",
+    share: "Partager le lien 🔗",
+    copied: "✅ Lien copié",
+    copyManual: "⚠️ Copiez manuellement :"
+  },
+
+  zh: {
+    loading: "正在加载书籍...",
+    notFound: "未找到书籍",
+    description: "描述",
+    author: "作者",
+    language: "语言",
+    pages: "页数",
+    price: "价格",
+    likes: "点赞",
+    dislikes: "点踩",
+    buy: "使用 Pi 购买 🪙",
+    share: "分享链接 🔗",
+    copied: "✅ 链接已复制",
+    copyManual: "⚠️ 请手动复制："
+  }
+};
+
+function changeLanguage() {
+
+  currentLang =
+    document.getElementById("languageSwitcher").value;
+
+  localStorage.setItem("appLanguage", currentLang);
+
+  document.body.style.direction =
+    currentLang === "ar" ? "rtl" : "ltr";
+
+  loadBook();
+}
+  
 const params = new URLSearchParams(window.location.search);
 const bookId = params.get("id");
 
 if (!bookId) {
-  document.getElementById("content").innerText = "Book not found";
+  document.getElementById("content").innerText =
+  translations[currentLang].notFound;
 }
 
 // جلب بيانات الكتاب من السيرفر
@@ -82,17 +182,22 @@ async function loadBook() {
       console.error("Error loading ratings:", e);
     }
 
+const t = translations[currentLang];
+    
     document.getElementById("content").innerHTML = `
       <img src="${b.cover}" alt="Cover">
       <h2>${b.title}</h2>
-      <p class="info"><strong>Description:</strong> ${b.description || "No description"}</p>
-      <p class="info"><strong>Author:</strong> ${b.owner}</p>
-      <p class="info"><strong>Language:</strong> ${b.language || "Unknown"}</p>
-      <p class="info"><strong>Pages:</strong> ${b.pageCount || "Unknown"}</p>
-      <p class="info"><strong>Price:</strong> ${b.price} Pi</p>
-      <p class="stats">👍 Likes: ${likes} | 👎 Dislikes: ${dislikes}</p>
-      <button id="buyBtn">Buy with Pi 🪙</button>
-      <button id="shareBtn" class="share">Share Link 🔗</button>
+      <p class="info"><strong>${t.description}:</strong> ${b.description || "No description"}</p>
+     <p class="info"><strong>${t.author}:</strong> ${b.owner}</p>
+      <p class="info"><strong>${t.language}:</strong> ${b.language || "Unknown"}</p>
+      <p class="info"><strong>${t.pages}:</strong> ${b.pageCount || "Unknown"}</p>
+      <p class="info"><strong>${t.price}:</strong> ${b.price} Pi</p>
+      <p class="stats">
+👍 ${t.likes}: ${likes} |
+👎 ${t.dislikes}: ${dislikes}
+</p>
+      <button id="buyBtn">${t.buy}</button>
+      <button id="shareBtn" class="share">${t.share}</button>
     `;
 
     // فتح الصفحة الرئيسية مع نفس الكتاب عند الشراء
@@ -110,8 +215,8 @@ async function loadBook() {
         }).catch(console.error);
       } else {
         navigator.clipboard.writeText(bookUrl)
-          .then(() => alert("✅ Link copied to clipboard"))
-          .catch(() => alert("⚠️ Copy manually: " + bookUrl));
+          .then(() => alert(t.copied))
+          .catch(() => alert(t.copyManual + " " + bookUrl));
       }
     };
 
@@ -121,7 +226,21 @@ async function loadBook() {
   }
 }
 
-loadBook();
+window.addEventListener("load", () => {
+
+  const savedLang =
+    localStorage.getItem("appLanguage") || "en";
+
+  document.getElementById("languageSwitcher").value =
+    savedLang;
+
+  currentLang = savedLang;
+
+  document.body.style.direction =
+    currentLang === "ar" ? "rtl" : "ltr";
+
+  loadBook();
+});
 
 </script>
 </body>
