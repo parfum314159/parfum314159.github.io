@@ -1303,6 +1303,8 @@ allBooksData.forEach(b => {
 
 // ================= RENDER BOOKS =================
 
+// ================= RENDER BOOKS =================
+
 let isRenderingBooks = false;
 
 async function renderBooks(booksArray) {
@@ -1311,8 +1313,6 @@ async function renderBooks(booksArray) {
     localStorage.getItem("appLanguage") || "en";
 
   const t = translations[lang];
-
-async function renderBooks(booksArray) {
 
   // منع تشغيل الدالة مرتين بنفس الوقت
   if (isRenderingBooks) return;
@@ -1351,7 +1351,7 @@ async function renderBooks(booksArray) {
       ? b.description.substring(0, 100) + "..."
       : "No description";
 
-    const lang = b.language
+    const langText = b.language
       ? `Language: ${b.language}`
       : "";
 
@@ -1378,7 +1378,7 @@ async function renderBooks(booksArray) {
 
         <div class="owner">${owner}</div>
 
-        <div class="language">${lang}</div>
+        <div class="language">${langText}</div>
 
         <div class="pages">${pages}</div>
 
@@ -1403,14 +1403,14 @@ async function renderBooks(booksArray) {
         </div>
 
        <button onclick="buy('${b.id}', ${b.price})"
-  ${!user ? 'disabled' : ''}
->
-  ${t.buy}
-</button>
+         ${!user ? 'disabled' : ''}
+       >
+         ${t.buy}
+       </button>
 
-<button onclick="openBook('${b.id}')">
-  ${t.view}
-</button>
+       <button onclick="openBook('${b.id}')">
+         ${t.view}
+       </button>
 
       </div>
     `;
@@ -1418,12 +1418,10 @@ async function renderBooks(booksArray) {
     b.likesCount = likes;
   }
 
-  // إضافة HTML مرة واحدة فقط
   box.innerHTML = html;
 
   isRenderingBooks = false;
 }
-
 
 // ================= Check if redirected from book.html =================
 window.addEventListener("load", () => {
