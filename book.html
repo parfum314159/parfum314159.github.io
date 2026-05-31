@@ -5,39 +5,401 @@
 <title>Book</title>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <style>
-body {
-  background: #111;
-  color: #fff;
-  font-family: Arial, sans-serif;
-  text-align: center;
-  padding: 20px;
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
 }
-img {
-  width: 250px;
-  border-radius: 8px;
-  margin-bottom: 10px;
+
+body{
+  font-family:'Segoe UI',sans-serif;
+
+  background:
+  radial-gradient(circle at top left,#172554 0%,#0f172a 35%,#020617 100%);
+
+  color:white;
+
+  min-height:100vh;
+
+  padding:25px;
+
+  text-align:center;
+
+  overflow-x:hidden;
 }
-button {
-  padding: 10px 20px;
-  background: #ff4500;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  margin: 10px;
+
+/* Glow Background */
+
+body::before{
+  content:"";
+  position:fixed;
+  width:500px;
+  height:500px;
+  background:#8b5cf6;
+  filter:blur(180px);
+  opacity:.15;
+  top:-150px;
+  right:-150px;
+  z-index:-1;
 }
-button.share {
-  background: #00aaff;
+
+body::after{
+  content:"";
+  position:fixed;
+  width:400px;
+  height:400px;
+  background:#00f5ff;
+  filter:blur(160px);
+  opacity:.12;
+  bottom:-120px;
+  left:-120px;
+  z-index:-1;
 }
-.info {
-  font-size: 14px;
-  color: #ccc;
-  margin: 5px 0;
+
+/* Language */
+
+#languageSwitcher{
+
+  padding:10px 14px;
+
+  border-radius:14px;
+
+  background:rgba(255,255,255,.05);
+
+  border:1px solid rgba(255,255,255,.08);
+
+  color:white;
+
+  backdrop-filter:blur(12px);
+
+  margin-bottom:25px;
 }
-.stats {
-  font-size: 14px;
-  color: #0f9;
-  margin: 5px 0;
+
+/* Main Card */
+
+.book-card{
+
+  width:95%;
+
+  max-width:900px;
+
+  margin:auto;
+position:relative;
+overflow:hidden;
+  background:
+  rgba(255,255,255,.05);
+
+  border:
+  1px solid rgba(255,255,255,.08);
+
+  backdrop-filter:blur(20px);
+
+  border-radius:32px;
+
+  padding:35px;
+
+  box-shadow:
+  0 0 40px rgba(139,92,246,.15);
+
+  animation:fadeUp .7s ease;
+}
+
+/* Cover */
+
+.book-cover{
+
+  width:280px;
+
+  max-width:100%;
+
+  border-radius:24px;
+
+  box-shadow:
+  0 0 40px rgba(0,245,255,.15);
+
+  transition:.4s;
+}
+
+.book-cover:hover{
+  transform:
+  perspective(1000px)
+  rotateY(-6deg)
+  translateY(-8px)
+  scale(1.03);
+
+  box-shadow:
+  0 20px 60px rgba(139,92,246,.45);
+}
+
+  .book-card::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:-150%;
+  width:60%;
+  height:100%;
+  background:
+  linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,.08),
+    transparent
+  );
+  transition:1s;
+}
+
+.book-card:hover::before{
+  left:150%;
+}
+  
+/* Title */
+
+.book-title{
+
+  font-size:42px;
+
+  font-weight:900;
+
+  margin:25px 0 15px;
+
+  background:
+  linear-gradient(
+  to right,
+  #00f5ff,
+  #8b5cf6,
+  #ff4ecd
+  );
+
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+
+/* Description */
+
+.description-box{
+
+  margin:20px auto;
+
+  max-width:700px;
+
+  padding:18px;
+
+  border-radius:20px;
+
+  background:
+  rgba(255,255,255,.04);
+
+  color:#dbeafe;
+
+  line-height:1.7;
+}
+
+/* Info Grid */
+
+.info-grid{
+
+  display:grid;
+
+  grid-template-columns:
+  repeat(auto-fit,minmax(180px,1fr));
+
+  gap:15px;
+
+  margin-top:25px;
+}
+
+.info-card{
+
+  padding:16px;
+
+  border-radius:20px;
+
+  background:
+  rgba(255,255,255,.04);
+
+  border:
+  1px solid rgba(255,255,255,.05);
+}
+
+.info-card span{
+
+  display:block;
+
+  color:#94a3b8;
+
+  font-size:13px;
+
+  margin-bottom:6px;
+}
+
+.info-card strong{
+
+  color:white;
+
+  font-size:15px;
+}
+
+/* Stats */
+
+.stats{
+
+  margin-top:25px;
+
+  font-size:17px;
+
+  color:#00f5ff;
+
+  font-weight:bold;
+}
+
+.rating-actions{
+  margin-top:20px;
+}
+
+.rating-btn{
+  padding:12px 20px;
+  border:none;
+  border-radius:14px;
+  cursor:pointer;
+  font-weight:700;
+  margin:5px;
+  transition:.3s;
+}
+
+.like-btn{
+  background:#16a34a;
+  color:white;
+}
+
+.dislike-btn{
+  background:#dc2626;
+  color:white;
+}
+
+.rating-btn.active{
+  box-shadow:0 0 20px rgba(255,255,255,.35);
+  transform:scale(1.05);
+}
+  
+/* Buttons */
+
+.actions{
+
+  margin-top:30px;
+}
+
+button{
+
+  border:none;
+
+  cursor:pointer;
+
+  padding:15px 28px;
+
+  border-radius:18px;
+
+  color:white;
+
+  font-weight:800;
+
+  font-size:15px;
+
+  margin:8px;
+
+  transition:.35s;
+}
+
+#buyBtn{
+position:relative;
+overflow:hidden;
+  background:
+  linear-gradient(
+  135deg,
+  #00f5ff,
+  #8b5cf6,
+  #ff4ecd
+  );
+
+  box-shadow:
+  0 0 25px rgba(139,92,246,.35);
+}
+
+#shareBtn{
+
+  background:
+  rgba(255,255,255,.06);
+
+  border:
+  1px solid rgba(255,255,255,.08);
+}
+
+button:hover{
+
+  transform:
+  translateY(-3px)
+  scale(1.03);
+}
+
+#buyBtn::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+  linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,.25),
+    transparent
+  );
+
+  transform:translateX(-150%);
+}
+
+#buyBtn:hover::after{
+  transform:translateX(150%);
+  transition:.8s;
+}
+  
+/* Animation */
+
+@keyframes fadeUp{
+
+  from{
+    opacity:0;
+    transform:translateY(25px);
+  }
+
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+@keyframes floatGlow{
+  0%{transform:translate(0,0);}
+  50%{transform:translate(30px,-20px);}
+  100%{transform:translate(0,0);}
+}
+
+body::before,
+body::after{
+  animation:floatGlow 12s ease-in-out infinite;
+}
+  
+/* Mobile */
+
+@media(max-width:700px){
+.info-grid{
+  grid-template-columns:repeat(2,1fr);
+}
+  .book-title{
+    font-size:30px;
+  }
+
+  .book-card{
+    padding:20px;
+  }
+
 }
 </style>
 </head>
@@ -60,8 +422,9 @@ border:1px solid #444;
 <div id="content">Loading book...</div>
 
 <script>
-const BACKEND_URL = "https://pi-backend-c8nz.onrender.com";
-const ALLOWED_ORIGIN = "https://https://spicylibrary.online"; // موقعك
+const BACKEND_URL = "https://pi-backend-c8nz.onrender.com";  let userUid = null;
+let currentUser = null;
+const ALLOWED_ORIGIN = "https://spicylibrary.online"; // موقعك
 
 // ================= LANGUAGES =================
 
@@ -145,8 +508,40 @@ function changeLanguage() {
   document.body.style.direction =
     currentLang === "ar" ? "rtl" : "ltr";
 
-  loadBook();
+ loadBook();
 }
+  
+async function loginPi() {
+
+  try {
+
+    Pi.init({ version: "2.0" });
+
+    const auth = await Pi.authenticate(
+      ["username"],
+      () => {}
+    );
+
+    currentUser = auth.user;
+    userUid = auth.user.uid;
+
+    localStorage.setItem(
+      "userUid",
+      userUid
+    );
+
+    return true;
+
+  } catch(err) {
+
+    console.error(err);
+    alert("Login failed");
+
+    return false;
+  }
+}
+  
+ 
   
 const params = new URLSearchParams(window.location.search);
 const bookId = params.get("id");
@@ -159,7 +554,7 @@ if (!bookId) {
 // جلب بيانات الكتاب من السيرفر
 async function loadBook() {
   try {
-    const res = await fetch(`${BACKEND_URL}/book/${bookId}`);
+    const res = await fetch(`${BACKEND_URL}/book?id=${bookId}`);
     const data = await res.json();
     if (!data.success) throw new Error();
 
@@ -185,20 +580,64 @@ async function loadBook() {
 const t = translations[currentLang];
     
     document.getElementById("content").innerHTML = `
-      <img src="${b.cover}" alt="Cover">
-      <h2>${b.title}</h2>
-      <p class="info"><strong>${t.description}:</strong> ${b.description || "No description"}</p>
-     <p class="info"><strong>${t.author}:</strong> ${b.owner}</p>
-      <p class="info"><strong>${t.language}:</strong> ${b.language || "Unknown"}</p>
-      <p class="info"><strong>${t.pages}:</strong> ${b.pageCount || "Unknown"}</p>
-      <p class="info"><strong>${t.price}:</strong> ${b.price} Pi</p>
-      <p class="stats">
-👍 ${t.likes}: ${likes} |
-👎 ${t.dislikes}: ${dislikes}
-</p>
-      <button id="buyBtn">${t.buy}</button>
-      <button id="shareBtn" class="share">${t.share}</button>
-    `;
+<div class="book-card">
+
+<img src="${b.cover}" class="book-cover">
+
+<h1 class="book-title">${b.title}</h1>
+
+<div class="description-box">
+${b.description || "No description"}
+</div>
+
+<div class="info-grid">
+
+<div class="info-card">
+<span>${t.author}</span>
+<strong>${b.owner}</strong>
+</div>
+
+<div class="info-card">
+<span>${t.language}</span>
+<strong>${b.language || "Unknown"}</strong>
+</div>
+
+<div class="info-card">
+<span>${t.pages}</span>
+<strong>${b.pageCount || "Unknown"}</strong>
+</div>
+
+<div class="info-card">
+<span>${t.price}</span>
+<strong>${b.price} Pi</strong>
+</div>
+
+</div>
+
+<div class="stats">
+👍 <span id="likesCount">${likes}</span>
+&nbsp;&nbsp; |
+&nbsp;&nbsp;
+👎 <span id="dislikesCount">${dislikes}</span>
+</div>
+
+<div class="rating-actions">
+<button id="likeBtn" class="rating-btn like-btn">
+👍 Like
+</button>
+
+<button id="dislikeBtn" class="rating-btn dislike-btn">
+👎 Dislike
+</button>
+</div>
+
+<div class="actions">
+<button id="buyBtn">${t.buy}</button>
+<button id="shareBtn">${t.share}</button>
+</div>
+
+</div>
+`;
 
     // فتح الصفحة الرئيسية مع نفس الكتاب عند الشراء
   document.getElementById("buyBtn").onclick = () => {
@@ -207,6 +646,104 @@ const t = translations[currentLang];
     `https://spicylibrary.online/index.html?buyBookId=${b.id}`;
 
 };
+
+    // تسجيل دخول Pi
+
+userUid = localStorage.getItem("userUid");
+
+// تحميل تصويت المستخدم الحالي
+
+if(userUid){
+
+  try{
+
+    const r = await fetch(
+      `${BACKEND_URL}/book-ratings`,
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          bookId:b.id,
+          userUid
+        })
+      }
+    );
+
+    const j = await r.json();
+
+    if(j.userVote==="like"){
+      document
+        .getElementById("likeBtn")
+        .classList.add("active");
+    }
+
+    if(j.userVote==="dislike"){
+      document
+        .getElementById("dislikeBtn")
+        .classList.add("active");
+    }
+
+  }catch(err){
+    console.error(err);
+  }
+
+}
+
+// إرسال التصويت
+
+async function sendVote(voteType){
+
+ if(!userUid){
+
+  const ok = await loginPi();
+
+  if(!ok) return;
+
+  userUid = localStorage.getItem("userUid");
+}
+
+  try{
+
+    const res = await fetch(
+      `${BACKEND_URL}/rate-book`,
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          bookId:b.id,
+          voteType,
+          userUid
+        })
+      }
+    );
+
+    const data = await res.json();
+
+    if(data.success){
+
+      loadBook();
+
+    }
+
+  }catch(err){
+
+    console.error(err);
+
+  }
+
+}
+
+document
+.getElementById("likeBtn")
+.onclick = () => sendVote("like");
+
+document
+.getElementById("dislikeBtn")
+.onclick = () => sendVote("dislike");
     // زر مشاركة الرابط
     document.getElementById("shareBtn").onclick = () => {
       const bookUrl = window.location.href;
@@ -229,7 +766,7 @@ const t = translations[currentLang];
 }
 
 window.addEventListener("load", () => {
-
+userUid = localStorage.getItem("userUid");
   const savedLang =
     localStorage.getItem("appLanguage") || "en";
 
