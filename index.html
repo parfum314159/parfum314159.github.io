@@ -1032,41 +1032,97 @@ let pageCount = "Unknown";
   let totalEarnings = 0;
 
 // ================= CLOUDINARY =================
-const coverWidget = cloudinary.createUploadWidget({
-  cloudName: "dkb0phegf",
-  uploadPreset: "spicy1998",
-  folder: "covers",
-  resourceType: "image",
-  clientAllowedFormats: ["jpg", "jpeg", "png", "webp"]
-}, (error, result) => {
-  if (!error && result && result.event === "success") {
-    coverUrl = result.info.secure_url;
-    document.getElementById("coverStatus").innerText = "Cover uploaded!";
-    checkSaveReady();
-  }
-});
 
-const pdfWidget = cloudinary.createUploadWidget({
-  cloudName: "dkb0phegf",
-  uploadPreset: "spicy1998",
-  folder: "pdfs",
-  resourceType: "raw",
-  clientAllowedFormats: ["pdf"]
-}, (error, result) => {
-  if (!error && result && result.event === "success") {
-    pdfUrl = result.info.secure_url;
-    pageCount = result.info.pages || "Unknown";
-    document.getElementById("pdfStatus").innerText = "PDF uploaded!" + (result.info.pages ? ` (Pages: ${result.info.pages})` : "");
-    checkSaveReady();
-  }
-});
+document.getElementById("uploadCoverBtn").onclick = () => {
+  const btn = document.getElementById("uploadCoverBtn");
+  btn.disabled = true; // ⬅ تعطيل الزر مباشرة
 
-document.getElementById("uploadCoverBtn").onclick = () => coverWidget.open();
-document.getElementById("uploadPdfBtn").onclick = () => pdfWidget.open();
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = "image/*"; // فقط صور
+  fileInput.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+      btn.disabled = false; // إعادة تفعيل الزر لو لم يختار ملف
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+      const base64 = reader.result; // الصورة كـBase64
+      try {
+        const res = await fetch(`${BACKEND_URL}/upload-cover`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ file: base64 })
+        });
+        const data = await res.json();
+        if (data.success) {
+          coverUrl = data.url;
+          document.getElementById("coverStatus").innerText = "Cover uploaded!";
+          checkSaveReady();
+        } else {
+          alert("Upload failed");
+        }
+      } catch (err) {
+        alert("Upload failed");
+      } finally {
+        btn.disabled = false; // ⬅ إعادة تفعيل الزر بعد انتهاء الرفع
+      }
+    };
+  };
+  fileInput.click();
+};
+
+document.getElementById("uploadPdfBtn").onclick = () => {
+  const btn = document.getElementById("uploadPdfBtn");
+  btn.disabled = true; // ⬅ تعطيل الزر
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = "application/pdf"; // فقط PDF
+  fileInput.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+      btn.disabled = false; // إعادة تفعيل الزر لو لم يختار ملف
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+      const base64 = reader.result;
+      try {
+        const res = await fetch(`${BACKEND_URL}/upload-pdf`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ file: base64 })
+        });
+        const data = await res.json();
+        if (data.success) {
+          pdfUrl = data.url;
+          pageCount = data.pages || "Unknown";
+          document.getElementById("pdfStatus").innerText = "PDF uploaded!";
+          checkSaveReady();
+        } else {
+          alert("Upload failed");
+        }
+      } catch (err) {
+        alert("Upload failed");
+      } finally {
+        btn.disabled = false; // ⬅ إعادة تفعيل الزر بعد انتهاء الرفع
+      }
+    };
+  };
+  fileInput.click();
+};
+
 
 function checkSaveReady() {
   document.getElementById("saveBookBtn").disabled = !(coverUrl && pdfUrl && user);
 }
+
 
 // ================= تجاهل الدفع المعلق =================
 async function onIncompletePaymentFound(incompletePayment) {
@@ -1098,9 +1154,8 @@ async function onIncompletePaymentFound(incompletePayment) {
 }
 // ================= LOGIN =================
 async function login() {
-
   try {
-
+    // تسجيل الدخول عبر Pi
     const authResult = await Pi.authenticate(
       ["username", "payments"],
       onIncompletePaymentFound
@@ -1108,30 +1163,79 @@ async function login() {
 
     user = authResult.user;
     userUid = user.uid;
+    localStorage.setItem("userUid", user.uid);
+localStorage.setItem("username", user.username);
+    window.accessToken = authResult.accessToken;
 
+    // ✅ تحقق من وجود المحفظة على السيرفر
+    const walletRes = await fetch(`${BACKEND_URL}/get-wallet`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userUid,
+        accessToken: window.accessToken
+      })
+    });
+
+    const walletData = await walletRes.json();
+
+    if (!walletData.success) {
+      alert("Failed to fetch wallet info from server.");
+      return;
+    }
+
+    if (!walletData.walletAddress) {
+      // اطلب من المستخدم إدخال المحفظة إذا لم توجد
+      let walletAddress = prompt("Enter your Pi Wallet Address");
+      if (!walletAddress) {
+        alert("Wallet address required");
+        return;
+      }
+
+      walletAddress = walletAddress.trim();
+
+      if (walletAddress.length !== 56 || !walletAddress.startsWith("G")) {
+        alert("Invalid Pi wallet address");
+        return;
+      }
+
+      // أرسل المحفظة إلى السيرفر
+      const saveRes = await fetch(`${BACKEND_URL}/save-wallet`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userUid,
+          accessToken: window.accessToken,
+          walletAddress
+        })
+      });
+
+      const saveData = await saveRes.json();
+      if (!saveData.success) {
+        alert("Failed to save wallet on server.");
+        return;
+      }
+    }
+
+    // تحديث واجهة المستخدم بعد تسجيل الدخول
     document.getElementById("welcome").innerText =
       `Welcome, ${user.username}!`;
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
 
-    document.getElementById("login")
-      .classList.add("hidden");
-
-    document.getElementById("app")
-      .classList.remove("hidden");
-
+    // تحميل البيانات
     loadBooks();
     loadMyPurchases();
     loadMySales();
 
   } catch (err) {
-
+    console.error(err);
     alert("Login failed. Open in Pi Browser.");
-
   }
-
 }
 
+// ربط زر تسجيل الدخول
 document.getElementById("loginBtn").onclick = login;
-    
 
 function logout() {
   location.reload();
@@ -1450,7 +1554,7 @@ window.addEventListener("load", () => {
     // ابحث عن الكتاب في المتجر
     const attemptBuy = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/book/${buyBookId}`);
+        const res = await fetch(`${BACKEND_URL}/book?id=${buyBookId}`);
         const data = await res.json();
         if (!data.success) throw new Error("Book not found");
 
@@ -1692,11 +1796,7 @@ async function requestPayout() {
     return;
   }
 
-  let walletAddress = prompt(
-    "Enter your Pi wallet address"
-  );
 
-  if (!walletAddress) return;
 
   try {
 
@@ -1708,9 +1808,8 @@ async function requestPayout() {
           "Content-Type": "application/json"
         },
 body: JSON.stringify({
-  username: user.username,
   userUid: userUid,
-  walletAddress
+  accessToken: window.accessToken
 })
       }
     );
@@ -1939,7 +2038,7 @@ Prohibited:
 - Manipulating payments
 - Hacking attempts
 
-Contact: spicylibrarysupport@gmail.com
+Contact: spicylibrarisupport@gmail.com
 `,
 
 ar: `
@@ -2036,7 +2135,7 @@ function closeModal() {
 // استمع لرسائل من book.html
 window.addEventListener("message", async (event) => {
   // تأكد أن الرسالة من موقعك فقط
-  if(event.origin !== "https://spicylibrary.online") return;
+  if(event.origin !== "https://spicy23-ai.github.io") return;
 
   const msg = event.data;
 
@@ -2098,7 +2197,7 @@ window.addEventListener("message", async (event) => {
           window.openedBook.postMessage({
             type: "PAYMENT_SUCCESS",
             bookId: msg.bookId
-          }, "https://spicylibrary.online");
+          }, "https://spicy23-ai.github.io");
 
           // فتح تبويب المشتريات تلقائياً
           openTab("purchases");
@@ -2111,7 +2210,7 @@ window.addEventListener("message", async (event) => {
 
           window.openedBook.postMessage({
             type: "PAYMENT_CANCELLED"
-          }, "https://spicylibrary.online");
+          }, "https://spicy23-ai.github.io");
 
         },
 
@@ -2120,7 +2219,7 @@ window.addEventListener("message", async (event) => {
           window.openedBook.postMessage({
             type: "PAYMENT_FAILED",
             error: err.message
-          }, "https://spicylibrary.online");
+          }, "https://spicy23-ai.github.io");
 
         }
 
