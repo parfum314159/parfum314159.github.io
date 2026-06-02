@@ -905,7 +905,8 @@ max-width:160px;
 
 <div id="app" class="hidden">
 
-   <div id="addBook" class="hidden">
+   <div id="addBookPage" class="tab-content">
+  <div id="addBook">
       <h3>Add Book</h3>
       <input id="title" placeholder="Book title" required>
       <input id="price" type="number" min="0.1" step="0.1" placeholder="Price (Pi)" required>
@@ -937,7 +938,7 @@ max-width:160px;
 
   
   <h3 id="welcome"></h3>
-  <button onclick="toggleAdd()">➕ Add Book</button>
+  
   <button onclick="logout()">Logout</button>
 
   <div>
@@ -1319,7 +1320,7 @@ document.getElementById("saveBookBtn").onclick = saveBook;
     if (!res.ok) throw new Error("Upload failed");
 
    alert(translations[currentLang].bookPending);
-    toggleAdd();
+    openTab("store");
     coverUrl = pdfUrl = "";
     document.getElementById("coverStatus").innerText = "";
     document.getElementById("pdfStatus").innerText = "";
@@ -1950,7 +1951,6 @@ function toggleAdd() {
   if (!user) return alert("Login required");
   document.getElementById("addBook").classList.toggle("hidden");
 }
-
 function openBook(bookId) {
   window.open(`book.html?id=${bookId}`, "_blank");
 }
