@@ -937,9 +937,7 @@ max-width:160px;
 
   
   <h3 id="welcome"></h3>
-  <button class="tab-btn" id="addBookTab" onclick="toggleAddTab(this)">
-  ➕ Add Book
-</button>
+  <button onclick="toggleAdd()">➕ Add Book</button>
   <button onclick="logout()">Logout</button>
 
   <div>
@@ -1321,11 +1319,7 @@ document.getElementById("saveBookBtn").onclick = saveBook;
     if (!res.ok) throw new Error("Upload failed");
 
    alert(translations[currentLang].bookPending);
-    const panel = document.getElementById("addBook");
-const btn = document.getElementById("addBookTab");
-
-panel.classList.add("hidden");
-btn.classList.remove("active");
+    toggleAdd();
     coverUrl = pdfUrl = "";
     document.getElementById("coverStatus").innerText = "";
     document.getElementById("pdfStatus").innerText = "";
@@ -1955,29 +1949,6 @@ function filterBooks(type, btn) {
 function toggleAdd() {
   if (!user) return alert("Login required");
   document.getElementById("addBook").classList.toggle("hidden");
-}
-
-  function toggleAddTab(btn) {
-
-  if (!user) {
-    alert("Login required");
-    return;
-  }
-
-  const panel = document.getElementById("addBook");
-
-  panel.classList.toggle("hidden");
-
-  if (panel.classList.contains("hidden")) {
-    btn.classList.remove("active");
-  } else {
-    btn.classList.add("active");
-
-    panel.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-  }
 }
 
 function openBook(bookId) {
