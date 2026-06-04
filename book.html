@@ -693,6 +693,17 @@ async function sendVote(voteType){
   userUid = localStorage.getItem("userUid");
 }
 
+async function sendVote(voteType){
+
+  console.log(
+    "userUid:",
+    userUid,
+    "token:",
+    localStorage.getItem("accessToken")
+  );
+
+  try{
+  
   try{
 
     const res = await fetch(
@@ -712,14 +723,19 @@ async function sendVote(voteType){
       }
     );
 
-    const data = await res.json();
+   const data = await res.json();
 
-    if(data.success){
+console.log(data);
 
-      loadBook();
+if(data.success){
 
-    }
+  loadBook();
 
+}else{
+
+  alert(data.error || "Vote failed");
+
+}
   }catch(err){
 
     console.error(err);
