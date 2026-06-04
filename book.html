@@ -529,7 +529,11 @@ async function loginPi() {
       "userUid",
       userUid
     );
-
+localStorage.setItem(
+  "accessToken",
+  auth.accessToken
+);
+    
     return true;
 
   } catch(err) {
@@ -698,11 +702,13 @@ async function sendVote(voteType){
         headers:{
           "Content-Type":"application/json"
         },
-        body:JSON.stringify({
-          bookId:b.id,
-          voteType,
-          userUid
-        })
+       body:JSON.stringify({
+  bookId:b.id,
+  voteType,
+  userUid,
+  accessToken:
+    localStorage.getItem("accessToken")
+})
       }
     );
 
