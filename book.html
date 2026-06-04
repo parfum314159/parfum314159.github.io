@@ -739,7 +739,9 @@ async function sendVote(voteType){
 
   }
 }
-
+document
+.getElementById("likeBtn")
+.onclick = () => sendVote("like");
 document
 .getElementById("dislikeBtn")
 .onclick = () => sendVote("dislike");
