@@ -684,16 +684,14 @@ if(userUid){
 
 async function sendVote(voteType){
 
- if(!userUid){
+  if(!userUid){
 
-  const ok = await loginPi();
+    const ok = await loginPi();
 
-  if(!ok) return;
+    if(!ok) return;
 
-  userUid = localStorage.getItem("userUid");
-}
-
-async function sendVote(voteType){
+    userUid = localStorage.getItem("userUid");
+  }
 
   console.log(
     "userUid:",
@@ -703,8 +701,6 @@ async function sendVote(voteType){
   );
 
   try{
-  
-  try{
 
     const res = await fetch(
       `${BACKEND_URL}/rate-book`,
@@ -713,40 +709,36 @@ async function sendVote(voteType){
         headers:{
           "Content-Type":"application/json"
         },
-       body:JSON.stringify({
-  bookId:b.id,
-  voteType,
-  userUid,
-  accessToken:
-    localStorage.getItem("accessToken")
-})
+        body:JSON.stringify({
+          bookId:b.id,
+          voteType,
+          userUid,
+          accessToken:
+            localStorage.getItem("accessToken")
+        })
       }
     );
 
-   const data = await res.json();
+    const data = await res.json();
 
-console.log(data);
+    console.log(data);
 
-if(data.success){
+    if(data.success){
 
-  loadBook();
+      loadBook();
 
-}else{
+    }else{
 
-  alert(data.error || "Vote failed");
+      alert(data.error || "Vote failed");
 
-}
+    }
+
   }catch(err){
 
     console.error(err);
 
   }
-
 }
-
-document
-.getElementById("likeBtn")
-.onclick = () => sendVote("like");
 
 document
 .getElementById("dislikeBtn")
