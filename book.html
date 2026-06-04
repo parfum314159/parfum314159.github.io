@@ -684,14 +684,17 @@ if(userUid){
 
 async function sendVote(voteType){
 
-  if(!userUid){
+ if(
+  !userUid ||
+  !localStorage.getItem("accessToken")
+){
 
-    const ok = await loginPi();
+  const ok = await loginPi();
 
-    if(!ok) return;
+  if(!ok) return;
 
-    userUid = localStorage.getItem("userUid");
-  }
+  userUid = localStorage.getItem("userUid");
+}
 
   console.log(
     "userUid:",
