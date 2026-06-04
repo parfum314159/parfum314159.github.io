@@ -703,6 +703,13 @@ async function sendVote(voteType){
     localStorage.getItem("accessToken")
   );
 
+alert(
+"bookId=" + b.id +
+"\nuserUid=" + userUid +
+"\naccessToken=" +
+localStorage.getItem("accessToken")
+);
+  
   try{
 
     const res = await fetch(
