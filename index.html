@@ -1473,7 +1473,7 @@ alert("Payment successful! The book is now open 📚");
 
 // تحديث المشتريات
 await loadMyPurchases();
-
+renderBooks(allBooksData);
 // فتح تبويب المشتريات مباشرة
 openTab("purchases");
       },
@@ -1504,6 +1504,7 @@ async function downloadPdf(bookId) {
 
 
  let allBooksData = []; 
+  let purchasedBookIds = new Set();
   
 // ================= LOAD BOOKS =================
 async function loadBooks() {
@@ -1631,11 +1632,25 @@ const userVote = null;
           </button> ${dislikes}
         </div>
 
-       <button onclick="buy('${b.id}', ${b.price})"
-         ${!user ? 'disabled' : ''}
-       >
-         ${t.buy}
-       </button>
+       ${
+  purchasedBookIds.has(b.id)
+    ? `
+      <button
+        onclick="openTab('purchases')"
+        style="background:#16a34a;"
+      >
+        ✅ You Own This Book
+      </button>
+    `
+    : `
+      <button
+        onclick="buy('${b.id}', ${b.price})"
+        ${!user ? 'disabled' : ''}
+      >
+        ${t.buy}
+      </button>
+    `
+}
 
        <button onclick="openBook('${b.id}')">
          ${t.view}
@@ -1740,6 +1755,12 @@ async function loadMyPurchases() {
 
     const books = json.books;
 
+purchasedBookIds.clear();
+
+books.forEach(book => {
+  purchasedBookIds.add(book.id);
+});
+    
     box.innerHTML = "";
 
     if (books.length === 0) {
@@ -1822,6 +1843,8 @@ const userVote = null;
     // إضافة HTML مرة واحدة فقط
     box.innerHTML = html;
 
+renderBooks(allBooksData);
+    
   } catch (e) {
 
     box.innerHTML = "<p>Error loading purchases. Retrying...</p>";
