@@ -423,6 +423,8 @@ border:1px solid #444;
 <script>
 const BACKEND_URL = "https://pi-backend-c8nz.onrender.com";  let userUid = null;
 let currentUser = null;
+  let accessToken =
+  localStorage.getItem("accessToken");
 const ALLOWED_ORIGIN = "https://spicylibrary.online"; // موقعك
 
 // ================= LANGUAGES =================
@@ -548,7 +550,7 @@ localStorage.setItem(
   "accessToken",
   auth.accessToken
 );
-    
+    accessToken = auth.accessToken;
     return true;
 
   } catch(err) {
@@ -748,7 +750,7 @@ async function sendVote(voteType){
 
  if(
   !userUid ||
-  !localStorage.getItem("accessToken")
+  !accessToken
 ){
 
   const ok = await loginPi();
@@ -780,8 +782,7 @@ async function sendVote(voteType){
           bookId:b.id,
           voteType,
           userUid,
-          accessToken:
-            localStorage.getItem("accessToken")
+          accessToken: accessToken
         })
       }
     );
