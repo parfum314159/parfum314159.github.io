@@ -789,6 +789,17 @@ async function sendVote(voteType){
 
     const data = await res.json();
 
+    if (data.error === "Invalid access token") {
+
+  localStorage.removeItem("accessToken");
+
+  accessToken = null;
+
+  await loginPi();
+
+  return sendVote(voteType);
+}
+
     console.log(data);
 
     if(data.success){
