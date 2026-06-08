@@ -1088,7 +1088,11 @@ btn.disabled = true;
         const res = await fetch(`${BACKEND_URL}/upload-cover`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ file: base64 })
+          body: JSON.stringify({
+  file: base64,
+  userUid: userUid,
+  accessToken: window.accessToken
+})
         });
         const data = await res.json();
         if (data.success) {
@@ -1133,7 +1137,11 @@ btn.disabled = true;
         const res = await fetch(`${BACKEND_URL}/upload-pdf`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ file: base64 })
+          body: JSON.stringify({
+  file: base64,
+  userUid: userUid,
+  accessToken: window.accessToken
+})
         });
         const data = await res.json();
         if (data.success) {
