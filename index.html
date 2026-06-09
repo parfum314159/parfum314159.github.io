@@ -1541,7 +1541,7 @@ openTab("purchases");
       },
 
       onCancel: () => showToast("Payment cancelled");
-      onError: (err) => showToast("Payment error: " + err.message);
+      onError: (err) => showToast("Payment error: " + err.message)
     });
   } catch (e) {
     alert("Use Pi Browser for payment.");
