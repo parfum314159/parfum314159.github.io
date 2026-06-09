@@ -1611,10 +1611,7 @@ const userVote = null;
 
         <h4>${b.title}</h4>
 
-        <button onclick="buy('${b.id}', ${b.price})">
-  Buy with ${b.price} Pi
-</button>
-
+        <p><strong>${b.price} Pi</strong></p>
         <div class="description">${desc}</div>
 
         <div class="owner">${owner}</div>
@@ -1655,11 +1652,11 @@ const userVote = null;
     `
     : `
       <button
-        onclick="buy('${b.id}', ${b.price})"
-        ${!user ? 'disabled' : ''}
-      >
-        ${t.buy}
-      </button>
+  onclick="buy('${b.id}', ${b.price})"
+  ${!user ? 'disabled' : ''}
+>
+  ${t.buy}  ${b.price} Pi
+</button>
     `
 }
 
