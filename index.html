@@ -1525,11 +1525,8 @@ async function buy(bookId, price) {
         }
 
         const data = await res.json();
-window.open(data.pdfUrl, "_blank");
-openModal(
-  "🎉 Purchase Successful",
-  "Your book is now available in My Purchases 📚"
-);
+        window.open(data.pdfUrl, "_blank");
+showToast("Payment successful! 📚 The book is now open");
 
 // تحديث المشتريات
 await loadMyPurchases();
