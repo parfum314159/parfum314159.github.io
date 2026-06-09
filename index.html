@@ -1540,7 +1540,7 @@ renderBooks(allBooksData);
 openTab("purchases");
       },
 
-      onCancel: () => showToast("Payment cancelled");
+      onCancel: () => showToast("Payment cancelled"),
       onError: (err) => showToast("Payment error: " + err.message)
     });
   } catch (e) {
