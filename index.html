@@ -1611,7 +1611,9 @@ const userVote = null;
 
         <h4>${b.title}</h4>
 
-        <p><strong>${b.price} Pi</strong></p>
+        <button onclick="buy('${b.id}', ${b.price})">
+  Buy with ${b.price} Pi
+</button>
 
         <div class="description">${desc}</div>
 
