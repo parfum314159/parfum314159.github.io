@@ -2006,7 +2006,7 @@ body: JSON.stringify({
       return;
     }
 
-   showToast(`✅ ${data.amount} Pi sent successfully`);
+   openModal("Payout Successful", `TXID:\n${data.txid}`);
 
     loadMySales();
 
