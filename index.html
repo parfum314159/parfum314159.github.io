@@ -1441,7 +1441,22 @@ async function rateBook(bookId, voteType, button) {
 }
 
 // ================= BUY =================
-async function buy(bookId, price) {
+let pendingBuy = null;
+
+function openBuyModal(bookId, price) {
+  pendingBuy = { bookId, price };
+
+  document.getElementById("buyTitle").innerText = "Buy this book";
+  document.getElementById("buyText").innerText =
+    `You will pay ${price} Pi using Pi Network`;
+
+  document.getElementById("buyModal").style.display = "flex";
+}
+
+function closeBuyModal() {
+  document.getElementById("buyModal").style.display = "none";
+  pendingBuy = null;
+}
   if (!userUid) return alert("Login required");
   if (!confirm(`Buy this book for ${price} Pi?`)) return;
 
@@ -1650,7 +1665,7 @@ const userVote = null;
     `
     : `
       <button
-  onclick="buy('${b.id}', ${b.price})"
+ onclick="openBuyModal('${b.id}', ${b.price})"
   ${!user ? 'disabled' : ''}
 >
   ${t.buy}  ${b.price} Pi
@@ -2698,8 +2713,58 @@ function goToStoreTop() {
   });
 
 } 
+
+
+  document.getElementById("confirmBuyBtn").onclick = async () => {
+  if (!pendingBuy) return;
+
+  const { bookId, price } = pendingBuy;
+
+  closeBuyModal();
+
+  // هنا نستعمل نفس نظام Pi الموجود عندك
+  await buy(bookId, price);
+};
+
+
   
 </script>
+  <!-- BUY MODAL -->
+<div id="buyModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+background:rgba(0,0,0,0.7); z-index:99999; justify-content:center; align-items:center;">
+
+  <div style="
+    width:90%;
+    max-width:420px;
+    background:rgba(15,23,42,0.95);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:20px;
+    padding:20px;
+    backdrop-filter:blur(15px);
+    text-align:center;
+    box-shadow:0 0 40px rgba(139,92,246,0.3);
+  ">
+
+    <h2 id="buyTitle" style="color:#00f5ff;">Buy Book</h2>
+
+    <p id="buyText" style="color:#cbd5e1; margin:15px 0;">
+      Confirm your purchase with Pi Network
+    </p>
+
+    <button id="confirmBuyBtn" style="width:100%; margin-top:10px;">
+      Confirm Payment
+    </button>
+
+    <button onclick="closeBuyModal()" style="
+      width:100%;
+      margin-top:10px;
+      background:rgba(255,255,255,0.1);
+    ">
+      Cancel
+    </button>
+
+  </div>
+</div>
   <!-- Modal for Privacy Policy / Terms -->
 <div id="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999;">
   <div style="background:#111;color:#fff;margin:50px auto;padding:20px;border-radius:8px;width:90%;max-width:500px;height:80%;overflow-y:auto;">
