@@ -995,7 +995,28 @@ display:flex;
 
     animation:fadeUp .3s ease;
 }
-  
+
+
+  /* ===== LOADING SPINNER INSIDE BUTTON ===== */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: auto;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.btn-loading {
+  pointer-events: none;
+  opacity: 0.8;
+}
   
 </style>
 </head>
@@ -1028,7 +1049,9 @@ max-width:160px;
   <option value="zh">中文</option>
 </select>
   
-  <button id="loginBtn">Login with Pi</button>
+  <button id="loginBtn">
+  <span id="loginText">Login with Pi</span>
+</button>
 </div>
 
 <div id="app" class="hidden">
@@ -1412,7 +1435,27 @@ checkNotifications();
 }
 
 // ربط زر تسجيل الدخول
-document.getElementById("loginBtn").onclick = login;
+document.getElementById("loginBtn").onclick = async function () {
+  const btn = document.getElementById("loginBtn");
+  const text = document.getElementById("loginText");
+
+  // ===== show spinner =====
+  btn.classList.add("btn-loading");
+  text.innerHTML = `<div class="spinner"></div>`;
+
+  try {
+    // مدة التحميل (3 ثواني)
+    await new Promise(r => setTimeout(r, 3000));
+
+    // تشغيل تسجيل الدخول الحقيقي
+    await login();
+
+  } finally {
+    // ===== رجوع الزر كما كان =====
+    btn.classList.remove("btn-loading");
+    text.innerHTML = "Login with Pi";
+  }
+};
 
 function logout() {
   location.reload();
