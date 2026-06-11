@@ -987,7 +987,8 @@ ${t.dislikeBtn}
 
 </div>
 `;
-
+document.getElementById("loginBtn").innerText =
+  translations[currentLang].login;
 // ربط زر تسجيل الدخول بعد إنشائه
 document.getElementById("loginBtn").onclick = async () => {
   await loginPi();
