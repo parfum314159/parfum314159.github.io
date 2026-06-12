@@ -1037,7 +1037,28 @@ ${t.dislikeBtn}
 
 </div>
 `;
+setTimeout(() => {
+  document.getElementById("viewCommentsBtn").onclick = async () => {
 
+    const res = await fetch(`${BACKEND_URL}/comments?bookId=${bookId}`);
+    const data = await res.json();
+
+    if (!data.success) return;
+
+    let html = "";
+
+    data.comments.forEach(c => {
+      html += `
+        <div class="comment-box">
+          <div class="comment-user">${c.username}</div>
+          <div>${c.text}</div>
+        </div>
+      `;
+    });
+
+    openModal("💬 Comments", html);
+  };
+}, 0);
 // ربط زر تسجيل الدخول بعد إنشائه
 document.getElementById("loginBtn").onclick = async () => {
   await loginPi();
@@ -1446,26 +1467,7 @@ async function saveComment() {
   }
 }
 
-  document.getElementById("viewCommentsBtn").onclick = async () => {
-
-  const res = await fetch(`${BACKEND_URL}/comments?bookId=${bookId}`);
-  const data = await res.json();
-
-  if (!data.success) return;
-
-  let html = "";
-
-  data.comments.forEach(c => {
-    html += `
-      <div class="comment-box">
-        <div class="comment-user">${c.username}</div>
-        <div>${c.text}</div>
-      </div>
-    `;
-  });
-
-  openModal("💬 Comments", html);
-};
+ 
   
 </script>
 
