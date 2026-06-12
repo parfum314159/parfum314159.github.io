@@ -1384,11 +1384,11 @@ btn.innerHTML = t.readMore;
 }
 
   
-  function openModal(title,text){
+ function openModal(title,text){
 
-  document.getElementById("modalTitle").innerText=title;
+  document.getElementById("modalTitle").innerText = title;
 
-  document.getElementById("modalText").innerText=text;
+  document.getElementById("modalText").innerHTML = text; // 👈 مهم جداً
 
   document.getElementById("modal").classList.remove("hidden");
 
@@ -1416,6 +1416,56 @@ document
 .classList.add("hidden");
 
 }
+
+async function saveComment() {
+
+  const text = document.getElementById("commentText").value;
+
+  if (!text) return;
+
+  const res = await fetch(`${BACKEND_URL}/add-comment`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      bookId,
+      userUid,
+      accessToken,
+      text
+    })
+  });
+
+  const data = await res.json();
+
+  if (data.success) {
+    closeCommentModal();
+    openModal("✅", "Comment added");
+  } else {
+    openModal("❌", data.error);
+  }
+}
+
+  document.getElementById("viewCommentsBtn").onclick = async () => {
+
+  const res = await fetch(`${BACKEND_URL}/comments?bookId=${bookId}`);
+  const data = await res.json();
+
+  if (!data.success) return;
+
+  let html = "";
+
+  data.comments.forEach(c => {
+    html += `
+      <div class="comment-box">
+        <div class="comment-user">${c.username}</div>
+        <div>${c.text}</div>
+      </div>
+    `;
+  });
+
+  openModal("💬 Comments", html);
+};
   
 </script>
 
