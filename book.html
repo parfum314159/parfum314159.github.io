@@ -674,6 +674,40 @@ body::after{
   gap:12px;
   margin-bottom:20px;
 }
+
+.comment-actions{
+margin-top:20px;
+}
+
+.comment-btn{
+padding:12px 20px;
+border:none;
+border-radius:14px;
+cursor:pointer;
+font-weight:700;
+margin:5px;
+background:#8b5cf6;
+color:white;
+transition:.3s;
+}
+
+.comment-btn:hover{
+transform:scale(1.05);
+}
+
+.comment-box{
+background:rgba(255,255,255,.05);
+padding:12px;
+border-radius:14px;
+margin-top:12px;
+text-align:left;
+}
+
+.comment-user{
+color:#00f5ff;
+font-weight:bold;
+margin-bottom:5px;
+}
   
 </style>
 </head>
@@ -985,7 +1019,17 @@ ${t.likeBtn}
 ${t.dislikeBtn}
 </button>
 </div>
+<div class="comment-actions">
 
+<button id="addCommentBtn" class="comment-btn">
+💬 Write Comment
+</button>
+
+<button id="viewCommentsBtn" class="comment-btn">
+👀 View Comments
+</button>
+
+</div>
 <div class="actions">
 <button id="buyBtn">${t.buy}</button>
 <button id="shareBtn">${t.share}</button>
@@ -1208,6 +1252,14 @@ document
 document
 .getElementById("dislikeBtn")
 .onclick = () => sendVote("dislike");
+
+    document
+.getElementById("addCommentBtn")
+.onclick = () => {
+
+  openCommentModal();
+
+};
     // زر مشاركة الرابط
     document.getElementById("shareBtn").onclick = () => {
       const bookUrl = window.location.href;
@@ -1349,7 +1401,21 @@ function closeModal(){
 }
 
 
+function openCommentModal(){
 
+document
+.getElementById("commentModal")
+.classList.remove("hidden");
+
+}
+
+function closeCommentModal(){
+
+document
+.getElementById("commentModal")
+.classList.add("hidden");
+
+}
   
 </script>
 
@@ -1368,6 +1434,35 @@ function closeModal(){
   </div>
 
 </div>
+
+  <div id="commentModal" class="modal hidden">
+
+<div class="modal-box">
+
+<h2>Leave Comment</h2>
+
+<textarea
+id="commentText"
+style="
+width:100%;
+height:120px;
+border-radius:12px;
+padding:10px;
+margin-top:15px;
+"></textarea>
+
+<button onclick="saveComment()">
+Save
+</button>
+
+<button onclick="closeCommentModal()">
+Cancel
+</button>
+
+</div>
+
+</div>
+
   
 </body>
 </html>
