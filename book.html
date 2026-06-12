@@ -525,6 +525,7 @@ body::after{
 }
 
 .modal-box{
+
   background:
   linear-gradient(
     180deg,
@@ -533,8 +534,9 @@ body::after{
   );
 
   width:90%;
-  max-width:430px;
-  min-height:auto;
+  max-width:700px;
+
+  max-height:70vh;   /* ارتفاع النافذة */
 
   padding:25px;
 
@@ -542,10 +544,6 @@ body::after{
 
   display:flex;
   flex-direction:column;
-  justify-content:flex-start;
-  align-items:center;
-
-  text-align:center;
 
   border:1px solid rgba(255,255,255,.08);
 
@@ -554,8 +552,9 @@ body::after{
   box-shadow:
     0 0 40px rgba(139,92,246,.25),
     0 0 80px rgba(0,245,255,.08);
-}
 
+  overflow:hidden;
+}
   #modalTitle{
 
   font-size:28px;
@@ -585,10 +584,18 @@ body::after{
 
   line-height:1.7;
 
-  margin-bottom:25px;
+  margin-bottom:20px;
 
+  max-height:45vh;
+
+  overflow-y:auto;
+
+  overflow-x:hidden;
+
+  padding-right:8px;
+
+  width:100%;
 }
-
 .modal-box button{
 
   width:100%;
@@ -680,14 +687,25 @@ margin-top:20px;
 }
 
 .comment-btn{
-padding:12px 20px;
+
+padding:9px 16px;
+
+font-size:14px;
+
 border:none;
-border-radius:14px;
+
+border-radius:12px;
+
 cursor:pointer;
+
 font-weight:700;
+
 margin:5px;
+
 background:#8b5cf6;
+
 color:white;
+
 transition:.3s;
 }
 
