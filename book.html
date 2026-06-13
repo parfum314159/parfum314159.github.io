@@ -806,6 +806,11 @@ const translations = {
   dislikeBtn: "👎 Dislike",
   purchased: "✅ Purchased",
   goToPurchases: "📚 Go to My Purchases",
+    writeComment: "💬 Write Comment",
+viewComments: "👀 View Comments",
+    leaveComment: "Leave Comment",
+save: "Save",
+cancel: "Cancel",
     readMore: "Read More ▼",
 readLess: "Show Less ▲"
   },
@@ -830,6 +835,11 @@ readLess: "Show Less ▲"
   dislikeBtn: "👎 عدم إعجاب",
   purchased: "✅ تم الشراء",
   goToPurchases: "📚 الذهاب إلى مشترياتي",
+    writeComment: "💬 كتابة تعليق",
+viewComments: "👀 عرض التعليقات",
+    leaveComment: "إضافة تعليق",
+save: "حفظ",
+cancel: "إلغاء",
     readMore: "عرض المزيد ▼",
 readLess: "عرض أقل ▲"
   },
@@ -854,6 +864,11 @@ readLess: "عرض أقل ▲"
   dislikeBtn: "👎 Je n'aime pas",
   purchased: "✅ Acheté",
   goToPurchases: "📚 Aller à mes achats",
+    writeComment: "💬 Écrire un commentaire",
+viewComments: "👀 Voir les commentaires",
+    leaveComment: "Laisser un commentaire",
+save: "Enregistrer",
+cancel: "Annuler",
     readMore: "Voir plus ▼",
 readLess: "Voir moins ▲"
   },
@@ -878,6 +893,11 @@ readLess: "Voir moins ▲"
   dislikeBtn: "👎 点踩",
   purchased: "✅ 已购买",
   goToPurchases: "📚 前往我的购买",
+    writeComment: "💬 写评论",
+viewComments: "👀 查看评论",
+    leaveComment: "发表评论",
+save: "保存",
+cancel: "取消",
     readMore: "阅读更多 ▼",
 readLess: "收起 ▲"
   }
@@ -893,10 +913,25 @@ function changeLanguage() {
   document.body.style.direction =
     currentLang === "ar" ? "rtl" : "ltr";
 
-document.getElementById("loginBtn").innerText =
-  translations[currentLang].login;
-  
- loadBook();
+  // زر تسجيل الدخول
+  if (document.getElementById("loginBtn")) {
+    document.getElementById("loginBtn").innerText =
+      translations[currentLang].login;
+  }
+
+  // نافذة التعليق
+  if (document.getElementById("commentTitle")) {
+    document.getElementById("commentTitle").innerText =
+      translations[currentLang].leaveComment;
+
+    document.getElementById("saveCommentBtn").innerText =
+      translations[currentLang].save;
+
+    document.getElementById("cancelCommentBtn").innerText =
+      translations[currentLang].cancel;
+  }
+
+  loadBook();
 }
   
 async function loginPi() {
@@ -1040,11 +1075,11 @@ ${t.dislikeBtn}
 <div class="comment-actions">
 
 <button id="addCommentBtn" class="comment-btn">
-💬 Write Comment
+${t.writeComment}
 </button>
 
 <button id="viewCommentsBtn" class="comment-btn">
-👀 View Comments
+${t.viewComments}
 </button>
 
 </div>
@@ -1519,7 +1554,7 @@ async function saveComment() {
 
 <div class="modal-box">
 
-<h2>Leave Comment</h2>
+<h2 id="commentTitle">Leave Comment</h2>
 
 <textarea
 id="commentText"
@@ -1531,11 +1566,11 @@ padding:10px;
 margin-top:15px;
 "></textarea>
 
-<button onclick="saveComment()">
+<button id="saveCommentBtn" onclick="saveComment()">
 Save
 </button>
 
-<button onclick="closeCommentModal()">
+<button id="cancelCommentBtn" onclick="closeCommentModal()">
 Cancel
 </button>
 
