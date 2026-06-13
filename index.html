@@ -989,7 +989,7 @@ display:flex;
 
     flex-direction:column;
 
-    gap:18px;
+    gap:6px;
 
     text-align:center;
 
@@ -1032,6 +1032,32 @@ display:flex;
 .comments-link:hover{
   color:#ff4ecd;
   text-decoration:underline;
+}
+  .comment-box{
+  padding:10px;
+  border-radius:12px;
+  background:rgba(255,255,255,.05);
+}
+
+  .modal-content-box{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1e1e2f;
+  padding: 25px;
+  border-radius: 20px;
+  width: 85%;
+  max-width: 400px;
+  color: white;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  height: 260px; /* مهم */
 }
   
 </style>
@@ -3010,7 +3036,7 @@ function goToStoreTop() {
        html += `
         <div style="
           padding:12px;
-          margin-bottom:10px;
+          margin-bottom:6px;
           background:rgba(255,255,255,.05);
           border-radius:12px;
         ">
