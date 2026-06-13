@@ -1021,49 +1021,17 @@ display:flex;
   margin-top:12px;
 }
 
-.comment-actions{
-margin-top:20px;
+.comments-link{
+  color:#00f5ff;
+  cursor:pointer;
+  font-size:14px;
+  font-weight:bold;
+  transition:0.3s;
 }
 
-.comment-btn{
-
-padding:9px 16px;
-
-font-size:14px;
-
-border:none;
-
-border-radius:12px;
-
-cursor:pointer;
-
-font-weight:700;
-
-margin:5px;
-
-background:#8b5cf6;
-
-color:white;
-
-transition:.3s;
-}
-
-.comment-btn:hover{
-transform:scale(1.05);
-}
-
-.comment-box{
-background:rgba(255,255,255,.05);
-padding:12px;
-border-radius:14px;
-margin-top:12px;
-text-align:left;
-}
-
-.comment-user{
-color:#00f5ff;
-font-weight:bold;
-margin-bottom:5px;
+.comments-link:hover{
+  color:#ff4ecd;
+  text-decoration:underline;
 }
   
 </style>
@@ -3040,9 +3008,23 @@ function goToStoreTop() {
       data.comments.forEach(c=>{
 
        html += `
-        <div class="comment-box">
-          <div class="comment-user">${c.username}</div>
-          <div>${c.text}</div>
+        <div style="
+          padding:12px;
+          margin-bottom:10px;
+          background:rgba(255,255,255,.05);
+          border-radius:12px;
+        ">
+          <div style="
+            color:#00f5ff;
+            font-weight:bold;
+            margin-bottom:5px;
+          ">
+            ${c.username}
+          </div>
+
+          <div style="color:white;">
+            ${c.text}
+          </div>
         </div>
         `;
 
