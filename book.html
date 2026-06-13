@@ -1519,9 +1519,9 @@ async function saveComment() {
   openModal("✅", "Comment added successfully");
 
   // إعادة تحميل الصفحة بعد ثانية واحدة
-  setTimeout(() => {
-    window.location.reload();
-  }, 1000);
+ setTimeout(() => {
+  window.location.href = window.location.href;
+}, 1000);
 
 } else {
 
