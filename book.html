@@ -1478,11 +1478,21 @@ async function saveComment() {
   const data = await res.json();
 
   if (data.success) {
-    closeCommentModal();
-    openModal("✅", "Comment added");
-  } else {
-    openModal("❌", data.error);
-  }
+
+  closeCommentModal();
+
+  openModal("✅", "Comment added successfully");
+
+  // إعادة تحميل الصفحة بعد ثانية واحدة
+  setTimeout(() => {
+    window.location.reload();
+  }, 1000);
+
+} else {
+
+  openModal("❌", data.error);
+
+}
 }
 
  
