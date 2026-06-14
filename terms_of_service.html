@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" translate="yes">
 <head>
   <meta charset="UTF-8">
   <title>Terms of Service - Spicy Library</title>
@@ -250,7 +250,11 @@ button:hover{
 <body>
 
 <div class="top-logo" onclick="window.location.href='https://spicylibrary.online'">
-
+<div style="text-align:center; margin:15px;">
+  <button onclick="enableTranslate()">
+    🌐 Translate Page
+  </button>
+</div>
   <img src="banner.png" alt="Spicy Library">
 
   <span>Spicy Library</span>
@@ -325,5 +329,10 @@ Terms may be updated at any time. Continued use constitutes acceptance.
 </p>
 
 </div>
+  <script>
+function enableTranslate(){
+  alert("Open Chrome menu → Translate page (or Pi Browser translation if available).");
+}
+</script>
 </body>
 </html>
