@@ -3045,25 +3045,26 @@ if(checkData.success && !checkData.commented){
       data.comments.forEach(c=>{
 
        html += `
-        <div style="
-          padding:12px;
-          margin-bottom:10px;
-          background:rgba(255,255,255,.05);
-          border-radius:12px;
-        ">
-          <div style="
-            color:#00f5ff;
-            font-weight:bold;
-            margin-bottom:5px;
-          ">
-            ${c.username}
-          </div>
+<div style="margin-bottom:8px;">
 
-          <div style="color:white;">
-            ${c.text}
-          </div>
-        </div>
-        `;
+  <div style="
+    color:#00f5ff;
+    font-weight:bold;
+  ">
+    ${c.username}
+  </div>
+
+  <div style="
+    color:white;
+    margin-top:2px;
+    margin-bottom:6px;
+    word-break:break-word;
+  ">
+    ${c.text}
+  </div>
+
+</div>
+`;
 
       });
 
