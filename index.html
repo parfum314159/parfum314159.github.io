@@ -1383,7 +1383,7 @@ async function login() {
   ["username", "payments", "wallet_address"],
   onIncompletePaymentFound
 );
-    alert("wallet = " + authResult.user.wallet_address);
+    alert(JSON.stringify(authResult.user));
     console.log("AUTH RESULT:", authResult);
 console.log("USER:", authResult.user);
 console.log("WALLET:", authResult.user.wallet_address);
