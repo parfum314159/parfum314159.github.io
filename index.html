@@ -8,1077 +8,211 @@
 <style>
 
 /* ===== GLOBAL ===== */
-
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-}
-
+*{ margin:0; padding:0; box-sizing:border-box; }
 body{
-
   font-family:'Segoe UI',sans-serif;
-
-  background:
-  radial-gradient(circle at top left,#172554 0%,#0f172a 35%,#020617 100%);
-
-  color:white;
-
-  text-align:center;
-
-  min-height:100vh;
-
-  padding:20px;
-
-  overflow-x:hidden;
+  background: radial-gradient(circle at top left,#172554 0%,#0f172a 35%,#020617 100%);
+  color:white; text-align:center; min-height:100vh; padding:20px; overflow-x:hidden;
 }
-
-/* ===== SCROLLBAR ===== */
-
-::-webkit-scrollbar{
-  width:10px;
-}
-
-::-webkit-scrollbar-thumb{
-  background:linear-gradient(#00f5ff,#8b5cf6);
-  border-radius:20px;
-}
-
-/* ===== TITLES ===== */
-
+::-webkit-scrollbar{ width:10px; }
+::-webkit-scrollbar-thumb{ background:linear-gradient(#00f5ff,#8b5cf6); border-radius:20px; }
 h1{
-
-  font-size:52px;
-
-  margin-bottom:12px;
-
-  font-weight:900;
-
-  background:
-  linear-gradient(
-  to right,
-  #00f5ff,
-  #8b5cf6,
-  #ff4ecd
-  );
-
-  -webkit-background-clip:text;
-
-  -webkit-text-fill-color:transparent;
-
-  text-shadow:
-  0 0 25px rgba(0,245,255,0.25);
-
-  animation:fadeUp 0.8s ease;
+  font-size:52px; margin-bottom:12px; font-weight:900;
+  background: linear-gradient(to right,#00f5ff,#8b5cf6,#ff4ecd);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  text-shadow:0 0 25px rgba(0,245,255,0.25); animation:fadeUp 0.8s ease;
 }
-
-h3{
-
-  margin:20px 0;
-
-  color:#00f5ff;
-
-  font-size:26px;
-}
-
-/* ===== BUTTONS ===== */
-
+h3{ margin:20px 0; color:#00f5ff; font-size:26px; }
 button{
-
-  padding:13px 26px;
-
-  border:none;
-
-  border-radius:16px;
-
-  background:
-  linear-gradient(
-  135deg,
-  #00f5ff,
-  #8b5cf6,
-  #ff4ecd
-  );
-
-  color:white;
-
-  cursor:pointer;
-
-  margin:6px;
-
-  font-weight:700;
-
-  font-size:15px;
-
-  transition:0.35s;
-
-  position:relative;
-
-  overflow:hidden;
-
-  box-shadow:
-  0 0 18px rgba(139,92,246,0.35);
+  padding:13px 26px; border:none; border-radius:16px;
+  background: linear-gradient(135deg,#00f5ff,#8b5cf6,#ff4ecd);
+  color:white; cursor:pointer; margin:6px; font-weight:700; font-size:15px;
+  transition:0.35s; position:relative; overflow:hidden;
+  box-shadow:0 0 18px rgba(139,92,246,0.35);
 }
-
-button:hover{
-
-  transform:
-  translateY(-3px)
-  scale(1.03);
-
-  box-shadow:
-  0 0 30px rgba(255,78,205,0.5);
+button:hover{ transform:translateY(-3px) scale(1.03); box-shadow:0 0 30px rgba(255,78,205,0.5); }
+button:active{ transform:scale(0.97); }
+button:disabled{ background:#334155; cursor:not-allowed; opacity:0.6; box-shadow:none; }
+input, textarea, select{
+  padding:14px; margin:8px; width:90%; max-width:420px;
+  border-radius:16px; border:1px solid rgba(255,255,255,0.08);
+  background:rgba(255,255,255,0.05); color:white;
+  backdrop-filter:blur(10px); outline:none; transition:0.3s; font-size:15px;
 }
-
-button:active{
-
-  transform:scale(0.97);
-}
-
-button:disabled{
-
-  background:#334155;
-
-  cursor:not-allowed;
-
-  opacity:0.6;
-
-  box-shadow:none;
-}
-
-/* ===== INPUTS ===== */
-
-input,
-textarea,
-select{
-
-  padding:14px;
-
-  margin:8px;
-
-  width:90%;
-
-  max-width:420px;
-
-  border-radius:16px;
-
-  border:1px solid rgba(255,255,255,0.08);
-
-  background:rgba(255,255,255,0.05);
-
-  color:white;
-
-  backdrop-filter:blur(10px);
-
-  outline:none;
-
-  transition:0.3s;
-
-  font-size:15px;
-}
-
-input:focus,
-textarea:focus,
-select:focus{
-
-  border:1px solid #00f5ff;
-
-  box-shadow:
-  0 0 15px rgba(0,245,255,0.35);
-}
-
-textarea{
-
-  resize:none;
-}
-
-/* ===== PLACEHOLDER ===== */
-
-::placeholder{
-
-  color:#cbd5e1;
-}
-
-/* ===== BOOKS GRID ===== */
-
-.books{
-
-  display:flex;
-
-  flex-wrap:wrap;
-
-  justify-content:center;
-
-  gap:28px;
-
-  margin-top:25px;
-}
-
-/* ===== BOOK CARD ===== */
-
+input:focus, textarea:focus, select:focus{ border:1px solid #00f5ff; box-shadow:0 0 15px rgba(0,245,255,0.35); }
+textarea{ resize:none; }
+::placeholder{ color:#cbd5e1; }
+.books{ display:flex; flex-wrap:wrap; justify-content:center; gap:28px; margin-top:25px; }
 .book{
-
-  background:
-  rgba(255,255,255,0.05);
-
-  border:
-  1px solid rgba(255,255,255,0.08);
-
-  backdrop-filter:blur(18px);
-
-  border-radius:24px;
-
-  padding:18px;
-
-  width:240px;
-
-  transition:0.4s;
-
-  position:relative;
-
-  overflow:hidden;
-
-  box-shadow:
-  0 0 25px rgba(0,245,255,0.08);
+  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);
+  backdrop-filter:blur(18px); border-radius:24px; padding:18px; width:240px;
+  transition:0.4s; position:relative; overflow:hidden;
+  box-shadow:0 0 25px rgba(0,245,255,0.08);
 }
-
-.book:hover{
-
-  transform:
-  translateY(-8px)
-  scale(1.02);
-
-  box-shadow:
-  0 0 35px rgba(139,92,246,0.35);
-}
-
-/* ===== BOOK IMAGE ===== */
-
-.book img{
-
-  width:100%;
-
-  border-radius:16px;
-
-  transition:0.4s;
-}
-
-.book:hover img{
-
-  transform:scale(1.03);
-}
-
-/* ===== BOOK TEXT ===== */
-
-.book h4{
-
-  margin:14px 0 8px;
-
-  font-size:20px;
-
-  color:white;
-}
-
-.description{
-
-  font-size:13px;
-
-  color:#cbd5e1;
-
-  height:65px;
-
-  overflow:hidden;
-
-  margin:10px 0;
-}
-
-.owner{
-
-  font-size:13px;
-
-  color:#ff4ecd;
-}
-
-.language{
-
-  font-size:13px;
-
-  color:#94a3b8;
-}
-
-.pages{
-
-  font-size:13px;
-
-  color:#00f5ff;
-
-  font-weight:bold;
-}
-
-.sales{
-
-  font-size:13px;
-
-  color:#facc15;
-
-  font-weight:bold;
-}
-
-/* ===== RATINGS ===== */
-
-.ratings{
-
-  font-size:14px;
-
-  margin:10px 0;
-}
-
-.like-btn,
-.dislike-btn{
-  border:none;
-  width:38px;
-  height:38px;
-  border-radius:50%;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  font-size:18px;
-  cursor:pointer;
-  margin:0 5px;
-  transition:0.25s;
-  background:rgba(255,255,255,0.08);
-  backdrop-filter:blur(10px);
+.book:hover{ transform:translateY(-8px) scale(1.02); box-shadow:0 0 35px rgba(139,92,246,0.35); }
+.book img{ width:100%; border-radius:16px; transition:0.4s; }
+.book:hover img{ transform:scale(1.03); }
+.book h4{ margin:14px 0 8px; font-size:20px; color:white; }
+.description{ font-size:13px; color:#cbd5e1; height:65px; overflow:hidden; margin:10px 0; }
+.owner{ font-size:13px; color:#ff4ecd; }
+.language{ font-size:13px; color:#94a3b8; }
+.pages{ font-size:13px; color:#00f5ff; font-weight:bold; }
+.sales{ font-size:13px; color:#facc15; font-weight:bold; }
+.ratings{ font-size:14px; margin:10px 0; }
+.like-btn, .dislike-btn{
+  border:none; width:38px; height:38px; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:18px; cursor:pointer; margin:0 5px; transition:0.25s;
+  background:rgba(255,255,255,0.08); backdrop-filter:blur(10px);
   box-shadow:0 0 10px rgba(0,0,0,0.2);
 }
-
-.like-btn{
-  color:#22c55e;
-}
-
-.dislike-btn{
-  color:#ef4444;
-}
-
-.like-btn:hover{
-  transform:scale(1.15);
-  background:rgba(34,197,94,0.15);
-  box-shadow:0 0 15px rgba(34,197,94,0.4);
-}
-
-.dislike-btn:hover{
-  transform:scale(1.15);
-  background:rgba(239,68,68,0.15);
-  box-shadow:0 0 15px rgba(239,68,68,0.4);
-}
-
-.like-btn:disabled,
-.dislike-btn:disabled{
-  opacity:0.4;
-  cursor:not-allowed;
-  transform:none;
-}
-/* ===== NOTICE ===== */
-
-.notice{
-
-  font-size:14px;
-
-  color:#cbd5e1;
-
-  margin-bottom:10px;
-}
-
-/* ===== TABS ===== */
-
+.like-btn{ color:#22c55e; }
+.dislike-btn{ color:#ef4444; }
+.like-btn:hover{ transform:scale(1.15); background:rgba(34,197,94,0.15); box-shadow:0 0 15px rgba(34,197,94,0.4); }
+.dislike-btn:hover{ transform:scale(1.15); background:rgba(239,68,68,0.15); box-shadow:0 0 15px rgba(239,68,68,0.4); }
+.like-btn:disabled, .dislike-btn:disabled{ opacity:0.4; cursor:not-allowed; transform:none; }
+.notice{ font-size:14px; color:#cbd5e1; margin-bottom:10px; }
 .tab-btn{
-
-  background:
-  rgba(255,255,255,0.06);
-
-  border:
-  1px solid rgba(255,255,255,0.08);
-
-  margin:10px;
-
-  padding:13px 26px;
-
-  border-radius:16px;
-
-  color:white;
+  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08);
+  margin:10px; padding:13px 26px; border-radius:16px; color:white;
 }
-
 .tab-btn.active{
-
-  background:
-  linear-gradient(
-  135deg,
-  #00f5ff,
-  #8b5cf6,
-  #ff4ecd
-  );
-
-  box-shadow:
-  0 0 25px rgba(139,92,246,0.45);
+  background:linear-gradient(135deg,#00f5ff,#8b5cf6,#ff4ecd);
+  box-shadow:0 0 25px rgba(139,92,246,0.45);
 }
-
-/* ===== TABS CONTENT ===== */
-
-.tab-content{
-
-  display:none;
-
-  animation:fadeUp 0.5s ease;
-}
-
-.tab-content.active{
-
-  display:block;
-}
-.hidden{
-  display:none !important;
-}
-
-/* ===== ADD BOOK PANEL ===== */
-
+.tab-content{ display:none; animation:fadeUp 0.5s ease; }
+.tab-content.active{ display:block; }
+.hidden{ display:none !important; }
 #addBook{
-
-  width:95%;
-
-  max-width:700px;
-
-  margin:30px auto;
-
-  padding:35px;
-
-  border-radius:30px;
-
-  background:
-  rgba(255,255,255,0.06);
-
-  border:
-  1px solid rgba(255,255,255,0.08);
-
-  backdrop-filter:blur(20px);
-
-  box-shadow:
-  0 0 40px rgba(139,92,246,0.25);
-
-  animation:addBookAnim 0.45s ease;
+  width:95%; max-width:700px; margin:30px auto; padding:35px;
+  border-radius:30px; background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.08); backdrop-filter:blur(20px);
+  box-shadow:0 0 40px rgba(139,92,246,0.25); animation:addBookAnim 0.45s ease;
 }
-
-/* TITLE */
-
 #addBook h3{
-
-  font-size:30px;
-
-  margin-bottom:20px;
-
-  background:
-  linear-gradient(
-  to right,
-  #00f5ff,
-  #8b5cf6,
-  #ff4ecd
-  );
-
-  -webkit-background-clip:text;
-
-  -webkit-text-fill-color:transparent;
-
-  font-weight:800;
+  font-size:30px; margin-bottom:20px;
+  background:linear-gradient(to right,#00f5ff,#8b5cf6,#ff4ecd);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-weight:800;
 }
-
-/* INPUTS */
-
-#addBook input,
-#addBook textarea,
-#addBook select{
-
-  width:100%;
-
-  max-width:100%;
-
-  margin:10px 0;
-
-  padding:16px;
-
-  border-radius:18px;
-
-  background:
-  rgba(255,255,255,0.05);
-
-  border:
-  1px solid rgba(255,255,255,0.08);
-
-  color:white;
-
-  font-size:15px;
-
-  transition:0.3s;
+#addBook input, #addBook textarea, #addBook select{
+  width:100%; max-width:100%; margin:10px 0; padding:16px;
+  border-radius:18px; background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08); color:white; font-size:15px; transition:0.3s;
 }
-
-#addBook input:focus,
-#addBook textarea:focus,
-#addBook select:focus{
-
-  border-color:#00f5ff;
-
-  box-shadow:
-  0 0 20px rgba(0,245,255,0.25);
+#addBook input:focus, #addBook textarea:focus, #addBook select:focus{
+  border-color:#00f5ff; box-shadow:0 0 20px rgba(0,245,255,0.25);
 }
-
-/* LABELS */
-
-#addBook p{
-
-  margin-top:15px;
-
-  color:#cbd5e1;
-
-  font-size:14px;
-}
-
-/* CHECKBOX AREA */
-
-#addBook label{
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-  gap:10px;
-
-  margin-top:18px;
-
-  color:#e2e8f0;
-
-  font-size:14px;
-}
-
-/* CHECKBOX */
-
-#addBook input[type="checkbox"]{
-
-  width:18px;
-
-  height:18px;
-
-  accent-color:#8b5cf6;
-}
-
-/* SAVE BUTTON */
-
-#saveBookBtn{
-
-  width:100%;
-
-  margin-top:20px;
-
-  padding:18px;
-
-  font-size:17px;
-
-  border-radius:18px;
-
-  font-weight:800;
-
-  letter-spacing:0.5px;
-}
-
-/* STATUS */
-
-.upload-status{
-
-  color:#00f5ff;
-
-  font-size:14px;
-
-  margin-top:5px;
-}
-
-/* ANIMATION */
-
+#addBook p{ margin-top:15px; color:#cbd5e1; font-size:14px; }
+#addBook label{ display:flex; align-items:center; justify-content:center; gap:10px; margin-top:18px; color:#e2e8f0; font-size:14px; }
+#addBook input[type="checkbox"]{ width:18px; height:18px; accent-color:#8b5cf6; }
+#saveBookBtn{ width:100%; margin-top:20px; padding:18px; font-size:17px; border-radius:18px; font-weight:800; letter-spacing:0.5px; }
+.upload-status{ color:#00f5ff; font-size:14px; margin-top:5px; }
 @keyframes addBookAnim{
-
-  from{
-
-    opacity:0;
-
-    transform:
-    translateY(20px)
-    scale(0.98);
-  }
-
-  to{
-
-    opacity:1;
-
-    transform:
-    translateY(0)
-    scale(1);
-  }
+  from{ opacity:0; transform:translateY(20px) scale(0.98); }
+  to{ opacity:1; transform:translateY(0) scale(1); }
 }
-
-  
-/* ===== SEARCH ===== */
-
-#searchInput{
-
-  width:80%;
-
-  max-width:520px;
-
-  margin:18px auto;
-
-  display:block;
-}
-
-/* ===== DISCLAIMER ===== */
-
-.disclaimer{
-
-  font-size:13px;
-
-  color:#94a3b8;
-
-  margin:25px;
-
-  padding:16px;
-
-  border-top:
-  1px solid rgba(255,255,255,0.08);
-}
-
-/* ===== SALES CARD ===== */
-
+#searchInput{ width:80%; max-width:520px; margin:18px auto; display:block; }
+.disclaimer{ font-size:13px; color:#94a3b8; margin:25px; padding:16px; border-top:1px solid rgba(255,255,255,0.08); }
 .sales-book{
-
-  background:
-  rgba(255,255,255,0.05);
-
-  border:
-  1px solid rgba(255,255,255,0.08);
-
-  backdrop-filter:blur(15px);
-
-  border-radius:24px;
-
-  padding:20px;
-
-  margin:22px auto;
-
-  width:90%;
-
-  max-width:520px;
-
-  box-shadow:
-  0 0 25px rgba(0,245,255,0.08);
+  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);
+  backdrop-filter:blur(15px); border-radius:24px; padding:20px;
+  margin:22px auto; width:90%; max-width:520px;
+  box-shadow:0 0 25px rgba(0,245,255,0.08);
 }
-
-/* ===== PROFITS ===== */
-
-.profit{
-
-  font-size:17px;
-
-  color:#00f5ff;
-
-  font-weight:bold;
-}
-
-.total-profit{
-
-  font-size:22px;
-
-  color:#facc15;
-
-  font-weight:800;
-
-  margin:25px 0;
-}
-
-/* ===== PAYOUT BUTTON ===== */
-
-#payoutBtn{
-
-  font-size:17px;
-
-  padding:16px 34px;
-}
-
-/* ===== PAYOUT NOTE ===== */
-
+.profit{ font-size:17px; color:#00f5ff; font-weight:bold; }
+.total-profit{ font-size:22px; color:#facc15; font-weight:800; margin:25px 0; }
+#payoutBtn{ font-size:17px; padding:16px 34px; }
 .payout-note{
-
-  font-size:14px;
-
-  color:#cbd5e1;
-
-  margin:18px auto;
-
-  padding:16px;
-
-  background:
-  rgba(255,255,255,0.04);
-
-  border-radius:18px;
-
-  width:90%;
-
-  max-width:550px;
+  font-size:14px; color:#cbd5e1; margin:18px auto; padding:16px;
+  background:rgba(255,255,255,0.04); border-radius:18px; width:90%; max-width:550px;
 }
-
-/* ===== MODAL ===== */
-
 #modal div{
-
-  background:
-  rgba(15,23,42,0.95) !important;
-
-  border:
-  1px solid rgba(255,255,255,0.08);
-
-  backdrop-filter:blur(18px);
-
-  border-radius:24px !important;
-
-  box-shadow:
-  0 0 40px rgba(139,92,246,0.25);
+  background:rgba(15,23,42,0.95) !important;
+  border:1px solid rgba(255,255,255,0.08); backdrop-filter:blur(18px);
+  border-radius:24px !important; box-shadow:0 0 40px rgba(139,92,246,0.25);
 }
-
-/* ===== ANIMATION ===== */
-
-@keyframes fadeUp{
-
-  from{
-
-    opacity:0;
-
-    transform:translateY(25px);
-  }
-
-  to{
-
-    opacity:1;
-
-    transform:translateY(0);
-  }
-}
-
-/* ===== MOBILE ===== */
-
-@media(max-width:700px){
-
-  h1{
-
-    font-size:36px;
-  }
-
-  .book{
-
-    width:100%;
-    max-width:320px;
-  }
-
-  button{
-
-    width:auto;
-  }
-
-}
-
-  /* ===== FILTERS ===== */
-
-.filter-bar{
-
-  display:flex;
-
-  justify-content:center;
-
-  flex-wrap:wrap;
-
-  gap:12px;
-
-  margin:20px 0;
-}
-
+@keyframes fadeUp{ from{ opacity:0; transform:translateY(25px); } to{ opacity:1; transform:translateY(0); } }
+@media(max-width:700px){ h1{ font-size:36px; } .book{ width:100%; max-width:320px; } button{ width:auto; } }
+.filter-bar{ display:flex; justify-content:center; flex-wrap:wrap; gap:12px; margin:20px 0; }
 .filter-btn{
-
-  background:rgba(255,255,255,0.06);
-
-  border:1px solid rgba(255,255,255,0.08);
-
-  padding:12px 20px;
-
-  border-radius:14px;
-
-  color:white;
-
-  font-weight:700;
-
-  transition:0.3s;
+  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08);
+  padding:12px 20px; border-radius:14px; color:white; font-weight:700; transition:0.3s;
 }
-
 .filter-btn.active{
-
-  background:linear-gradient(
-    135deg,
-    #00f5ff,
-    #8b5cf6,
-    #ff4ecd
-  );
-
+  background:linear-gradient(135deg,#00f5ff,#8b5cf6,#ff4ecd);
   box-shadow:0 0 20px rgba(139,92,246,0.35);
 }
-
-  /* ===== LOGIN IMAGE ===== */
-
 .app-banner{
-
-  width:90%;
-
-  max-width:520px;
-
-  margin:25px auto;
-
-  display:block;
-
-  border-radius:28px;
-
-  box-shadow:
-    0 0 40px rgba(139,92,246,0.35);
-
-  border:
-    1px solid rgba(255,255,255,0.08);
-
-  animation:fadeUp 0.8s ease;
+  width:90%; max-width:520px; margin:25px auto; display:block;
+  border-radius:28px; box-shadow:0 0 40px rgba(139,92,246,0.35);
+  border:1px solid rgba(255,255,255,0.08); animation:fadeUp 0.8s ease;
 }
-/* ===== STORE FLOAT BUTTON ===== */
-
 #storeFloatBtn{
-  position:fixed;
-  bottom:20px;
-  right:20px;
-
-  width:45px;
-  height:45px;
-
-  border:none;
-  border-radius:50%;
-
-  font-size:20px;
-  cursor:pointer;
-
-  display:none;
-
-  z-index:9999;
-
-  background:linear-gradient(
-    135deg,
-    #00f5ff,
-    #8b5cf6,
-    #ff4ecd
-  );
-
-  color:white;
-
-  box-shadow:0 0 20px rgba(139,92,246,0.4);
+  position:fixed; bottom:20px; right:20px; width:45px; height:45px;
+  border:none; border-radius:50%; font-size:20px; cursor:pointer;
+  display:none; z-index:9999;
+  background:linear-gradient(135deg,#00f5ff,#8b5cf6,#ff4ecd);
+  color:white; box-shadow:0 0 20px rgba(139,92,246,0.4);
 }
-
-
 .toast{
-  position:fixed;
-  bottom:20px;
-  left:50%;
-  transform:translateX(-50%);
-  background:rgba(15,23,42,0.95);
-  color:white;
-  padding:12px 18px;
-  border-radius:12px;
-  box-shadow:0 0 20px rgba(0,245,255,0.2);
-  z-index:99999;
-  animation:fadeUp 0.3s ease;
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  background:rgba(15,23,42,0.95); color:white; padding:12px 18px;
+  border-radius:12px; box-shadow:0 0 20px rgba(0,245,255,0.2);
+  z-index:99999; animation:fadeUp 0.3s ease;
 }
-
 .modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.6);
-  display:flex;
-  align-items:center;   /* يبقى في الوسط عمودياً */
-  justify-content:center;
-  z-index:99999;
+  position:fixed; inset:0; background:rgba(0,0,0,0.6);
+  display:flex; align-items:center; justify-content:center; z-index:99999;
 }
-
 .modal-box{
-  background:#0f172a;
-  padding:25px 20px;
-  border-radius:16px;
-  gap:10px;
-display:flex;
-  flex-direction:column;
- 
-  
-  /* ✨ أهم تعديل */
-  width: fit-content;
-  max-width: 90%;
-  min-width: 260px;
-
-  text-align:center;
-  border:1px solid rgba(255,255,255,0.1);
-
-  /* يمنع الطول الكبير */
-  max-height: 80vh;
-  overflow-y: auto;
-
-  box-shadow: 0 0 25px rgba(0,245,255,0.15);
+  background:#0f172a; padding:25px 20px; border-radius:16px; gap:10px;
+  display:flex; flex-direction:column; width:fit-content; max-width:90%; min-width:260px;
+  text-align:center; border:1px solid rgba(255,255,255,0.1);
+  max-height:80vh; overflow-y:auto; box-shadow:0 0 25px rgba(0,245,255,0.15);
 }
-
-#confirmText{
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: 1.5;
-}
-
-#modal-content{
-  word-break: break-word;
-  line-height: 1.5;
-  text-align:left;
-}
-  
-.modal-actions{
-  display:flex;
-  justify-content:space-between;
-  margin-top:15px;
-}
-
-.modal-actions button{
-  flex:1;
-  margin:5px;
-}
-.hidden{display:none;}
-
-
+#confirmText{ white-space:pre-wrap; word-break:break-word; line-height:1.5; }
+#modal-content{ word-break:break-word; line-height:1.5; text-align:left; }
+.modal-actions{ display:flex; justify-content:space-between; margin-top:15px; }
+.modal-actions button{ flex:1; margin:5px; }
 #modal .modal-content-box{
-
-    background:linear-gradient(
-        180deg,
-        rgba(15,23,42,0.98),
-        rgba(2,6,23,0.98)
-    );
-
-    color:white;
-
-    margin:80px auto;
-
-    padding:30px;
-
-    border-radius:24px;
-
-    width:90%;
-    max-width:500px;
-
-    border:1px solid rgba(255,255,255,0.08);
-
-    backdrop-filter:blur(20px);
-
-    box-shadow:0 0 40px rgba(139,92,246,0.25);
-
-    height:auto;
-    max-height:80vh;
-
-    overflow-y:auto;
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:18px;
-
-    text-align:center;
-
-    animation:fadeUp .3s ease;
+  background:linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.98));
+  color:white; margin:80px auto; padding:30px; border-radius:24px;
+  width:90%; max-width:500px; border:1px solid rgba(255,255,255,0.08);
+  backdrop-filter:blur(20px); box-shadow:0 0 40px rgba(139,92,246,0.25);
+  height:auto; max-height:80vh; overflow-y:auto;
+  display:flex; flex-direction:column; gap:18px; text-align:center; animation:fadeUp .3s ease;
 }
-
-  .spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top: 2px solid white;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  display: inline-block;
-  margin-left: 8px;
-  vertical-align: middle;
+.spinner{
+  width:16px; height:16px; border:2px solid rgba(255,255,255,0.3);
+  border-top:2px solid white; border-radius:50%;
+  animation:spin 0.8s linear infinite; display:inline-block;
+  margin-left:8px; vertical-align:middle;
 }
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
- .book-actions{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  gap:12px;
-  margin-top:12px;
-}
-
-.comments-link{
-  color:#00f5ff;
-  cursor:pointer;
-  font-size:14px;
-  font-weight:bold;
-  transition:0.3s;
-}
-
-.comments-link:hover{
-  color:#ff4ecd;
-  text-decoration:underline;
-}
-  
-  
+@keyframes spin{ 0%{ transform:rotate(0deg); } 100%{ transform:rotate(360deg); } }
+.book-actions{ display:flex; justify-content:center; align-items:center; gap:12px; margin-top:12px; }
+.comments-link{ color:#00f5ff; cursor:pointer; font-size:14px; font-weight:bold; transition:0.3s; }
+.comments-link:hover{ color:#ff4ecd; text-decoration:underline; }
 </style>
 </head>
 <body>
 
 <div id="login">
-  <h1> Spicy Library</h1>
-
- <img
-  src="./banner.png"
-  alt="Spicy Library"
-  class="app-banner"
->
-  
+  <h1>📚 Spicy Library</h1>
+  <img src="./banner.png" alt="Spicy Library" class="app-banner">
   <p class="notice">Login using Pi Network (must be in Pi Browser)</p>
-
-<select id="languageSwitcher" onchange="changeLanguage()" style="
-padding:8px 12px;
-border-radius:12px;
-margin:10px;
-background:rgba(255,255,255,0.08);
-color:white;
-border:1px solid rgba(255,255,255,0.1);
-width:auto;
-max-width:160px;
-">
-  <option value="en">English</option>
-  <option value="ar">العربية</option>
-  <option value="fr">Français</option>
-  <option value="zh">中文</option>
-</select>
-  
+  <select id="languageSwitcher" onchange="changeLanguage()" style="padding:8px 12px;border-radius:12px;margin:10px;background:rgba(255,255,255,0.08);color:white;border:1px solid rgba(255,255,255,0.1);width:auto;max-width:160px;">
+    <option value="en">English</option>
+    <option value="ar">العربية</option>
+    <option value="fr">Français</option>
+    <option value="zh">中文</option>
+  </select>
   <button id="loginBtn">Login with Pi</button>
 </div>
 
 <div id="app" class="hidden">
 
-   <div id="addBookPage" class="tab-content">
-  <div id="addBook">
+  <div id="addBookPage" class="tab-content">
+    <div id="addBook">
       <h3>Add Book</h3>
       <input id="title" placeholder="Book title" required>
       <input id="price" type="number" min="0.1" step="0.1" placeholder="Price (Pi)" required>
@@ -1093,7 +227,7 @@ max-width:160px;
         <option value="German">German</option>
         <option value="Other">Other</option>
       </select>
-     <p>Number of pages</p>
+      <p>Number of pages</p>
       <input id="manualPages" type="number" placeholder="e.g. 250" min="1" required>
       <p>📷 Book Cover (Images only • Maximum size: 5 MB)</p>
       <button id="uploadCoverBtn">Upload Cover</button>
@@ -1107,54 +241,35 @@ max-width:160px;
         I confirm that I own all rights to this book
       </label><br><br>
       <button id="saveBookBtn" disabled>Save Book</button>
-      </div>
-</div>
+    </div>
+  </div>
 
-  
   <h3 id="welcome"></h3>
-  
   <button onclick="logout()">Logout</button>
 
   <div>
     <button class="tab-btn active" onclick="openTab('store')">Store</button>
-<button class="tab-btn" onclick="openTab('addBookPage')">Add Book</button>
-<button class="tab-btn" onclick="openTab('purchases')">My Purchases</button>
-<button class="tab-btn" onclick="openTab('sales')">My Sales</button>
+    <button class="tab-btn" onclick="openTab('addBookPage')">Add Book</button>
+    <button class="tab-btn" onclick="openTab('purchases')">My Purchases</button>
+    <button class="tab-btn" onclick="openTab('sales')">My Sales</button>
   </div>
 
   <div id="store" class="tab-content active">
-   
     <h3>All Books</h3>
     <input type="text" id="searchInput" placeholder="Search by book title..." oninput="searchBooks()">
-
-<div class="filter-bar">
-  <button class="filter-btn active" onclick="filterBooks('all', this)">
-    All Books
-  </button>
-
-  <button class="filter-btn" onclick="filterBooks('likes', this)">
-    Most Liked
-  </button>
-
-  <button class="filter-btn" onclick="filterBooks('sales', this)">
-    Best Sellers
-  </button>
-
-  <button class="filter-btn" onclick="filterBooks('new', this)">
-    Old Books
-  </button>
-</div>
-
-    
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterBooks('all', this)">All Books</button>
+      <button class="filter-btn" onclick="filterBooks('likes', this)">Most Liked</button>
+      <button class="filter-btn" onclick="filterBooks('sales', this)">Best Sellers</button>
+      <button class="filter-btn" onclick="filterBooks('new', this)">Old Books</button>
+    </div>
     <div class="books" id="books"></div>
-
     <div class="disclaimer" id="copyrightNotice">
-  Copyright Notice: Authors may upload only content they own or have permission to distribute. If you believe that any content infringes your copyright, please contact us at
-  <a href="mailto:spicylibrarysupport@gmail.com">
-    spicylibrarysupport@gmail.com
-  </a>.
-  Reported content may be reviewed and removed if necessary.
-</div>
+      Copyright Notice: Authors may upload only content they own or have permission to distribute.
+      If you believe that any content infringes your copyright, please contact us at
+      <a href="mailto:spicylibrarysupport@gmail.com">spicylibrarysupport@gmail.com</a>.
+      Reported content may be reviewed and removed if necessary.
+    </div>
   </div>
 
   <div id="purchases" class="tab-content">
@@ -1162,77 +277,37 @@ max-width:160px;
     <div class="books" id="myBooks"></div>
   </div>
 
-<div id="sales" class="tab-content">
+  <div id="sales" class="tab-content">
+    <h3 id="salesTitle">My Sales & Earnings</h3>
 
-  <h3 id="salesTitle">My Sales & Earnings</h3>
-
-  <!-- TOP EARNINGS CARD -->
-  <div style="
-    width:90%;
-    max-width:650px;
-    margin:20px auto;
-    padding:25px;
-    border-radius:24px;
-    background:rgba(255,255,255,0.06);
-    border:1px solid rgba(255,255,255,0.08);
-    backdrop-filter:blur(18px);
-    box-shadow:0 0 35px rgba(139,92,246,0.18);
-  ">
-
-    <div id="totalEarnings" class="total-profit">
-      Loading earnings...
+    <div style="width:90%;max-width:650px;margin:20px auto;padding:25px;border-radius:24px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(18px);box-shadow:0 0 35px rgba(139,92,246,0.18);">
+      <div id="totalEarnings" class="total-profit">Loading earnings...</div>
+      <button id="payoutBtn" onclick="requestPayout()" disabled style="margin-top:15px;width:100%;max-width:320px;">
+        Request Payout
+      </button>
+      <p id="platformFeeText" style="margin-top:18px;color:#cbd5e1;font-size:14px;">
+        Platform fee: 30% – You get 70% of each sale
+      </p>
+      <p id="minimumPayoutText" style="color:#94a3b8;font-size:13px;margin-top:8px;">
+        Minimum payout: 5 Pi
+      </p>
     </div>
 
-    <button
-      id="payoutBtn"
-      onclick="requestPayout()"
-      disabled
-      style="
-        margin-top:15px;
-        width:100%;
-        max-width:320px;
-      "
-    >
-      Request Payout
-    </button>
+    <div class="payout-note" id="instantPayoutText">
+      <strong>Instant payout:</strong>
+      Withdrawals are sent directly to your Pi wallet via Pi Network — no manual address needed.
+    </div>
 
-    <p id="platformFeeText" style="
-      margin-top:18px;
-      color:#cbd5e1;
-      font-size:14px;
-    ">
-      Platform fee: 30% – You get 70% of each sale
-    </p>
-
-   <p id="minimumPayoutText" style="
-      color:#94a3b8;
-      font-size:13px;
-      margin-top:8px;
-    ">
-      Minimum payout: 5 Pi
-    </p>
-
+    <div id="mySalesBooks"></div>
   </div>
 
-  <!-- PAYOUT NOTE -->
- <div class="payout-note" id="instantPayoutText">
-  <strong>Instant payout:</strong>
-  Withdrawals are processed automatically and sent instantly
-  to your Pi wallet after approval.
-</div>
-
-  <!-- SALES BOOKS -->
-  <div id="mySalesBooks"></div>
-
-</div>
-  
 </div>
 
 <script>
-// ================= BACKEND URL =================
+/* ================= BACKEND URL ================= */
 const BACKEND_URL = "https://pi-backend-c8nz.onrender.com";
 
-// ================= PI SDK =================
+/* ================= PI SDK ================= */
 Pi.init({ version: "2.0", sandbox: false });
 
 let user = null;
@@ -1240,71 +315,54 @@ let userUid = null;
 let coverUrl = "";
 let pdfUrl = "";
 let pageCount = "Unknown";
-  let totalEarnings = 0;
+let totalEarnings = 0;
 
-// ================= CLOUDINARY =================
-
+/* ================= CLOUDINARY UPLOAD ================= */
 document.getElementById("uploadCoverBtn").onclick = () => {
- const btn = document.getElementById("uploadCoverBtn");
-
+  const btn = document.getElementById("uploadCoverBtn");
   const fileInput = document.createElement("input");
   fileInput.type = "file";
-  fileInput.accept = "image/*"; // فقط صور
+  fileInput.accept = "image/*";
   fileInput.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-btn.disabled = true;
-    document.getElementById("coverStatus").innerText =
-"⏳ Uploading cover... Please wait";
+    btn.disabled = true;
+    document.getElementById("coverStatus").innerText = "⏳ Uploading cover... Please wait";
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = async () => {
-      const base64 = reader.result; // الصورة كـBase64
+      const base64 = reader.result;
       try {
         const res = await fetch(`${BACKEND_URL}/upload-cover`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-  file: base64,
-  userUid: userUid,
-  accessToken: window.accessToken
-})
+          body: JSON.stringify({ file: base64, userUid, accessToken: window.accessToken })
         });
         const data = await res.json();
         if (data.success) {
           coverUrl = data.url;
-          document.getElementById("coverStatus").innerText =
-"✅ Cover uploaded successfully!";
+          document.getElementById("coverStatus").innerText = "✅ Cover uploaded successfully!";
           checkSaveReady();
-        } else {
-          alert("Upload failed");
-        }
-      } catch (err) { 
-        document.getElementById("coverStatus").innerText =
-"❌ Upload failed";
+        } else { alert("Upload failed"); }
+      } catch (err) {
+        document.getElementById("coverStatus").innerText = "❌ Upload failed";
         alert("Upload failed");
-      } finally {
-        btn.disabled = false; // ⬅ إعادة تفعيل الزر بعد انتهاء الرفع
-      }
+      } finally { btn.disabled = false; }
     };
   };
   fileInput.click();
 };
 
 document.getElementById("uploadPdfBtn").onclick = () => {
- const btn = document.getElementById("uploadPdfBtn");
-
+  const btn = document.getElementById("uploadPdfBtn");
   const fileInput = document.createElement("input");
   fileInput.type = "file";
-  fileInput.accept = "application/pdf"; // فقط PDF
+  fileInput.accept = "application/pdf";
   fileInput.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-btn.disabled = true;
-    document.getElementById("pdfStatus").innerText =
-"⏳ Uploading PDF... Please wait";
-
+    btn.disabled = true;
+    document.getElementById("pdfStatus").innerText = "⏳ Uploading PDF... Please wait";
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = async () => {
@@ -1313,47 +371,34 @@ btn.disabled = true;
         const res = await fetch(`${BACKEND_URL}/upload-pdf`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-  file: base64,
-  userUid: userUid,
-  accessToken: window.accessToken
-})
+          body: JSON.stringify({ file: base64, userUid, accessToken: window.accessToken })
         });
         const data = await res.json();
         if (data.success) {
           pdfUrl = data.url;
           pageCount = data.pages || "Unknown";
-          document.getElementById("pdfStatus").innerText =
-"✅ PDF uploaded successfully!";
+          document.getElementById("pdfStatus").innerText = "✅ PDF uploaded successfully!";
           checkSaveReady();
-        } else {
-          alert("Upload failed");
-        }
+        } else { alert("Upload failed"); }
       } catch (err) {
-        document.getElementById("pdfStatus").innerText =
-"❌ Upload failed";
+        document.getElementById("pdfStatus").innerText = "❌ Upload failed";
         alert("Upload failed");
-      } finally {
-        btn.disabled = false; // ⬅ إعادة تفعيل الزر بعد انتهاء الرفع
-      }
+      } finally { btn.disabled = false; }
     };
   };
   fileInput.click();
 };
 
-
 function checkSaveReady() {
   document.getElementById("saveBookBtn").disabled = !(coverUrl && pdfUrl && user);
 }
 
-
-// ================= تجاهل الدفع المعلق =================
+/* ================= INCOMPLETE PAYMENT HANDLER ================= */
 async function onIncompletePaymentFound(incompletePayment) {
   alert("A previous pending payment was detected... Attempting to complete it automatically");
   console.log("Incomplete payment found:", incompletePayment);
-
   try {
-    const response = await fetch("https://pi-backend-c8nz.onrender.com/complete-payment", {
+    const response = await fetch(`${BACKEND_URL}/complete-payment`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1361,153 +406,90 @@ async function onIncompletePaymentFound(incompletePayment) {
         txid: incompletePayment.transaction?.txid
       })
     });
-
     if (!response.ok) {
       const err = await response.json();
       console.error("Failed to complete pending payment:", err);
       alert("Failed to automatically complete the pending payment.\nPlease go to developers.minepi.com to complete or cancel it manually.");
       return;
     }
-
     alert("Pending payment completed successfully!\nYou can now make new purchases.");
   } catch (err) {
     console.error("Error completing pending payment:", err);
     alert("Error completing pending payment.\nPlease try again or complete it manually from the developer dashboard.");
   }
 }
-// ================= LOGIN =================
+
+/* ================= LOGIN ================= */
 async function login() {
   try {
-    // تسجيل الدخول عبر Pi
     const authResult = await Pi.authenticate(
       ["username", "payments"],
       onIncompletePaymentFound
     );
-
     user = authResult.user;
     userUid = user.uid;
     localStorage.setItem("userUid", user.uid);
-localStorage.setItem("username", user.username);
+    localStorage.setItem("username", user.username);
     window.accessToken = authResult.accessToken;
 
-    
-
-    // تحديث واجهة المستخدم بعد تسجيل الدخول
-    document.getElementById("welcome").innerText =
-      `Welcome, ${user.username}!`;
+    document.getElementById("welcome").innerText = `Welcome, ${user.username}!`;
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
 
-    // تحميل البيانات
     loadBooks();
-loadMyPurchases();
-loadMySales();
-
-checkNotifications();
-
- } catch (err) {
-  console.error(err);
-
-  window.modalType = "login";
-
-openModal(
-  "⚠️ Login Required",
-  "Please login again and ensure that you are accessing the app through Pi Browser"
-);
-
-  // بعد الضغط على OK سيتم إعادة تحميل الموقع
-  
-}
+    loadMyPurchases();
+    loadMySales();
+    checkNotifications();
+  } catch (err) {
+    console.error(err);
+    window.modalType = "login";
+    openModal(
+      "⚠️ Login Required",
+      "Please login again and ensure that you are accessing the app through Pi Browser"
+    );
+  }
 }
 
-// ربط زر تسجيل الدخول
 const loginBtn = document.getElementById("loginBtn");
-
 loginBtn.onclick = async function () {
   loginBtn.disabled = true;
-
-  // حفظ النص الأصلي
   const oldText = loginBtn.innerHTML;
-
-  // إظهار spinner
   loginBtn.innerHTML = `Logging in <span class="spinner"></span>`;
-
   try {
-    await login(); // نفس الدالة بدون تغيير
-
+    await login();
   } finally {
-    // إعادة الزر لحالته الطبيعية إذا فشل أو انتهى
     loginBtn.disabled = false;
     loginBtn.innerHTML = oldText;
   }
 };
 
-function logout() {
-  location.reload();
-}
+function logout() { location.reload(); }
 
 async function checkNotifications() {
-
   try {
-
-    const res = await fetch(
-      `${BACKEND_URL}/my-notifications`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-  userUid,
-  accessToken: window.accessToken
-})
-      }
-    );
-
+    const res = await fetch(`${BACKEND_URL}/my-notifications`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userUid, accessToken: window.accessToken })
+    });
     const data = await res.json();
-
     if (!data.success) return;
-
     for (const n of data.notifications) {
-
-      const key =
-        "review_" + n.id;
-
-      if (localStorage.getItem(key)) {
-        continue;
-      }
-
+      const key = "review_" + n.id;
+      if (localStorage.getItem(key)) continue;
       if (n.approved) {
-
-        openModal(
-  "✅ Book Approved",
-  `Your book "${n.title}" has been approved.\n\n${n.reviewMessage}`
-);
-
+        openModal("✅ Book Approved", `Your book "${n.title}" has been approved.\n\n${n.reviewMessage}`);
       } else {
-
-        openModal(
-  "❌ Book Rejected",
-  `Your book "${n.title}" was rejected.\n\n${n.reviewMessage}`
-);
-
+        openModal("❌ Book Rejected", `Your book "${n.title}" was rejected.\n\n${n.reviewMessage}`);
       }
-
-      localStorage.setItem(
-        key,
-        "shown"
-      );
+      localStorage.setItem(key, "shown");
     }
-
-  } catch (e) {
-    console.error(e);
-  }
-
+  } catch (e) { console.error(e); }
 }
-  
-// ================= SAVE BOOK =================
+
+/* ================= SAVE BOOK ================= */
 document.getElementById("saveBookBtn").onclick = saveBook;
-  async function saveBook() {
+async function saveBook() {
   if (!user) return alert("Login required");
   if (!document.getElementById("rights").checked) return alert("Confirm rights");
 
@@ -1517,20 +499,11 @@ document.getElementById("saveBookBtn").onclick = saveBook;
   const language = document.getElementById("language").value;
   const manualPages = document.getElementById("manualPages").value.trim();
 
-  if (
-  !title ||
-  price <= 0 ||
-  !description ||
-  !language ||
-  !manualPages ||
-  !coverUrl ||
-  !pdfUrl
-) {
-  return alert("Please complete all required fields");
-}
+  if (!title || price <= 0 || !description || !language || !manualPages || !coverUrl || !pdfUrl) {
+    return alert("Please complete all required fields");
+  }
 
   const finalPages = manualPages || pageCount;
-
   const btn = document.getElementById("saveBookBtn");
   btn.disabled = true;
   btn.innerText = "Saving...";
@@ -1540,26 +513,14 @@ document.getElementById("saveBookBtn").onclick = saveBook;
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-  title,
-  price,
-  description,
-  language,
-  pageCount: finalPages,
-  cover: coverUrl,
-  pdf: pdfUrl,
-  owner: user.username,
-  ownerUid: userUid,
-  
-  accessToken: window.accessToken
-})
+        title, price, description, language,
+        pageCount: finalPages, cover: coverUrl, pdf: pdfUrl,
+        owner: user.username, ownerUid: userUid,
+        accessToken: window.accessToken
+      })
     });
-
     if (!res.ok) throw new Error("Upload failed");
-
-   openModal(
-  "📚 Book Submitted",
-  translations[currentLang].bookPending
-);
+    openModal("📚 Book Submitted", translations[currentLang].bookPending);
     openTab("store");
     coverUrl = pdfUrl = "";
     document.getElementById("coverStatus").innerText = "";
@@ -1574,45 +535,35 @@ document.getElementById("saveBookBtn").onclick = saveBook;
     btn.innerText = "Save Book";
   }
 }
-// ================= RATE BOOK =================
+
+/* ================= RATE BOOK ================= */
 async function rateBook(bookId, voteType, button) {
   if (!userUid) return alert("Login required");
   try {
     await fetch(`${BACKEND_URL}/rate-book`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-  bookId,
-  voteType,
-  userUid,
-  accessToken: window.accessToken
-})
+      body: JSON.stringify({ bookId, voteType, userUid, accessToken: window.accessToken })
     });
-
     button.disabled = true;
     button.classList.add(voteType === 'like' ? 'liked' : 'disliked');
     const sibling = button.parentNode.querySelector(voteType === 'like' ? '.dislike-btn' : '.like-btn');
     if (sibling) sibling.disabled = true;
     loadBooks();
     loadMyPurchases();
-  } catch (e) {
-    alert("Rating failed");
-  }
+  } catch (e) { alert("Rating failed"); }
 }
 
-// ================= BUY =================
+/* ================= BUY ================= */
 async function buy(bookId, price) {
   if (!userUid) return alert("Login required");
   if (!await showConfirm(`Buy this book for ${price} Pi?`)) return;
-
   try {
     await Pi.createPayment({
       amount: price,
       memo: "Spicy Library - Book Purchase",
-      // 🔐 metadata فقط (يستخدمها backend)
       metadata: { bookId, userUid }
     }, {
-      // 🔹 الموافقة من السيرفر
       onReadyForServerApproval: async (paymentId) => {
         await fetch(`${BACKEND_URL}/approve-payment`, {
           method: "POST",
@@ -1620,472 +571,216 @@ async function buy(bookId, price) {
           body: JSON.stringify({ paymentId })
         });
       },
-
-      // 🔹 الإكمال من السيرفر (بدون bookId و userUid)
       onReadyForServerCompletion: async (paymentId, txid) => {
         const res = await fetch(`${BACKEND_URL}/complete-payment`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            paymentId,
-            txid
-          })
+          body: JSON.stringify({ paymentId, txid })
         });
-
-        if (!res.ok) {
-          alert("Payment failed");
-          return;
-        }
-
+        if (!res.ok) { alert("Payment failed"); return; }
         const data = await res.json();
         window.open(data.pdfUrl, "_blank");
-openModal(
-  "🎉 Purchase Successful",
-  "Your book is now available in My Purchases 📚"
-);
-
-// تحديث المشتريات
-await loadMyPurchases();
-renderBooks(allBooksData);
-// فتح تبويب المشتريات مباشرة
-openTab("purchases");
+        openModal("🎉 Purchase Successful", "Your book is now available in My Purchases 📚");
+        await loadMyPurchases();
+        renderBooks(allBooksData);
+        openTab("purchases");
       },
-
       onCancel: () => showToast("Payment cancelled"),
       onError: (err) => showToast("Payment error: " + err.message)
     });
-  } catch (e) {
-    alert("Use Pi Browser for payment.");
-  }
+  } catch (e) { alert("Use Pi Browser for payment."); }
 }
 
-// ================= DOWNLOAD PDF =================
+/* ================= DOWNLOAD PDF ================= */
 async function downloadPdf(bookId) {
   const res = await fetch(`${BACKEND_URL}/get-pdf`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-  bookId,
-  userUid,
-  accessToken: window.accessToken
-})
+    body: JSON.stringify({ bookId, userUid, accessToken: window.accessToken })
   });
   const data = await res.json();
   if (!res.ok) return alert(data.error || "Access denied");
   window.open(data.pdfUrl, "_blank");
 }
 
+let allBooksData = [];
+let purchasedBookIds = new Set();
 
- let allBooksData = []; 
-  let purchasedBookIds = new Set();
-  
-// ================= LOAD BOOKS =================
+/* ================= LOAD BOOKS ================= */
 async function loadBooks() {
   const box = document.getElementById("books");
- const lang =
-  localStorage.getItem("appLanguage") || "en";
-
-box.innerHTML =
-  `<p>${translations[lang].loadingBooks}</p>`;
+  const lang = localStorage.getItem("appLanguage") || "en";
+  box.innerHTML = `<p>${translations[lang].loadingBooks}</p>`;
   try {
     const res = await fetch(`${BACKEND_URL}/books`);
     const json = await res.json();
     if (!json.success) throw new Error(json.error);
-
-    const books = json.books;
-
-allBooksData = books;
-
-allBooksData.forEach(b => {
-  b.likesCount = b.likesCount || 0;
-});
-    
+    allBooksData = json.books;
+    allBooksData.forEach(b => { b.likesCount = b.likesCount || 0; });
     box.innerHTML = "";
-    if (books.length === 0)
-  return box.innerHTML = `<p>${translations[lang].noBooks}</p>`;
-
-    renderBooks(books);
+    if (json.books.length === 0) return box.innerHTML = `<p>${translations[lang].noBooks}</p>`;
+    renderBooks(json.books);
   } catch (e) {
     box.innerHTML = "<p>Error loading books. Retrying...</p>";
     setTimeout(loadBooks, 5000);
   }
 }
 
-
-// ================= RENDER BOOKS =================
-
-
+/* ================= RENDER BOOKS ================= */
 let isRenderingBooks = false;
-
 async function renderBooks(booksArray) {
-
-  const lang =
-    localStorage.getItem("appLanguage") || "en";
-
+  const lang = localStorage.getItem("appLanguage") || "en";
   const t = translations[lang];
-
-  // منع تشغيل الدالة مرتين بنفس الوقت
   if (isRenderingBooks) return;
-
   isRenderingBooks = true;
-
   const box = document.getElementById("books");
-
   box.innerHTML = "";
-
   if (booksArray.length === 0) {
     box.innerHTML = "<p>No books found.</p>";
     isRenderingBooks = false;
     return;
   }
-
   let html = "";
-
   for (const b of booksArray) {
-
     const likes = b.likes || 0;
-const dislikes = b.dislikes || 0;
-const userVote = null;
-
-    const desc = b.description
-      ? b.description.substring(0, 100) + "..."
-      : "No description";
-
-    const langText = b.language
-      ? `Language: ${b.language}`
-      : "";
-
+    const dislikes = b.dislikes || 0;
+    const userVote = null;
+    const desc = b.description ? b.description.substring(0, 100) + "..." : "No description";
+    const langText = b.language ? `Language: ${b.language}` : "";
     const owner = `By: ${b.owner}`;
-
-    const pages = b.pageCount !== "Unknown"
-      ? `Pages: ${b.pageCount}`
-      : "";
-
-    const sales = b.salesCount > 0
-      ? `Sales: ${b.salesCount}`
-      : "";
+    const pages = b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
+    const sales = b.salesCount > 0 ? `Sales: ${b.salesCount}` : "";
 
     html += `
       <div class="book">
-
         <img src="${b.cover}" alt="Cover">
-
         <h4>${b.title}</h4>
-
-       
         <div class="description">${desc}</div>
-
         <div class="owner">${owner}</div>
-
         <div class="language">${langText}</div>
-
         <div class="pages">${pages}</div>
-
         <div class="sales">${sales}</div>
-
         <div class="ratings">
-          <button
-            class="like-btn ${userVote === 'like' ? 'liked' : ''}"
+          <button class="like-btn ${userVote === 'like' ? 'liked' : ''}"
             onclick="rateBook('${b.id}', 'like', this)"
-            ${userVote || !user ? 'disabled' : ''}
-          >
-            👍
-          </button> ${likes}
-
-          <button
-            class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}"
+            ${userVote || !user ? 'disabled' : ''}> 👍 </button> ${likes}
+          <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}"
             onclick="rateBook('${b.id}', 'dislike', this)"
-            ${userVote || !user ? 'disabled' : ''}
-          >
-            👎
-          </button> ${dislikes}
+            ${userVote || !user ? 'disabled' : ''}> 👎 </button> ${dislikes}
         </div>
-
-       ${
-  purchasedBookIds.has(b.id)
-    ? `
-      <button
-        onclick="openTab('purchases')"
-        style="background:#16a34a;"
-      >
-        ${t.ownBook}
-      </button>
-    `
-    : `
-      <button
-  onclick="buy('${b.id}', ${b.price})"
-  ${!user ? 'disabled' : ''}
->
-  ${t.buy}  ${b.price} Pi
-</button>
-    `
-}
-
-       <div class="book-actions">
-
-  <button onclick="openBook('${b.id}')">
-    ${t.view}
-  </button>
-
-  <span
-    class="comments-link"
-    id="comments-count-${b.id}"
-    onclick="showComments('${b.id}')"
-  >
-    💬 ...
-  </span>
-
-</div>
-
-      </div>
-    `;
-
+        ${purchasedBookIds.has(b.id)
+          ? `<button onclick="openTab('purchases')" style="background:#16a34a;">${t.ownBook}</button>`
+          : `<button onclick="buy('${b.id}', ${b.price})" ${!user ? 'disabled' : ''}>${t.buy} ${b.price} Pi</button>`
+        }
+        <div class="book-actions">
+          <button onclick="openBook('${b.id}')">${t.view}</button>
+          <span class="comments-link" id="comments-count-${b.id}" onclick="showComments('${b.id}')">💬 ...</span>
+        </div>
+      </div>`;
     b.likesCount = likes;
   }
-
   box.innerHTML = html;
-
   booksArray.forEach(loadCommentsCount);
-
   isRenderingBooks = false;
 }
 
-// ================= Check if redirected from book.html =================
-window.addEventListener("load", () => {
-  const params = new URLSearchParams(window.location.search);
-  const buyBookId = params.get("buyBookId");
-
-  if (buyBookId) {
-    // ابحث عن الكتاب في المتجر
-    const attemptBuy = async () => {
-      try {
-        const res = await fetch(`${BACKEND_URL}/book?id=${buyBookId}`);
-        const data = await res.json();
-        if (!data.success) throw new Error("Book not found");
-
-        const book = data.book;
-
-        if (!userUid) {
-          alert("⚠️ Please log in first to buy this book.");
-          return;
-        }
-
-        // التأكيد قبل الدفع
-        if (confirm(`Buy "${book.title}" for ${book.price} Pi?`)) {
-          buy(book.id, book.price);
-        }
-      } catch (e) {
-        console.error(e);
-        alert("Book not found or cannot be purchased.");
-      }
-    };
-
-    // تأكد أن المستخدم قام بتسجيل الدخول قبل محاولة الشراء
-    if (userUid) {
-      attemptBuy();
-    } else {
-      // إذا لم يسجل بعد الدخول، انتظر تسجيل الدخول ثم شراء
-     document.getElementById("loginBtn").onclick = async () => {
-
-  await login();
-
-  if (userUid) {
-    attemptBuy();
-  }
-
-};
-    }
-  }
-});
-
-
-  
-// ================= LOAD MY PURCHASES =================
-
+/* ================= LOAD MY PURCHASES ================= */
 let isLoadingPurchases = false;
-
 async function loadMyPurchases() {
-
-  // منع التكرار
   if (isLoadingPurchases) return;
-
   isLoadingPurchases = true;
-
   const box = document.getElementById("myBooks");
-
   box.innerHTML = "<p>Loading purchases...</p>";
-
   if (!userUid) {
     box.innerHTML = "<p>Please log in.</p>";
     isLoadingPurchases = false;
     return;
   }
-
   try {
-
     const res = await fetch(`${BACKEND_URL}/my-purchases`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-  userUid,
-  accessToken: window.accessToken
-})
+      body: JSON.stringify({ userUid, accessToken: window.accessToken })
     });
-
     const json = await res.json();
-
     if (!json.success) throw new Error(json.error);
-
     const books = json.books;
-
-purchasedBookIds.clear();
-
-books.forEach(book => {
-  purchasedBookIds.add(book.id);
-});
-    
+    purchasedBookIds.clear();
+    books.forEach(book => { purchasedBookIds.add(book.id); });
     box.innerHTML = "";
-
     if (books.length === 0) {
       box.innerHTML = "<p>No purchases yet.</p>";
       isLoadingPurchases = false;
       return;
     }
-
     let html = "";
-
     for (const b of books) {
-
       const likes = b.likes || 0;
-const dislikes = b.dislikes || 0;
-const userVote = null;
-
-      const desc = b.description
-        ? b.description.substring(0, 100) + "..."
-        : "No description";
-
-      const lang = b.language
-        ? `Language: ${b.language}`
-        : "";
-
+      const dislikes = b.dislikes || 0;
+      const userVote = null;
+      const desc = b.description ? b.description.substring(0, 100) + "..." : "No description";
+      const lang = b.language ? `Language: ${b.language}` : "";
       const owner = `By: ${b.owner}`;
-
-      const pages = b.pageCount !== "Unknown"
-        ? `Pages: ${b.pageCount}`
-        : "";
-
-      const sales = b.salesCount > 0
-        ? `Sales: ${b.salesCount}`
-        : "";
-
+      const pages = b.pageCount !== "Unknown" ? `Pages: ${b.pageCount}` : "";
+      const sales = b.salesCount > 0 ? `Sales: ${b.salesCount}` : "";
       html += `
         <div class="book">
-
           <img src="${b.cover}" alt="Cover">
-
           <h4>${b.title}</h4>
-
           <div class="description">${desc}</div>
-
           <div class="owner">${owner}</div>
-
           <div class="language">${lang}</div>
-
           <div class="pages">${pages}</div>
-
           <div class="sales">${sales}</div>
-
           <div class="ratings">
-
-            <button
-              class="like-btn ${userVote === 'like' ? 'liked' : ''}"
+            <button class="like-btn ${userVote === 'like' ? 'liked' : ''}"
               onclick="rateBook('${b.id}', 'like', this)"
-              ${userVote ? 'disabled' : ''}
-            >
-              👍
-            </button> ${likes}
-
-            <button
-              class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}"
+              ${userVote ? 'disabled' : ''}> 👍 </button> ${likes}
+            <button class="dislike-btn ${userVote === 'dislike' ? 'disliked' : ''}"
               onclick="rateBook('${b.id}', 'dislike', this)"
-              ${userVote ? 'disabled' : ''}
-            >
-              👎
-            </button> ${dislikes}
-
+              ${userVote ? 'disabled' : ''}> 👎 </button> ${dislikes}
           </div>
-
-          <button onclick="downloadPdf('${b.id}')">
-  ${translations[currentLang].download}
-</button>
-
-        </div>
-      `;
+          <button onclick="downloadPdf('${b.id}')">${translations[currentLang].download}</button>
+        </div>`;
     }
-
-    // إضافة HTML مرة واحدة فقط
     box.innerHTML = html;
-
-renderBooks(allBooksData);
-    
+    renderBooks(allBooksData);
   } catch (e) {
-
     box.innerHTML = "<p>Error loading purchases. Retrying...</p>";
-
-    setTimeout(() => {
-      isLoadingPurchases = false;
-      loadMyPurchases();
-    }, 5000);
-
+    setTimeout(() => { isLoadingPurchases = false; loadMyPurchases(); }, 5000);
     return;
   }
-
-  // فتح القفل
   isLoadingPurchases = false;
 }
 
-// ================= LOAD MY SALES =================
+/* ================= LOAD MY SALES ================= */
 async function loadMySales() {
   const box = document.getElementById("mySalesBooks");
   const totalBox = document.getElementById("totalEarnings");
   box.innerHTML = "<p>Loading sales...</p>";
   totalBox.innerHTML = "";
   if (!user) return box.innerHTML = "<p>Please log in.</p>";
-
   try {
     const res = await fetch(`${BACKEND_URL}/my-sales`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-     body: JSON.stringify({
-    userUid: user.uid,
-    accessToken: window.accessToken
-})
+      body: JSON.stringify({ userUid: user.uid, accessToken: window.accessToken })
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.error);
-
     const books = json.books;
+    const lang = localStorage.getItem("appLanguage") || "en";
     if (books.length === 0) {
       box.innerHTML = "<p>No books uploaded.</p>";
-     const lang =
-  localStorage.getItem("appLanguage") || "en";
-
-totalBox.innerHTML =
-`<div class='total-profit'>
-${translations[lang].totalEarnings}: 0 Pi
-</div>`;
+      totalBox.innerHTML = `<div class='total-profit'>${translations[lang].totalEarnings}: 0 Pi</div>`;
       document.getElementById("payoutBtn").disabled = true;
       return;
     }
-
-   totalEarnings = 0;
-
+    totalEarnings = 0;
     box.innerHTML = "";
     for (const b of books) {
-      const profit =
-  Number(b.withdrawableEarnings || 0);
-
-totalEarnings += profit;
+      const profit = Number(b.withdrawableEarnings || 0);
+      totalEarnings += profit;
       box.innerHTML += `
         <div class="sales-book">
           <img src="${b.cover}" style="width:150px;border-radius:6px;">
@@ -2095,150 +790,108 @@ totalEarnings += profit;
           <div class="profit">Your earnings: ${profit.toFixed(2)} Pi (70%)</div>
         </div>`;
     }
-    const lang =
-  localStorage.getItem("appLanguage") || "en";
-
-totalBox.innerHTML =
-`<div class='total-profit'>
-${translations[lang].totalEarnings}: ${totalEarnings.toFixed(2)} Pi
-</div>`;
-document.getElementById("payoutBtn").disabled = totalEarnings < 5;
-
+    totalBox.innerHTML = `<div class='total-profit'>${translations[lang].totalEarnings}: ${totalEarnings.toFixed(2)} Pi</div>`;
+    document.getElementById("payoutBtn").disabled = totalEarnings < 5;
   } catch (e) {
     box.innerHTML = "<p>Error loading sales.</p>";
   }
 }
 
-
-// ================= REQUEST PAYOUT (SIMULATED) =================
+/* ================================================================
+ * ================= REQUEST PAYOUT via Pi SDK A2U ================
+ * ================================================================
+ * الخطوات:
+ * 1. نطلب من السيرفر تحضير الدفعة (init-payout) → يعيد paymentId
+ * 2. نستخدم Pi.createPayment مع paymentId للسماح للمستخدم بالتوقيع
+ * 3. السيرفر يوافق (approve-payout) ثم يُكمل (complete-payout)
+ * 4. الأرباح تُصفَّر تلقائياً بعد النجاح
+ * ================================================================ */
 async function requestPayout() {
-
-  // فحص وجود محفظة محفوظة
-
-const walletRes = await fetch(`${BACKEND_URL}/get-wallet`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    userUid,
-    accessToken: window.accessToken
-  })
-});
-
-const walletData = await walletRes.json();
-
-if (!walletData.success) {
-  alert("Failed to check wallet");
-  return;
-}
-
-if (!walletData.walletAddress) {
-
-  openWalletModal();
-
-  document.getElementById("saveWalletBtn").onclick =
-  async function(){
-
-    let walletAddress =
-      document.getElementById("walletInput")
-      .value
-      .trim();
-
-    if(
-      walletAddress.length !== 56 ||
-      !walletAddress.startsWith("G")
-    ){
-      alert("Invalid Pi wallet address");
-      return;
-    }
-
-    const saveRes = await fetch(
-      `${BACKEND_URL}/save-wallet`,
-      {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json"
-        },
-        body:JSON.stringify({
-          userUid,
-          accessToken:window.accessToken,
-          walletAddress
-        })
-      }
-    );
-
-    const saveData = await saveRes.json();
-
-    if(!saveData.success){
-      alert("Failed to save wallet");
-      return;
-    }
-
-    closeWalletModal();
-
-    requestPayout();
-  };
-
-  return;
-}
-   
-const btn = document.getElementById("payoutBtn");
-
-  btn.disabled = true;
-
-  const oldText = btn.innerHTML;
-
-  btn.innerHTML = `Processing <span class="spinner"></span>`;
   if (totalEarnings < 5) {
     showToast("Minimum payout is 5 Pi");
     return;
   }
 
-
+  const btn = document.getElementById("payoutBtn");
+  btn.disabled = true;
+  const oldText = btn.innerHTML;
+  btn.innerHTML = `Processing <span class="spinner"></span>`;
 
   try {
+    // الخطوة 1: تحضير الدفعة من السيرفر
+    const initRes = await fetch(`${BACKEND_URL}/init-payout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userUid, accessToken: window.accessToken })
+    });
 
-    const res = await fetch(
-      `${BACKEND_URL}/request-payout`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-body: JSON.stringify({
-  userUid: userUid,
-  accessToken: window.accessToken
-})
-      }
-    );
-
-    const data = await res.json();
-
-    if (!data.success) {
-      showToast(data.error || "Payout failed");
+    const initData = await initRes.json();
+    if (!initData.success) {
+      showToast(initData.error || "Payout initialization failed");
+      btn.disabled = false;
+      btn.innerHTML = oldText;
       return;
     }
 
-   openModal("🎉 Payout Successful 🎉", `TXID:\n${data.txid}`);
+    const { paymentId, amount } = initData;
 
-    loadMySales();
+    // الخطوة 2: Pi SDK يعرض واجهة الدفع للمستخدم ليوافق
+    await Pi.createPayment({
+      amount: amount,
+      memo: "Spicy Library - Author Earnings Payout",
+      metadata: {
+        type: "payout",
+        userUid,
+        paymentId
+      }
+    }, {
+      // الخطوة 3a: السيرفر يوافق
+      onReadyForServerApproval: async (piPaymentId) => {
+        await fetch(`${BACKEND_URL}/approve-payout`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId: piPaymentId })
+        });
+      },
 
-} catch (e) {
+      // الخطوة 3b: السيرفر يُكمل وتُصفَّر الأرباح
+      onReadyForServerCompletion: async (piPaymentId, txid) => {
+        const completeRes = await fetch(`${BACKEND_URL}/complete-payout`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId: piPaymentId, txid })
+        });
+        const completeData = await completeRes.json();
+        if (!completeData.success) {
+          showToast(completeData.error || "Payout completion failed");
+          return;
+        }
+        openModal(
+          "🎉 Payout Successful 🎉",
+          `Amount: ${amount} Pi\nTXID: ${txid}\n\nThe Pi has been sent directly to your wallet!`
+        );
+        loadMySales();
+      },
 
-  console.error(e);
+      onCancel: () => {
+        showToast("Payout cancelled");
+      },
 
-  alert("Payout failed");
+      onError: (err) => {
+        showToast("Payout error: " + err.message);
+      }
+    });
 
-} finally {
-
-  btn.disabled = false;
-
-  btn.innerHTML = oldText;
-
+  } catch (e) {
+    console.error("Payout error:", e);
+    alert("Payout failed: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = oldText;
+  }
 }
-}
 
-
-// ================= TABS & SEARCH & TOGGLE =================
+/* ================= TABS & SEARCH ================= */
 function openTab(tabName) {
   document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
   document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
@@ -2258,267 +911,46 @@ function searchBooks() {
   });
 }
 
-
-// ================= FILTER BOOKS =================
-
 function filterBooks(type, btn) {
-
-  // تغيير الزر النشط
-  document.querySelectorAll(".filter-btn")
-    .forEach(b => b.classList.remove("active"));
-
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
-
   let filtered = [...allBooksData];
-
-  // ===== ALL =====
-  if (type === "all") {
-    renderBooks(filtered);
-    return;
-  }
-
-  // ===== MOST LIKED =====
-  if (type === "likes") {
-
-    filtered.sort((a, b) =>
-      (b.likesCount || 0) - (a.likesCount || 0)
-    );
-
-    renderBooks(filtered);
-    return;
-  }
-
-  // ===== BEST SELLERS =====
-  if (type === "sales") {
-
-    filtered.sort((a, b) =>
-      (b.salesCount || 0) - (a.salesCount || 0)
-    );
-
-    renderBooks(filtered);
-    return;
-  }
-
-  // ===== NEW BOOKS =====
-  if (type === "new") {
-
-    filtered.reverse();
-
-    renderBooks(filtered);
-    return;
-  }
+  if (type === "all") { renderBooks(filtered); return; }
+  if (type === "likes") { filtered.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0)); renderBooks(filtered); return; }
+  if (type === "sales") { filtered.sort((a, b) => (b.salesCount || 0) - (a.salesCount || 0)); renderBooks(filtered); return; }
+  if (type === "new") { filtered.reverse(); renderBooks(filtered); return; }
 }
-  
-
 
 function openBook(bookId) {
   window.open(`book.html?id=${bookId}`, "_blank");
 }
 
+/* ================= REDIRECT FROM BOOK.HTML ================= */
+window.addEventListener("load", () => {
+  const params = new URLSearchParams(window.location.search);
+  const buyBookId = params.get("buyBookId");
+  if (buyBookId) {
+    const attemptBuy = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/book?id=${buyBookId}`);
+        const data = await res.json();
+        if (!data.success) throw new Error("Book not found");
+        const book = data.book;
+        if (!userUid) { alert("⚠️ Please log in first to buy this book."); return; }
+        if (confirm(`Buy "${book.title}" for ${book.price} Pi?`)) { buy(book.id, book.price); }
+      } catch (e) { console.error(e); alert("Book not found or cannot be purchased."); }
+    };
+    if (userUid) { attemptBuy(); }
+    else {
+      document.getElementById("loginBtn").onclick = async () => {
+        await login();
+        if (userUid) { attemptBuy(); }
+      };
+    }
+  }
+});
 
-  
-  // ================= LEGAL TEXT =================
-const PrivacyPolicyText = {
-
-en: `
-Privacy Policy - Spicy Library
-
-We respect your privacy and protect your data. We collect:
-- Pi Network UID and username
-- Purchase history
-- Sales data for authors
-- Pi wallet addresses (for withdrawals)
-
-We DO NOT collect passwords or private keys.
-
-Your data is used for:
-- Login and app functionality
-- Payment processing
-- Delivering books
-- Author earnings and withdrawals
-
-We do not share your data with third parties unless required by law.
-
-Contact: spicylibrarysupport@gmail.com
-`,
-
-ar: `
-سياسة الخصوصية - Spicy Library
-
-نحن نحترم خصوصيتك ونحمي بياناتك. نقوم بجمع:
-- معرف Pi Network واسم المستخدم
-- سجل المشتريات
-- بيانات المبيعات للمؤلفين
-- عناوين محافظ Pi للسحب
-
-نحن لا نجمع كلمات المرور أو المفاتيح الخاصة.
-
-يتم استخدام بياناتك من أجل:
-- تسجيل الدخول وتشغيل التطبيق
-- معالجة المدفوعات
-- تسليم الكتب
-- أرباح المؤلفين وعمليات السحب
-
-لا نقوم بمشاركة بياناتك مع أي طرف ثالث إلا إذا كان ذلك مطلوبًا قانونيًا.
-
-التواصل:
-spicylibrarysupport@gmail.com
-`,
-
-fr: `
-Politique de confidentialité - Spicy Library
-
-Nous respectons votre vie privée et protégeons vos données. Nous collectons :
-- UID et nom d'utilisateur Pi Network
-- Historique des achats
-- Données de ventes des auteurs
-- Adresses de portefeuille Pi (pour les retraits)
-
-Nous ne collectons PAS les mots de passe ni les clés privées.
-
-Vos données sont utilisées pour :
-- La connexion et le fonctionnement de l'application
-- Le traitement des paiements
-- La livraison des livres
-- Les revenus et retraits des auteurs
-
-Nous ne partageons pas vos données avec des tiers sauf obligation légale.
-
-Contact :
-spicylibrarysupport@gmail.com
-`,
-
-zh: `
-隐私政策 - Spicy Library
-
-我们尊重您的隐私并保护您的数据。我们会收集：
-- Pi Network 用户ID和用户名
-- 购买记录
-- 作者销售数据
-- Pi 钱包地址（用于提现）
-
-我们不会收集密码或私钥。
-
-您的数据将用于：
-- 登录和应用功能
-- 支付处理
-- 图书交付
-- 作者收益和提现
-
-除法律要求外，我们不会与第三方共享您的数据。
-
-联系方式：
-spicylibrarysupport@gmail.com
-`
-};
-
-const TermsOfServiceText = {
-
-en: `
-Terms of Service - Spicy Library
-
-By using Spicy Library, you agree to:
-- Use Pi Network for login
-- Be responsible for your account activity
-- Ensure all content you upload respects copyright
-
-Purchases:
-- Made in Pi currency only
-- Are final and non-refundable
-
-Authors:
-- Receive 70% of each sale
-- Minimum withdrawal: 5 Pi
-- Withdrawals are processed automatically and sent instantly to your Pi wallet after approval.
-
-Prohibited:
-- Uploading stolen content
-- Manipulating payments
-- Hacking attempts
-
-Contact: spicylibrarisupport@gmail.com
-`,
-
-ar: `
-شروط الاستخدام - Spicy Library
-
-باستخدامك لتطبيق Spicy Library فإنك توافق على:
-- استخدام Pi Network لتسجيل الدخول
-- تحمل المسؤولية الكاملة عن نشاط حسابك
-- التأكد من أن جميع المحتويات التي ترفعها تحترم حقوق النشر
-
-المشتريات:
-- تتم بعملة Pi فقط
-- نهائية وغير قابلة للاسترجاع
-
-المؤلفون:
-- يحصلون على 70٪ من كل عملية بيع
-- الحد الأدنى للسحب هو 5 Pi
-- تتم عمليات السحب تلقائيًا وإرسالها فورًا إلى محفظة Pi الخاصة بك بعد الموافقة.
-
-الممنوعات:
-- رفع محتوى مسروق
-- التلاعب بالمدفوعات
-- محاولات الاختراق
-
-التواصل:
-spicylibrarysupport@gmail.com
-`,
-
-fr: `
-Conditions d'utilisation - Spicy Library
-
-En utilisant Spicy Library, vous acceptez :
-- D'utiliser Pi Network pour vous connecter
-- D'être responsable de l'activité de votre compte
-- De garantir que le contenu téléchargé respecte les droits d'auteur
-
-Achats :
-- Effectués uniquement en monnaie Pi
-- Définitifs et non remboursables
-
-Auteurs :
-- Reçoivent 70 % de chaque vente
-- Retrait minimum : 5 Pi
-- Les retraits sont traités automatiquement et envoyés instantanément vers votre portefeuille Pi après approbation.
-
-Interdictions :
-- Télécharger du contenu volé
-- Manipuler les paiements
-- Tentatives de piratage
-
-Contact :
-spicylibrarysupport@gmail.com
-`,
-
-zh: `
-服务条款 - Spicy Library
-
-使用 Spicy Library 即表示您同意：
-- 使用 Pi Network 登录
-- 对您的账户活动负责
-- 确保上传内容符合版权规定
-
-购买：
-- 仅使用 Pi 货币
-- 交易最终且不可退款
-
-作者：
-- 每次销售获得 70%
-- 最低提现金额为 5 Pi
-- 提现会在批准后自动并即时发送到您的 Pi 钱包
-
-禁止行为：
-- 上传盗版内容
-- 操纵支付
-- 黑客攻击行为
-
-联系方式：
-spicylibrarysupport@gmail.com
-`
-};
-
-// ================= MODAL =================
+/* ================= MODAL ================= */
 function openModal(title, content) {
   document.getElementById('modal-title').innerText = title;
   document.getElementById('modal-content').innerHTML = content;
@@ -2526,794 +958,310 @@ function openModal(title, content) {
 }
 function closeModal() {
   document.getElementById('modal').style.display = 'none';
-
-  // إعادة تحميل الموقع فقط إذا كانت نافذة تسجيل الدخول
-  if (window.modalType === "login") {
-    window.location.href = "https://spicylibrary.online";
-  }
-
+  if (window.modalType === "login") { window.location.href = "https://spicylibrary.online"; }
   window.modalType = null;
 }
 
-
-
-// استمع لرسائل من book.html
+/* ================= MESSAGE FROM BOOK.HTML ================= */
 window.addEventListener("message", async (event) => {
-  // تأكد أن الرسالة من موقعك فقط
-  if(event.origin !== "https://spicy23-ai.github.io") return;
-
+  if (event.origin !== "https://spicy23-ai.github.io") return;
   const msg = event.data;
-
   if (msg.type === "BUY_BOOK") {
-
-  // حفظ مرجع نافذة الكتاب
-  window.openedBook = event.source;
-
-  const startPurchase = async () => {
-
-    try {
-
-      await Pi.createPayment({
-        amount: msg.price,
-        memo: "Spicy Library - Book Purchase",
-        metadata: {
-          bookId: msg.bookId,
-          userUid
-        }
-
-      }, {
-
-        onReadyForServerApproval: async (paymentId) => {
-
-          await fetch(`${BACKEND_URL}/approve-payment`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              paymentId
-            })
-          });
-
-        },
-
-        onReadyForServerCompletion: async (paymentId, txid) => {
-
-          const res = await fetch(
-            `${BACKEND_URL}/complete-payment`,
-            {
+    window.openedBook = event.source;
+    const startPurchase = async () => {
+      try {
+        await Pi.createPayment({
+          amount: msg.price,
+          memo: "Spicy Library - Book Purchase",
+          metadata: { bookId: msg.bookId, userUid }
+        }, {
+          onReadyForServerApproval: async (paymentId) => {
+            await fetch(`${BACKEND_URL}/approve-payment`, {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                paymentId,
-                txid
-              })
-            }
-          );
-
-          const data = await res.json();
-
-          // تحديث المشتريات
-          loadMyPurchases();
-
-          // إرسال نجاح الدفع إلى صفحة الكتاب
-          window.openedBook.postMessage({
-            type: "PAYMENT_SUCCESS",
-            bookId: msg.bookId
-          }, "https://spicy23-ai.github.io");
-
-          // فتح تبويب المشتريات تلقائياً
-          openTab("purchases");
-
-          showToast("Payment successful! 📚");
-
-        },
-
-        onCancel: () => {
-
-          window.openedBook.postMessage({
-            type: "PAYMENT_CANCELLED"
-          }, "https://spicy23-ai.github.io");
-
-        },
-
-        onError: (err) => {
-
-          window.openedBook.postMessage({
-            type: "PAYMENT_FAILED",
-            error: err.message
-          }, "https://spicy23-ai.github.io");
-
-        }
-
-      });
-
-    } catch (e) {
-
-      alert("Payment failed");
-
-    }
-
-  };
-
-  // إذا لم يسجل دخول → سجل دخول ثم اشترِ
-  if (!user) {
-
-    try {
-
-      const authResult = await Pi.authenticate(
-        ["username", "payments"],
-        onIncompletePaymentFound
-      );
-
-      user = authResult.user;
-      userUid = user.uid;
-
-      document.getElementById("welcome").innerText =
-        `Welcome, ${user.username}!`;
-
-      document.getElementById("login")
-        .classList.add("hidden");
-
-      document.getElementById("app")
-        .classList.remove("hidden");
-
-      loadBooks();
-      loadMyPurchases();
-      loadMySales();
-
-      // بعد تسجيل الدخول يبدأ الشراء مباشرة
-      startPurchase();
-
-    } catch (err) {
-
-      alert("Login failed");
-
-    }
-
-  } else {
-
-    // المستخدم مسجل أصلاً
-    startPurchase();
-
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paymentId })
+            });
+          },
+          onReadyForServerCompletion: async (paymentId, txid) => {
+            const res = await fetch(`${BACKEND_URL}/complete-payment`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paymentId, txid })
+            });
+            const data = await res.json();
+            loadMyPurchases();
+            window.openedBook.postMessage({ type: "PAYMENT_SUCCESS", bookId: msg.bookId }, "https://spicy23-ai.github.io");
+            openTab("purchases");
+            showToast("Payment successful! 📚");
+          },
+          onCancel: () => { window.openedBook.postMessage({ type: "PAYMENT_CANCELLED" }, "https://spicy23-ai.github.io"); },
+          onError: (err) => { window.openedBook.postMessage({ type: "PAYMENT_FAILED", error: err.message }, "https://spicy23-ai.github.io"); }
+        });
+      } catch (e) { alert("Payment failed"); }
+    };
+    if (!user) {
+      try {
+        const authResult = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
+        user = authResult.user;
+        userUid = user.uid;
+        window.accessToken = authResult.accessToken;
+        document.getElementById("welcome").innerText = `Welcome, ${user.username}!`;
+        document.getElementById("login").classList.add("hidden");
+        document.getElementById("app").classList.remove("hidden");
+        loadBooks(); loadMyPurchases(); loadMySales();
+        startPurchase();
+      } catch (err) { alert("Login failed"); }
+    } else { startPurchase(); }
   }
+});
 
-}
-  });
-
-function showToast(msg){
+function showToast(msg) {
   const t = document.getElementById("toast");
   t.innerText = msg;
   t.classList.remove("hidden");
-  setTimeout(()=> t.classList.add("hidden"), 2500);
+  setTimeout(() => t.classList.add("hidden"), 2500);
 }
 
-
- function openWalletModal(){
-  document
-    .getElementById("walletModal")
-    .classList.remove("hidden");
-}
-
-function closeWalletModal(){
-  document
-    .getElementById("walletModal")
-    .classList.add("hidden");
-}
-  
-function showConfirm(message){
-  return new Promise(resolve=>{
+function showConfirm(message) {
+  return new Promise(resolve => {
     const modal = document.getElementById("confirmModal");
     const text = document.getElementById("confirmText");
     const yes = document.getElementById("confirmYes");
     const no = document.getElementById("confirmNo");
-
     text.innerText = message;
     modal.classList.remove("hidden");
-
-    yes.onclick = () => {
-      modal.classList.add("hidden");
-      resolve(true);
-    };
-
-    no.onclick = () => {
-      modal.classList.add("hidden");
-      resolve(false);
-    };
+    yes.onclick = () => { modal.classList.add("hidden"); resolve(true); };
+    no.onclick = () => { modal.classList.add("hidden"); resolve(false); };
   });
 }
-// ================= LANGUAGES =================
+
+/* ================= LANGUAGES ================= */
 let currentLang = "en";
 const translations = {
-
   en: {
     loginNotice: "Login using Pi Network (must be in Pi Browser)",
-privacyPolicy: "Privacy Policy",
-termsService: "Terms of Service",
-privacyTitle: "Privacy Policy",
-termsTitle: "Terms of Service",
-    
-    loginBtn: "Login with Pi",
-    addBook: "➕ Add Book",
-    logout: "Logout",
-    store: "Store",
-    purchases: "My Purchases",
-    sales: "My Sales",
-
-    allBooks: "All Books",
-    searchPlaceholder: "Search by book title...",
-
-    filterAll: "All Books",
-    filterLikes: "Most Liked",
-    filterSales: "Best Sellers",
-    filterNew: "Old Books",
-
-    addBookTitle: "Add Book",
-    bookTitle: "Book title",
-    price: "Price (Pi)",
-    description: "Book description",
-    selectLanguage: "Select language",
-    pages: "Number of pages",
-    uploadCover: "Upload Cover",
-    uploadPdf: "Upload PDF",
-    rights: "I confirm that I own all rights to this book",
-    saveBook: "Save Book",
-
-    buy: "Buy with",
-    view: "View 📖",
-
-    download: "Download PDF",
-salesTitle: "My Sales & Earnings",
-    requestPayout: "Request Payout",
-    loadingBooks: "Loading books...",
-    noBooks: "No books available.",
-   bookPending:
-    "✅ Book submitted successfully!\n\nYour book is under review and will be published after approval.",
-ownBook: "✅ You Own This Book",
+    privacyPolicy: "Privacy Policy", termsService: "Terms of Service",
+    privacyTitle: "Privacy Policy", termsTitle: "Terms of Service",
+    loginBtn: "Login with Pi", addBook: "➕ Add Book", logout: "Logout",
+    store: "Store", purchases: "My Purchases", sales: "My Sales",
+    allBooks: "All Books", searchPlaceholder: "Search by book title...",
+    filterAll: "All Books", filterLikes: "Most Liked", filterSales: "Best Sellers", filterNew: "Old Books",
+    addBookTitle: "Add Book", bookTitle: "Book title", price: "Price (Pi)",
+    description: "Book description", selectLanguage: "Select language", pages: "Number of pages",
+    uploadCover: "Upload Cover", uploadPdf: "Upload PDF",
+    rights: "I confirm that I own all rights to this book", saveBook: "Save Book",
+    buy: "Buy with", view: "View 📖", download: "Download PDF",
+    salesTitle: "My Sales & Earnings", requestPayout: "Request Payout",
+    loadingBooks: "Loading books...", noBooks: "No books available.",
+    bookPending: "✅ Book submitted successfully!\n\nYour book is under review and will be published after approval.",
+    ownBook: "✅ You Own This Book",
     platformFee: "Platform fee: 30% – You get 70% of each sale",
-minimumPayout: "Minimum payout: 5 Pi",
-    copyrightNotice: `
-Copyright Notice: Authors may upload only content they own or have permission to distribute. If you believe that any content infringes your copyright, please contact us at
-<a href="mailto:spicylibrarysupport@gmail.com">spicylibrarysupport@gmail.com</a>.
-Reported content may be reviewed and removed if necessary.
-`,
-    instantPayout:
-  "Instant payout: Withdrawals are processed automatically and sent instantly to your wallet after approval.",
-totalEarnings: "Total earnings"
+    minimumPayout: "Minimum payout: 5 Pi",
+    copyrightNotice: `Copyright Notice: Authors may upload only content they own or have permission to distribute. If you believe that any content infringes your copyright, please contact us at <a href="mailto:spicylibrarysupport@gmail.com">spicylibrarysupport@gmail.com</a>. Reported content may be reviewed and removed if necessary.`,
+    instantPayout: "Instant payout: Withdrawals are sent directly to your Pi wallet via Pi Network — no manual address needed.",
+    totalEarnings: "Total earnings"
   },
-
   ar: {
     loginNotice: "سجل الدخول باستخدام Pi Network",
-    privacyPolicy: "سياسة الخصوصية",
-termsService: "شروط الاستخدام",
-privacyTitle: "سياسة الخصوصية",
-termsTitle: "شروط الاستخدام",
-    loginBtn: "تسجيل الدخول عبر Pi",
-    addBook: "➕ إضافة كتاب",
-    logout: "تسجيل الخروج",
-    store: "المتجر",
-    purchases: "مشترياتي",
-    sales: "مبيعاتي",
-
-    allBooks: "كل الكتب",
-    searchPlaceholder: "ابحث عن كتاب...",
-
-    filterAll: "كل الكتب",
-    filterLikes: "الأكثر إعجاباً",
-    filterSales: "الأكثر مبيعاً",
-    filterNew: "الكتب القديمة",
-
-    addBookTitle: "إضافة كتاب",
-    bookTitle: "عنوان الكتاب",
-    price: "السعر (Pi)",
-    description: "وصف الكتاب",
-    selectLanguage: "اختر اللغة",
-    pages: "عدد الصفحات",
-    uploadCover: "رفع الغلاف",
-    uploadPdf: "رفع PDF",
-    rights: "أؤكد أنني أملك جميع حقوق هذا الكتاب",
-    saveBook: "حفظ الكتاب",
-
-    buy: "شراء عبر",
-    view: "عرض 📖",
-
-    download: "تحميل PDF",
-salesTitle: "مبيعاتي وأرباحي",
-    requestPayout: "طلب سحب",
-  
-    loadingBooks: "جاري تحميل الكتب...",
-    noBooks: "لا توجد كتب.",
-     bookPending:
-    "✅ تم إرسال الكتاب بنجاح.\n\nالكتاب الآن قيد المراجعة وسيتم نشره بعد الموافقة عليه.",
- ownBook: "✅ أنت تملك هذا الكتاب",
+    privacyPolicy: "سياسة الخصوصية", termsService: "شروط الاستخدام",
+    privacyTitle: "سياسة الخصوصية", termsTitle: "شروط الاستخدام",
+    loginBtn: "تسجيل الدخول عبر Pi", addBook: "➕ إضافة كتاب", logout: "تسجيل الخروج",
+    store: "المتجر", purchases: "مشترياتي", sales: "مبيعاتي",
+    allBooks: "كل الكتب", searchPlaceholder: "ابحث عن كتاب...",
+    filterAll: "كل الكتب", filterLikes: "الأكثر إعجاباً", filterSales: "الأكثر مبيعاً", filterNew: "الكتب القديمة",
+    addBookTitle: "إضافة كتاب", bookTitle: "عنوان الكتاب", price: "السعر (Pi)",
+    description: "وصف الكتاب", selectLanguage: "اختر اللغة", pages: "عدد الصفحات",
+    uploadCover: "رفع الغلاف", uploadPdf: "رفع PDF",
+    rights: "أؤكد أنني أملك جميع حقوق هذا الكتاب", saveBook: "حفظ الكتاب",
+    buy: "شراء عبر", view: "عرض 📖", download: "تحميل PDF",
+    salesTitle: "مبيعاتي وأرباحي", requestPayout: "طلب سحب",
+    loadingBooks: "جاري تحميل الكتب...", noBooks: "لا توجد كتب.",
+    bookPending: "✅ تم إرسال الكتاب بنجاح.\n\nالكتاب الآن قيد المراجعة وسيتم نشره بعد الموافقة عليه.",
+    ownBook: "✅ أنت تملك هذا الكتاب",
     platformFee: "رسوم المنصة: 30٪ - تحصل على 70٪ من كل عملية بيع",
-minimumPayout: "الحد الأدنى للسحب: 5 Pi",
-    copyrightNotice: `
-إشعار حقوق النشر: يمكن للمؤلفين رفع المحتوى الذي يملكون حقوقه أو لديهم إذن بتوزيعه فقط. إذا كنت تعتقد أن أي محتوى ينتهك حقوق النشر الخاصة بك، يرجى التواصل معنا على
-<a href="mailto:spicylibrarysupport@gmail.com">spicylibrarysupport@gmail.com</a>.
-قد تتم مراجعة المحتوى المُبلغ عنه وإزالته عند الضرورة.
-`,
-    instantPayout:
-  "السحب الفوري: تتم معالجة عمليات السحب تلقائيًا وإرسالها فورًا إلى محفظتك بعد الموافقة.",
-totalEarnings: "إجمالي الأرباح"
+    minimumPayout: "الحد الأدنى للسحب: 5 Pi",
+    copyrightNotice: `إشعار حقوق النشر: يمكن للمؤلفين رفع المحتوى الذي يملكون حقوقه أو لديهم إذن بتوزيعه فقط. إذا كنت تعتقد أن أي محتوى ينتهك حقوق النشر الخاصة بك، يرجى التواصل معنا على <a href="mailto:spicylibrarysupport@gmail.com">spicylibrarysupport@gmail.com</a>. قد تتم مراجعة المحتوى المُبلغ عنه وإزالته عند الضرورة.`,
+    instantPayout: "السحب الفوري: يتم إرسال الأرباح مباشرة إلى محفظتك عبر Pi Network — دون الحاجة لإدخال العنوان يدويًا.",
+    totalEarnings: "إجمالي الأرباح"
   },
-
   fr: {
     loginNotice: "Connectez-vous avec Pi Network",
-privacyPolicy: "Politique de confidentialité",
-termsService: "Conditions d'utilisation",
-privacyTitle: "Politique de confidentialité",
-termsTitle: "Conditions d'utilisation",
-    
-    loginBtn: "Connexion avec Pi",
-    addBook: "➕ Ajouter un livre",
-    logout: "Déconnexion",
-    store: "Boutique",
-    purchases: "Mes achats",
-    sales: "Mes ventes",
-
-    allBooks: "Tous les livres",
-    searchPlaceholder: "Rechercher un livre...",
-
-    filterAll: "Tous les livres",
-    filterLikes: "Les plus aimés",
-    filterSales: "Meilleures ventes",
-    filterNew: "Anciens livres",
-
-    addBookTitle: "Ajouter un livre",
-    bookTitle: "Titre du livre",
-    price: "Prix (Pi)",
-    description: "Description du livre",
-    selectLanguage: "Choisir la langue",
-    pages: "Nombre de pages",
-    uploadCover: "Télécharger la couverture",
-    uploadPdf: "Télécharger le PDF",
-    rights: "Je confirme posséder tous les droits",
-    saveBook: "Enregistrer le livre",
-
-    buy: "Acheter avec",
-    view: "Voir 📖",
-
-    download: "Télécharger PDF",
-salesTitle: "Mes ventes et revenus",
-    requestPayout: "Demander un retrait",
-    loadingBooks: "Chargement des livres...",
-    noBooks: "Aucun livre disponible.",
-    bookPending:
-    "✅ Livre envoyé avec succès !\n\nVotre livre est en cours de vérification et sera publié après approbation.",
+    privacyPolicy: "Politique de confidentialité", termsService: "Conditions d'utilisation",
+    privacyTitle: "Politique de confidentialité", termsTitle: "Conditions d'utilisation",
+    loginBtn: "Connexion avec Pi", addBook: "➕ Ajouter un livre", logout: "Déconnexion",
+    store: "Boutique", purchases: "Mes achats", sales: "Mes ventes",
+    allBooks: "Tous les livres", searchPlaceholder: "Rechercher un livre...",
+    filterAll: "Tous les livres", filterLikes: "Les plus aimés", filterSales: "Meilleures ventes", filterNew: "Anciens livres",
+    addBookTitle: "Ajouter un livre", bookTitle: "Titre du livre", price: "Prix (Pi)",
+    description: "Description du livre", selectLanguage: "Choisir la langue", pages: "Nombre de pages",
+    uploadCover: "Télécharger la couverture", uploadPdf: "Télécharger le PDF",
+    rights: "Je confirme posséder tous les droits", saveBook: "Enregistrer le livre",
+    buy: "Acheter avec", view: "Voir 📖", download: "Télécharger PDF",
+    salesTitle: "Mes ventes et revenus", requestPayout: "Demander un retrait",
+    loadingBooks: "Chargement des livres...", noBooks: "Aucun livre disponible.",
+    bookPending: "✅ Livre envoyé avec succès !\n\nVotre livre est en cours de vérification et sera publié après approbation.",
     ownBook: "✅ Vous possédez ce livre",
     platformFee: "Frais de plateforme : 30 % – Vous recevez 70 % de chaque vente",
-minimumPayout: "Retrait minimum : 5 Pi",
-    copyrightNotice: `
-Avis de droit d'auteur : Les auteurs ne peuvent publier que du contenu dont ils possèdent les droits ou qu'ils sont autorisés à distribuer. Si vous pensez qu'un contenu enfreint vos droits d'auteur, veuillez nous contacter à
-<a href="mailto:spicylibrarysupport@gmail.com">spicylibrarysupport@gmail.com</a>.
-Le contenu signalé pourra être examiné et supprimé si nécessaire.
-`,
-    instantPayout:
-  "Paiement instantané : les retraits sont traités automatiquement et envoyés instantanément à votre portefeuille après approbation.",
-totalEarnings: "Gains totaux"
+    minimumPayout: "Retrait minimum : 5 Pi",
+    copyrightNotice: `Avis de droit d'auteur : Les auteurs ne peuvent publier que du contenu dont ils possèdent les droits. Contactez-nous à <a href="mailto:spicylibrarysupport@gmail.com">spicylibrarysupport@gmail.com</a>.`,
+    instantPayout: "Paiement instantané : les retraits sont envoyés directement à votre portefeuille Pi — sans saisie manuelle d'adresse.",
+    totalEarnings: "Gains totaux"
   },
-
   zh: {
     loginNotice: "使用 Pi Network 登录",
-privacyPolicy: "隐私政策",
-termsService: "服务条款",
-privacyTitle: "隐私政策",
-termsTitle: "服务条款",
-    
-    loginBtn: "使用 Pi 登录",
-    addBook: "➕ 添加书籍",
-    logout: "退出登录",
-    store: "商店",
-    purchases: "我的购买",
-    sales: "我的销售",
-
-    allBooks: "所有书籍",
-    searchPlaceholder: "搜索书籍...",
-
-    filterAll: "所有书籍",
-    filterLikes: "最受喜欢",
-    filterSales: "畅销书",
-    filterNew: "旧书",
-
-    addBookTitle: "添加书籍",
-    bookTitle: "书名",
-    price: "价格 (Pi)",
-    description: "书籍描述",
-    selectLanguage: "选择语言",
-    pages: "页数",
-    uploadCover: "上传封面",
-    uploadPdf: "上传 PDF",
-    rights: "我确认拥有本书的全部版权",
-    saveBook: "保存书籍",
-
-    buy: "使用 购买",
-    view: "查看 📖",
-
-    download: "下载 PDF",
-salesTitle: "我的销售与收入",
-    requestPayout: "申请提现",
-    loadingBooks: "正在加载书籍...",
-    noBooks: "暂无书籍。",
-  bookPending:
-    "✅ 图书提交成功！\n\n您的图书正在审核中，通过审核后将发布。",
-   ownBook: "✅ 您拥有这本书",
-    totalEarnings: "总收益",
-platformFee: "平台费用：30％ - 您获得每笔销售的70％",
-minimumPayout: "最低提现金额：5 Pi",
-    copyrightNotice: `
-版权声明：作者只能上传其拥有版权或已获得分发许可的内容。如果您认为任何内容侵犯了您的版权，请联系我们：
-<a href="mailto:spicylibrarysupport@gmail.com">spicylibrarysupport@gmail.com</a>。
-被举报的内容可能会经过审核，并在必要时删除。
-`,
-    instantPayout:
-  "即时付款：提款经批准后会自动处理并立即发送到您的钱包。",
-totalEarnings: "总收益"
+    privacyPolicy: "隐私政策", termsService: "服务条款",
+    privacyTitle: "隐私政策", termsTitle: "服务条款",
+    loginBtn: "使用 Pi 登录", addBook: "➕ 添加书籍", logout: "退出登录",
+    store: "商店", purchases: "我的购买", sales: "我的销售",
+    allBooks: "所有书籍", searchPlaceholder: "搜索书籍...",
+    filterAll: "所有书籍", filterLikes: "最受喜欢", filterSales: "畅销书", filterNew: "旧书",
+    addBookTitle: "添加书籍", bookTitle: "书名", price: "价格 (Pi)",
+    description: "书籍描述", selectLanguage: "选择语言", pages: "页数",
+    uploadCover: "上传封面", uploadPdf: "上传 PDF",
+    rights: "我确认拥有本书的全部版权", saveBook: "保存书籍",
+    buy: "使用 购买", view: "查看 📖", download: "下载 PDF",
+    salesTitle: "我的销售与收入", requestPayout: "申请提现",
+    loadingBooks: "正在加载书籍...", noBooks: "暂无书籍。",
+    bookPending: "✅ 图书提交成功！\n\n您的图书正在审核中，通过审核后将发布。",
+    ownBook: "✅ 您拥有这本书",
+    platformFee: "平台费用：30％ - 您获得每笔销售的70％",
+    minimumPayout: "最低提现金额：5 Pi",
+    copyrightNotice: `版权声明：作者只能上传其拥有版权的内容。请联系我们：<a href="mailto:spicylibrarysupport@gmail.com">spicylibrarysupport@gmail.com</a>。`,
+    instantPayout: "即时付款：提款通过 Pi Network 直接发送到您的钱包，无需手动输入地址。",
+    totalEarnings: "总收益"
   }
-
 };
 
 function changeLanguage() {
-
   const lang = document.getElementById("languageSwitcher").value;
-
   localStorage.setItem("appLanguage", lang);
-
   const t = translations[lang];
-currentLang = lang;
-  // LOGIN
+  currentLang = lang;
   document.querySelector(".notice").innerText = t.loginNotice;
   document.getElementById("loginBtn").innerText = t.loginBtn;
-
-  // MAIN BUTTONS
   document.querySelector('button[onclick="openTab(\'addBookPage\')"]').innerText = t.addBook;
   document.querySelector('button[onclick="logout()"]').innerText = t.logout;
-
-  // TABS
   document.querySelector('button[onclick="openTab(\'store\')"]').innerText = t.store;
   document.querySelector('button[onclick="openTab(\'purchases\')"]').innerText = t.purchases;
   document.querySelector('button[onclick="openTab(\'sales\')"]').innerText = t.sales;
-
-  document.getElementById("salesTitle").innerText =
-  t.salesTitle;
-
-  document.getElementById("payoutBtn").innerText =
-  t.requestPayout;
-
-  document.getElementById("platformFeeText").innerText =
-  t.platformFee;
-
-document.getElementById("minimumPayoutText").innerText =
-  t.minimumPayout;
-
-  document.getElementById("instantPayoutText").innerText =
-  t.instantPayout;
-
-  document.getElementById("copyrightNotice").innerHTML =
-  t.copyrightNotice;
-
-  // STORE
+  document.getElementById("salesTitle").innerText = t.salesTitle;
+  document.getElementById("payoutBtn").innerText = t.requestPayout;
+  document.getElementById("platformFeeText").innerText = t.platformFee;
+  document.getElementById("minimumPayoutText").innerText = t.minimumPayout;
+  document.getElementById("instantPayoutText").innerText = t.instantPayout;
+  document.getElementById("copyrightNotice").innerHTML = t.copyrightNotice;
   document.querySelector("#store h3").innerText = t.allBooks;
-
-  document.getElementById("searchInput").placeholder =
-    t.searchPlaceholder;
-
-  // FILTERS
+  document.getElementById("searchInput").placeholder = t.searchPlaceholder;
   const filters = document.querySelectorAll(".filter-btn");
-
   filters[0].innerText = t.filterAll;
   filters[1].innerText = t.filterLikes;
   filters[2].innerText = t.filterSales;
   filters[3].innerText = t.filterNew;
-
-  // ADD BOOK PANEL
   document.querySelector("#addBook h3").innerText = t.addBookTitle;
-
   document.getElementById("title").placeholder = t.bookTitle;
   document.getElementById("price").placeholder = t.price;
   document.getElementById("description").placeholder = t.description;
   document.getElementById("manualPages").placeholder = "e.g. 250";
-
   document.getElementById("uploadCoverBtn").innerText = t.uploadCover;
   document.getElementById("uploadPdfBtn").innerText = t.uploadPdf;
-
   document.querySelector("#saveBookBtn").innerText = t.saveBook;
-
-  document.querySelector("#addBook label").lastChild.textContent =
-    " " + t.rights;
-
-  // RTL
-  document.body.style.direction =
-    lang === "ar" ? "rtl" : "ltr";
-
-  // إعادة رسم الكتب باللغة الجديدة
+  document.querySelector("#addBook label").lastChild.textContent = " " + t.rights;
+  document.body.style.direction = lang === "ar" ? "rtl" : "ltr";
   renderBooks(allBooksData);
-
 }
 
-// تحميل اللغة المحفوظة
 window.addEventListener("load", () => {
-
-  const savedLang =
-    localStorage.getItem("appLanguage") || "en";
-
-  document.getElementById("languageSwitcher").value =
-    savedLang;
-
+  const savedLang = localStorage.getItem("appLanguage") || "en";
+  document.getElementById("languageSwitcher").value = savedLang;
   changeLanguage();
-
   const t = translations[savedLang];
-
-  document.getElementById("privacyBtn").innerText =
-    t.privacyPolicy;
-
-  document.getElementById("termsBtn").innerText =
-    t.termsService;
+  document.getElementById("privacyBtn").innerText = t.privacyPolicy;
+  document.getElementById("termsBtn").innerText = t.termsService;
 });
 
-   // زر المتجر العائم
-
 window.addEventListener("scroll", () => {
-
-  const btn =
-    document.getElementById("storeFloatBtn");
-
-  if (window.scrollY > 500) {
-    btn.style.display = "block";
-  } else {
-    btn.style.display = "none";
-  }
-
+  const btn = document.getElementById("storeFloatBtn");
+  if (window.scrollY > 500) { btn.style.display = "block"; }
+  else { btn.style.display = "none"; }
 });
 
 function goToStoreTop() {
-
   openTab("store");
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
-
-} 
-
-  async function loadCommentsCount(book){
-
-  try{
-
-    const res = await fetch(
-      `${BACKEND_URL}/comments?bookId=${book.id}`
-    );
-
-    const data = await res.json();
-
-    const el = document.getElementById(
-      `comments-count-${book.id}`
-    );
-
-    if(el && data.success){
-
-      el.innerHTML = `💬 ${data.comments.length}`;
-
-    }
-
-  }catch(e){
-
-    console.log(e);
-
-  }
-
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-  async function showComments(bookId){
-
-  try{
-
-    const res = await fetch(
-      `${BACKEND_URL}/comments?bookId=${bookId}`
-    );
-
+async function loadCommentsCount(book) {
+  try {
+    const res = await fetch(`${BACKEND_URL}/comments?bookId=${book.id}`);
     const data = await res.json();
+    const el = document.getElementById(`comments-count-${book.id}`);
+    if (el && data.success) { el.innerHTML = `💬 ${data.comments.length}`; }
+  } catch (e) { console.log(e); }
+}
 
+async function showComments(bookId) {
+  try {
+    const res = await fetch(`${BACKEND_URL}/comments?bookId=${bookId}`);
+    const data = await res.json();
     let html = "";
-
-    // هل المستخدم علق من قبل؟
-const checkRes = await fetch(
-  `${BACKEND_URL}/has-comment?bookId=${bookId}&userUid=${userUid}`
-);
-
-const checkData = await checkRes.json();
-
-if(checkData.success && !checkData.commented){
-
-  html += `
-  <div style="margin-bottom:15px;">
-
-    <textarea
-      id="newComment"
-      placeholder="Write your comment..."
-      style="
-        width:100%;
-        height:80px;
-        border-radius:12px;
-        padding:10px;
-      ">
-    </textarea>
-
-    <button
-      style="margin-top:10px;"
-      onclick="addComment('${bookId}')">
-
-      Add Comment
-
-    </button>
-
-  </div>
-  `;
-
-}
-
-    if(!data.success || data.comments.length===0){
-
-      html +=
-"<div style='padding:20px;text-align:center;'>No comments yet.</div>";
-
-    }else{
-
-      data.comments.forEach(c=>{
-
-     html += `
-<div style="margin:0;padding:0;">
-  <div style="
-    color:#00f5ff;
-    font-weight:bold;
-    font-size:13px;
-  ">
-    ${c.username}
-  </div>
-
-  <div style="
-    color:white;
-    margin-bottom:6px;
-  ">
-    ${c.text}
-  </div>
-</div>
-`;
+    const checkRes = await fetch(`${BACKEND_URL}/has-comment?bookId=${bookId}&userUid=${userUid}`);
+    const checkData = await checkRes.json();
+    if (checkData.success && !checkData.commented) {
+      html += `
+        <div style="margin-bottom:15px;">
+          <textarea id="newComment" placeholder="Write your comment..." style="width:100%;height:80px;border-radius:12px;padding:10px;"></textarea>
+          <button style="margin-top:10px;" onclick="addComment('${bookId}')">Add Comment</button>
+        </div>`;
+    }
+    if (!data.success || data.comments.length === 0) {
+      html += "<div style='padding:20px;text-align:center;'>No comments yet.</div>";
+    } else {
+      data.comments.forEach(c => {
+        html += `
+          <div style="margin:0;padding:0;">
+            <div style="color:#00f5ff;font-weight:bold;font-size:13px;">${c.username}</div>
+            <div style="color:white;margin-bottom:6px;">${c.text}</div>
+          </div>`;
       });
-
     }
-
-    openModal(
-      "Comments",
-      html
-    );
-
-  }catch(e){
-
-    openModal(
-      "Comments",
-      "<div style='padding:20px;text-align:center;'>Failed to load comments.</div>"
-    );
-
+    openModal("Comments", html);
+  } catch (e) {
+    openModal("Comments", "<div style='padding:20px;text-align:center;'>Failed to load comments.</div>");
   }
-
 }
 
-async function addComment(bookId){
-
-  const text =
-    document.getElementById("newComment").value.trim();
-
-  if(!text){
-
-    alert("Write a comment");
-
-    return;
-
-  }
-
-  const res = await fetch(
-
-    `${BACKEND_URL}/add-comment`,
-
-    {
-
-      method:"POST",
-
-      headers:{
-        "Content-Type":"application/json"
-      },
-
-      body:JSON.stringify({
-
-        bookId,
-
-        userUid,
-
-        accessToken:window.accessToken,
-
-        text
-
-      })
-
-    }
-
-  );
-
+async function addComment(bookId) {
+  const text = document.getElementById("newComment").value.trim();
+  if (!text) { alert("Write a comment"); return; }
+  const res = await fetch(`${BACKEND_URL}/add-comment`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bookId, userUid, accessToken: window.accessToken, text })
+  });
   const data = await res.json();
-
-  if(data.success){
-
-    showComments(bookId);
-
-    loadCommentsCount({id:bookId});
-
-  }else{
-
-    alert(data.error);
-
-  }
-
+  if (data.success) { showComments(bookId); loadCommentsCount({ id: bookId }); }
+  else { alert(data.error); }
 }
-  
 </script>
-  <!-- Modal for Privacy Policy / Terms -->
+
+<!-- Modal -->
 <div id="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999;">
-<div class="modal-content-box">
+  <div class="modal-content-box">
     <h2 id="modal-title"></h2>
     <div id="modal-content"></div>
-    <div style="
-position:sticky;
-bottom:0;
-background:#0f172a;
-padding-top:10px;
-">
-<button
-onclick="closeModal()"
-style="
-padding:14px 26px;
-border:none;
-border-radius:16px;
-cursor:pointer;
-font-size:15px;
-font-weight:700;
-color:white;
-background:linear-gradient(135deg,#00f5ff,#8b5cf6,#ff4ecd);
-">
-Close
-</button>
-</div>
+    <div style="position:sticky;bottom:0;background:#0f172a;padding-top:10px;">
+      <button onclick="closeModal()" style="padding:14px 26px;border:none;border-radius:16px;cursor:pointer;font-size:15px;font-weight:700;color:white;background:linear-gradient(135deg,#00f5ff,#8b5cf6,#ff4ecd);">
+        Close
+      </button>
+    </div>
   </div>
 </div>
 
+<button id="storeFloatBtn" onclick="goToStoreTop()">↑</button>
 
-<button
-  id="storeFloatBtn"
-  onclick="goToStoreTop()"
->
-↑
-</button>
-
-
-  <div style="margin:20px;">
-
- <button
-  id="privacyBtn"
-  onclick="window.open('https://spicylibrary.online/privacy_policy','_blank')"
->
-  Privacy Policy
-</button>
-
-<button
-  id="termsBtn"
-  onclick="window.open('https://spicylibrary.online/terms_of_service','_blank')"
->
-  Terms of Service
-</button>
-
+<div style="margin:20px;">
+  <button id="privacyBtn" onclick="window.open('https://spicylibrary.online/privacy_policy','_blank')">Privacy Policy</button>
+  <button id="termsBtn" onclick="window.open('https://spicylibrary.online/terms_of_service','_blank')">Terms of Service</button>
 </div>
 
 <div id="toast" class="toast hidden"></div>
@@ -3328,32 +1276,5 @@ Close
   </div>
 </div>
 
-
-  <div id="walletModal" class="modal hidden">
-  <div class="modal-box">
-
-    <h3>Pi Wallet</h3>
-
-    <input
-      id="walletInput"
-      type="text"
-      placeholder="Enter your Pi Wallet Address"
-    >
-
-    <div class="modal-actions">
-      <button id="saveWalletBtn">
-        Save
-      </button>
-
-      <button onclick="closeWalletModal()">
-        Cancel
-      </button>
-    </div>
-
-  </div>
-</div>
-  
 </body>
-
-
 </html>
