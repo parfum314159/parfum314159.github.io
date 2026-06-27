@@ -1384,11 +1384,12 @@ async function login() {
   onIncompletePaymentFound
 );
     user = authResult.user;
+    window.user = authResult.user;
     userUid = user.uid;
     localStorage.setItem("userUid", user.uid);
 localStorage.setItem("username", user.username);
     window.accessToken = authResult.accessToken;
-
+window.walletAddress = authResult.user.wallet_address || null;
     // حفظ عنوان المحفظة تلقائياً من Pi SDK
 if (authResult.user.wallet_address) {
   fetch(`${BACKEND_URL}/save-wallet`, {
@@ -2124,7 +2125,47 @@ document.getElementById("payoutBtn").disabled = totalEarnings < 5;
 async function requestPayout() {
 
   // فحص وجود محفظة محفوظة
+// إذا لم يكن لدينا عنوان المحفظة أو accessToken
+// نطلب من Pi SDK إعادة المصادقة للحصول على wallet_address
 
+if (!window.accessToken || !window.user?.wallet_address) {
+
+  try {
+
+    const authResult = await Pi.authenticate(
+      ["username", "payments", "wallet_address"],
+      onIncompletePaymentFound
+    );
+
+    window.accessToken = authResult.accessToken;
+    window.user = authResult.user;
+
+    // حفظ المحفظة في قاعدة البيانات
+    if (authResult.user.wallet_address) {
+
+      await fetch(`${BACKEND_URL}/save-wallet`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userUid: authResult.user.uid,
+          accessToken: authResult.accessToken,
+          walletAddress: authResult.user.wallet_address
+        })
+      });
+
+    }
+
+  } catch (e) {
+
+    alert("Wallet permission is required.");
+
+    return;
+
+  }
+
+}
    
 const btn = document.getElementById("payoutBtn");
 
