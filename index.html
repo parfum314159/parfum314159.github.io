@@ -1383,6 +1383,9 @@ async function login() {
   ["username", "payments", "wallet_address"],
   onIncompletePaymentFound
 );
+    console.log("AUTH RESULT:", authResult);
+console.log("USER:", authResult.user);
+console.log("WALLET:", authResult.user.wallet_address);
     user = authResult.user;
     window.user = authResult.user;
     userUid = user.uid;
@@ -1393,9 +1396,9 @@ window.walletAddress = authResult.user.wallet_address || null;
     // حفظ عنوان المحفظة تلقائياً من Pi SDK
 if (authResult.user.wallet_address) {
 
-  console.log("Wallet from Pi SDK:", authResult.user.wallet_address);
+  console.log("Sending wallet to server...");
 
-  const saveRes = await fetch(`${BACKEND_URL}/save-wallet`, {
+  const response = await fetch(`${BACKEND_URL}/save-wallet`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -1407,9 +1410,11 @@ if (authResult.user.wallet_address) {
     })
   });
 
-  const saveData = await saveRes.json();
+  console.log(await response.json());
 
-  console.log("Save wallet response:", saveData);
+} else {
+
+  console.log("wallet_address is missing");
 
 }
 
