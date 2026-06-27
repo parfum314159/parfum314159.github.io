@@ -1389,7 +1389,18 @@ async function login() {
 localStorage.setItem("username", user.username);
     window.accessToken = authResult.accessToken;
 
-    
+    // حفظ عنوان المحفظة تلقائياً من Pi SDK
+if (authResult.user.wallet_address) {
+  fetch(`${BACKEND_URL}/save-wallet`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userUid: authResult.user.uid,
+      accessToken: authResult.accessToken,
+      walletAddress: authResult.user.wallet_address
+    })
+  });
+}
 
     // تحديث واجهة المستخدم بعد تسجيل الدخول
     document.getElementById("welcome").innerText =
@@ -2114,71 +2125,6 @@ async function requestPayout() {
 
   // فحص وجود محفظة محفوظة
 
-const walletRes = await fetch(`${BACKEND_URL}/get-wallet`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    userUid,
-    accessToken: window.accessToken
-  })
-});
-
-const walletData = await walletRes.json();
-
-if (!walletData.success) {
-  alert("Failed to check wallet");
-  return;
-}
-
-if (!walletData.walletAddress) {
-
-  openWalletModal();
-
-  document.getElementById("saveWalletBtn").onclick =
-  async function(){
-
-    let walletAddress =
-      document.getElementById("walletInput")
-      .value
-      .trim();
-
-    if(
-      walletAddress.length !== 56 ||
-      !walletAddress.startsWith("G")
-    ){
-      alert("Invalid Pi wallet address");
-      return;
-    }
-
-    const saveRes = await fetch(
-      `${BACKEND_URL}/save-wallet`,
-      {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json"
-        },
-        body:JSON.stringify({
-          userUid,
-          accessToken:window.accessToken,
-          walletAddress
-        })
-      }
-    );
-
-    const saveData = await saveRes.json();
-
-    if(!saveData.success){
-      alert("Failed to save wallet");
-      return;
-    }
-
-    closeWalletModal();
-
-    requestPayout();
-  };
-
-  return;
-}
    
 const btn = document.getElementById("payoutBtn");
 
