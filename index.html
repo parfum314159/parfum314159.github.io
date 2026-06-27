@@ -2217,7 +2217,21 @@ body: JSON.stringify({
       return;
     }
 
-   openModal("🎉 Payout Successful 🎉", `TXID:\n${data.txid}`);
+  if (data.pending) {
+
+  openModal(
+    "⏳ Payout Submitted",
+    `Payment ID:\n${data.paymentId}\n\nWaiting for Pi Network to complete the transaction.`
+  );
+
+} else {
+
+  openModal(
+    "🎉 Payout Successful 🎉",
+    `TXID:\n${data.txid}`
+  );
+
+}
 
     loadMySales();
 
