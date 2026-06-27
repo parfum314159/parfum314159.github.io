@@ -2204,17 +2204,68 @@ body: JSON.stringify({
       return;
     }
 
-  if (data.pending) {
+ if (data.pending) {
 
   openModal(
     "⏳ Payout Submitted",
     `Payment ID:\n${data.paymentId}\n\nWaiting for Pi Network to complete the transaction.`
   );
 
+  // متابعة حالة السحب
+  const interval = setInterval(async () => {
+
+    try {
+
+      const checkRes = await fetch(
+        `${BACKEND_URL}/check-payout/${data.paymentId}`
+      );
+
+      const checkData = await checkRes.json();
+
+      // ما زالت قيد الانتظار
+      if (checkData.status === "pending") {
+        return;
+      }
+
+      // ألغيت
+      if (checkData.status === "cancelled") {
+
+        clearInterval(interval);
+
+        openModal(
+          "❌ Payout Cancelled",
+          "The payout has been cancelled."
+        );
+
+        return;
+      }
+
+      // اكتملت
+      if (checkData.status === "completed") {
+
+        clearInterval(interval);
+
+        openModal(
+          "🎉 Payout Successful",
+          `TXID:\n${checkData.txid}`
+        );
+
+        await loadMySales();
+
+      }
+
+    } catch (err) {
+
+      console.error(err);
+
+    }
+
+  }, 5000);
+
 } else {
 
   openModal(
-    "🎉 Payout Successful 🎉",
+    "🎉 Payout Successful",
     `TXID:\n${data.txid}`
   );
 
