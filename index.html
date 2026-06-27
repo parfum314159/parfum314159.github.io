@@ -395,27 +395,53 @@ function checkSaveReady() {
 
 /* ================= INCOMPLETE PAYMENT HANDLER ================= */
 async function onIncompletePaymentFound(incompletePayment) {
-  alert("A previous pending payment was detected... Attempting to complete it automatically");
   console.log("Incomplete payment found:", incompletePayment);
+
+  const paymentId = incompletePayment.identifier;
+  const txid      = incompletePayment.transaction?.txid || null;
+  const type      = incompletePayment.metadata?.type || "purchase";
+
   try {
+    // === دفعة سحب أرباح معلقة ===
+    if (type === "payout") {
+      const response = await fetch(`${BACKEND_URL}/resolve-incomplete-payout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId, txid })
+      });
+
+      if (!response.ok) {
+        console.error("Failed to resolve pending payout");
+        // لا نعرض alert — نترك المستخدم يكمل تسجيل الدخول
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        showToast("✅ Previous payout resolved successfully!");
+        // تحديث صفحة المبيعات لو كانت مفتوحة
+        if (typeof loadMySales === "function") loadMySales();
+      }
+      return;
+    }
+
+    // === دفعة شراء كتاب معلقة ===
     const response = await fetch(`${BACKEND_URL}/complete-payment`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        paymentId: incompletePayment.identifier,
-        txid: incompletePayment.transaction?.txid
-      })
+      body: JSON.stringify({ paymentId, txid })
     });
+
     if (!response.ok) {
-      const err = await response.json();
-      console.error("Failed to complete pending payment:", err);
-      alert("Failed to automatically complete the pending payment.\nPlease go to developers.minepi.com to complete or cancel it manually.");
+      console.error("Failed to complete pending purchase");
       return;
     }
-    alert("Pending payment completed successfully!\nYou can now make new purchases.");
+
+    showToast("✅ Previous purchase completed!");
+    if (typeof loadMyPurchases === "function") loadMyPurchases();
+
   } catch (err) {
-    console.error("Error completing pending payment:", err);
-    alert("Error completing pending payment.\nPlease try again or complete it manually from the developer dashboard.");
+    console.error("Error handling incomplete payment:", err);
   }
 }
 
@@ -833,44 +859,54 @@ async function requestPayout() {
       return;
     }
 
-    const { paymentId, amount } = initData;
+    const { amount } = initData;
 
-    // الخطوة 2: Pi SDK يعرض واجهة الدفع للمستخدم ليوافق
+    // الخطوة 2: Pi SDK يعرض واجهة الدفع
+    // ⚠️ metadata.type = "payout" مهم جداً لـ onIncompletePaymentFound
     await Pi.createPayment({
       amount: amount,
       memo: "Spicy Library - Author Earnings Payout",
       metadata: {
-        type: "payout",
-        userUid,
-        paymentId
+        type: "payout",          // ← مهم: يميّز السحب عن الشراء
+        userUid: userUid
       }
     }, {
       // الخطوة 3a: السيرفر يوافق
       onReadyForServerApproval: async (piPaymentId) => {
-        await fetch(`${BACKEND_URL}/approve-payout`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId: piPaymentId })
-        });
+        try {
+          const res = await fetch(`${BACKEND_URL}/approve-payout`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId: piPaymentId })
+          });
+          if (!res.ok) console.error("Approve payout failed:", await res.text());
+        } catch (e) {
+          console.error("Approve payout error:", e);
+        }
       },
 
       // الخطوة 3b: السيرفر يُكمل وتُصفَّر الأرباح
       onReadyForServerCompletion: async (piPaymentId, txid) => {
-        const completeRes = await fetch(`${BACKEND_URL}/complete-payout`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId: piPaymentId, txid })
-        });
-        const completeData = await completeRes.json();
-        if (!completeData.success) {
-          showToast(completeData.error || "Payout completion failed");
-          return;
+        try {
+          const completeRes = await fetch(`${BACKEND_URL}/complete-payout`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId: piPaymentId, txid })
+          });
+          const completeData = await completeRes.json();
+          if (!completeData.success) {
+            showToast(completeData.error || "Payout completion failed");
+            return;
+          }
+          openModal(
+            "🎉 Payout Successful 🎉",
+            `Amount: ${amount} Pi sent to your Pi wallet!\n\nTXID: ${txid}`
+          );
+          loadMySales();
+        } catch (e) {
+          console.error("Complete payout error:", e);
+          showToast("Payout completion error");
         }
-        openModal(
-          "🎉 Payout Successful 🎉",
-          `Amount: ${amount} Pi\nTXID: ${txid}\n\nThe Pi has been sent directly to your wallet!`
-        );
-        loadMySales();
       },
 
       onCancel: () => {
@@ -878,13 +914,14 @@ async function requestPayout() {
       },
 
       onError: (err) => {
-        showToast("Payout error: " + err.message);
+        console.error("Pi payout error:", err);
+        showToast("Payout error: " + (err.message || err));
       }
     });
 
   } catch (e) {
     console.error("Payout error:", e);
-    alert("Payout failed: " + e.message);
+    showToast("Payout failed: " + e.message);
   } finally {
     btn.disabled = false;
     btn.innerHTML = oldText;
