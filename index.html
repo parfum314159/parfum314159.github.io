@@ -1392,15 +1392,25 @@ localStorage.setItem("username", user.username);
 window.walletAddress = authResult.user.wallet_address || null;
     // حفظ عنوان المحفظة تلقائياً من Pi SDK
 if (authResult.user.wallet_address) {
-  fetch(`${BACKEND_URL}/save-wallet`, {
+
+  console.log("Wallet from Pi SDK:", authResult.user.wallet_address);
+
+  const saveRes = await fetch(`${BACKEND_URL}/save-wallet`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({
       userUid: authResult.user.uid,
       accessToken: authResult.accessToken,
       walletAddress: authResult.user.wallet_address
     })
   });
+
+  const saveData = await saveRes.json();
+
+  console.log("Save wallet response:", saveData);
+
 }
 
     // تحديث واجهة المستخدم بعد تسجيل الدخول
