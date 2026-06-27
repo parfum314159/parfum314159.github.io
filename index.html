@@ -853,23 +853,30 @@ async function requestPayout() {
 
     const initData = await initRes.json();
     if (!initData.success) {
-      showToast(initData.error || "Payout initialization failed");
-      btn.disabled = false;
-      btn.innerHTML = oldText;
-      return;
+
+    if (initData.pending) {
+        showToast("You already have a payout in progress. Please wait a few moments.");
+    } else {
+        showToast(initData.error || "Payout initialization failed");
     }
 
-    const { amount } = initData;
+    btn.disabled = false;
+    btn.innerHTML = oldText;
+    return;
+}
 
+    const { amount } = initData;
+const paymentId = initData.paymentId;
     // الخطوة 2: Pi SDK يعرض واجهة الدفع
     // ⚠️ metadata.type = "payout" مهم جداً لـ onIncompletePaymentFound
     await Pi.createPayment({
       amount: amount,
       memo: "Spicy Library - Author Earnings Payout",
-      metadata: {
-        type: "payout",          // ← مهم: يميّز السحب عن الشراء
-        userUid: userUid
-      }
+     metadata: {
+    type: "payout",
+    paymentId: paymentId,
+    userUid: userUid
+}
     }, {
       // الخطوة 3a: السيرفر يوافق
       onReadyForServerApproval: async (piPaymentId) => {
