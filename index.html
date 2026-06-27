@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>📚 Spicy Library</title>
-<script src="https://sdk.minepi.com/v2/pi-sdk.js"></script>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
 <style>
 
@@ -1380,47 +1380,17 @@ async function login() {
   try {
     // تسجيل الدخول عبر Pi
     const authResult = await Pi.authenticate(
-  ["username", "payments", "wallet_address"],
-  onIncompletePaymentFound
-);
-    alert(
-  "wallet=" + authResult.wallet_address +
-  "\nuser.wallet=" + authResult.user?.wallet_address
-);
-    console.log("AUTH RESULT:", authResult);
-console.log("USER:", authResult.user);
-console.log("WALLET:", authResult.user.wallet_address);
+      ["username", "payments"],
+      onIncompletePaymentFound
+    );
+
     user = authResult.user;
-    window.user = authResult.user;
     userUid = user.uid;
     localStorage.setItem("userUid", user.uid);
 localStorage.setItem("username", user.username);
     window.accessToken = authResult.accessToken;
-window.walletAddress = authResult.user.wallet_address || null;
-    // حفظ عنوان المحفظة تلقائياً من Pi SDK
-if (authResult.user.wallet_address) {
 
-  console.log("Sending wallet to server...");
-
-  const response = await fetch(`${BACKEND_URL}/save-wallet`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      userUid: authResult.user.uid,
-      accessToken: authResult.accessToken,
-      walletAddress: authResult.user.wallet_address
-    })
-  });
-
-  console.log(await response.json());
-
-} else {
-
-  console.log("wallet_address is missing");
-
-}
+    
 
     // تحديث واجهة المستخدم بعد تسجيل الدخول
     document.getElementById("welcome").innerText =
@@ -2144,46 +2114,71 @@ document.getElementById("payoutBtn").disabled = totalEarnings < 5;
 async function requestPayout() {
 
   // فحص وجود محفظة محفوظة
-// إذا لم يكن لدينا عنوان المحفظة أو accessToken
-// نطلب من Pi SDK إعادة المصادقة للحصول على wallet_address
 
-if (!window.accessToken || !window.user?.wallet_address) {
+const walletRes = await fetch(`${BACKEND_URL}/get-wallet`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    userUid,
+    accessToken: window.accessToken
+  })
+});
 
-  try {
+const walletData = await walletRes.json();
 
-    const authResult = await Pi.authenticate(
-      ["username", "payments", "wallet_address"],
-      onIncompletePaymentFound
-    );
+if (!walletData.success) {
+  alert("Failed to check wallet");
+  return;
+}
 
-    window.accessToken = authResult.accessToken;
-    window.user = authResult.user;
+if (!walletData.walletAddress) {
 
-    // حفظ المحفظة في قاعدة البيانات
-    if (authResult.user.wallet_address) {
+  openWalletModal();
 
-      await fetch(`${BACKEND_URL}/save-wallet`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          userUid: authResult.user.uid,
-          accessToken: authResult.accessToken,
-          walletAddress: authResult.user.wallet_address
-        })
-      });
+  document.getElementById("saveWalletBtn").onclick =
+  async function(){
 
+    let walletAddress =
+      document.getElementById("walletInput")
+      .value
+      .trim();
+
+    if(
+      walletAddress.length !== 56 ||
+      !walletAddress.startsWith("G")
+    ){
+      alert("Invalid Pi wallet address");
+      return;
     }
 
-  } catch (e) {
+    const saveRes = await fetch(
+      `${BACKEND_URL}/save-wallet`,
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          userUid,
+          accessToken:window.accessToken,
+          walletAddress
+        })
+      }
+    );
 
-    alert("Wallet permission is required.");
+    const saveData = await saveRes.json();
 
-    return;
+    if(!saveData.success){
+      alert("Failed to save wallet");
+      return;
+    }
 
-  }
+    closeWalletModal();
 
+    requestPayout();
+  };
+
+  return;
 }
    
 const btn = document.getElementById("payoutBtn");
@@ -2223,72 +2218,7 @@ body: JSON.stringify({
       return;
     }
 
- if (data.pending) {
-
-  openModal(
-    "⏳ Payout Submitted",
-    `Payment ID:\n${data.paymentId}\n\nWaiting for Pi Network to complete the transaction.`
-  );
-
-  // متابعة حالة السحب
-  const interval = setInterval(async () => {
-
-    try {
-
-      const checkRes = await fetch(
-        `${BACKEND_URL}/check-payout/${data.paymentId}`
-      );
-
-      const checkData = await checkRes.json();
-
-      // ما زالت قيد الانتظار
-      if (checkData.status === "pending") {
-        return;
-      }
-
-      // ألغيت
-      if (checkData.status === "cancelled") {
-
-        clearInterval(interval);
-
-        openModal(
-          "❌ Payout Cancelled",
-          "The payout has been cancelled."
-        );
-
-        return;
-      }
-
-      // اكتملت
-      if (checkData.status === "completed") {
-
-        clearInterval(interval);
-
-        openModal(
-          "🎉 Payout Successful",
-          `TXID:\n${checkData.txid}`
-        );
-
-        await loadMySales();
-
-      }
-
-    } catch (err) {
-
-      console.error(err);
-
-    }
-
-  }, 5000);
-
-} else {
-
-  openModal(
-    "🎉 Payout Successful",
-    `TXID:\n${data.txid}`
-  );
-
-}
+   openModal("🎉 Payout Successful 🎉", `TXID:\n${data.txid}`);
 
     loadMySales();
 
