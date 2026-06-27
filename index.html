@@ -1380,10 +1380,9 @@ async function login() {
   try {
     // تسجيل الدخول عبر Pi
     const authResult = await Pi.authenticate(
-      ["username", "payments"],
-      onIncompletePaymentFound
-    );
-
+  ["username", "payments", "wallet_address"],
+  onIncompletePaymentFound
+);
     user = authResult.user;
     userUid = user.uid;
     localStorage.setItem("userUid", user.uid);
