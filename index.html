@@ -220,13 +220,13 @@ async function onIncompletePaymentFound(payment){
 async function login(){
   try{
     const auth=await Pi.authenticate(
-      ["username","payments","wallet_address"],  // ← wallet_address مضاف هنا
-      onIncompletePaymentFound
-    );
+  ["username","payments"],
+  onIncompletePaymentFound
+);
     user=auth.user;
     userUid=user.uid;
     /* تخزين عنوان المحفظة إذا أتى مع نتيجة المصادقة */
-    userWalletAddress = auth.user?.wallet_address || null;
+    userWalletAddress = null;
     localStorage.setItem("userUid",user.uid);
     localStorage.setItem("username",user.username);
     window.accessToken=auth.accessToken;
@@ -461,11 +461,10 @@ async function requestPayout(){
   try{
     const res=await fetch(`${BACKEND_URL}/request-payout`,{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        userUid,
-        accessToken:window.accessToken,
-        walletAddress: userWalletAddress || null  // ← عنوان المحفظة من Pi SDK
-      })
+      body: JSON.stringify({
+    userUid,
+    accessToken: window.accessToken
+})
     });
     const data=await res.json();
     if(!data.success){
@@ -557,7 +556,10 @@ window.addEventListener("message",async(event)=>{
     };
     if(!user){
       try{
-        const auth=await Pi.authenticate(["username","payments","wallet_address"],onIncompletePaymentFound);
+        const auth=await Pi.authenticate(
+  ["username","payments"],
+  onIncompletePaymentFound
+);
         user=auth.user; userUid=user.uid; window.accessToken=auth.accessToken;
         userWalletAddress=auth.user?.wallet_address||null;
         document.getElementById("welcome").innerText=`Welcome, ${user.username}!`;
