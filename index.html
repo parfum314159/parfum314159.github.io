@@ -225,8 +225,9 @@ async function login(){
     );
     user=auth.user;
     userUid=user.uid;
+   
     /* تخزين عنوان المحفظة إذا أتى مع نتيجة المصادقة */
-    userWalletAddress = null;
+    userWalletAddress = auth.user?.wallet_address || null;
     localStorage.setItem("userUid",user.uid);
     localStorage.setItem("username",user.username);
     window.accessToken=auth.accessToken;
@@ -461,10 +462,11 @@ async function requestPayout(){
   try{
     const res=await fetch(`${BACKEND_URL}/request-payout`,{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-    userUid,
-    accessToken: window.accessToken
-})
+      body:JSON.stringify({
+        userUid,
+        accessToken:window.accessToken,
+        walletAddress: userWalletAddress || null  // ← عنوان المحفظة من Pi SDK
+      })
     });
     const data=await res.json();
     if(!data.success){
