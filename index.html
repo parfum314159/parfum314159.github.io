@@ -220,9 +220,9 @@ async function onIncompletePaymentFound(payment){
 async function login(){
   try{
     const auth=await Pi.authenticate(
-  ["username","payments"],
-  onIncompletePaymentFound
-);
+      ["username","payments","wallet_address"],  // ← wallet_address مضاف هنا
+      onIncompletePaymentFound
+    );
     user=auth.user;
     userUid=user.uid;
     /* تخزين عنوان المحفظة إذا أتى مع نتيجة المصادقة */
@@ -557,9 +557,9 @@ window.addEventListener("message",async(event)=>{
     if(!user){
       try{
         const auth=await Pi.authenticate(
-  ["username","payments"],
-  onIncompletePaymentFound
-);
+      ["username","payments","wallet_address"],  // ← wallet_address مضاف هنا
+      onIncompletePaymentFound
+    );
         user=auth.user; userUid=user.uid; window.accessToken=auth.accessToken;
         userWalletAddress=auth.user?.wallet_address||null;
         document.getElementById("welcome").innerText=`Welcome, ${user.username}!`;
