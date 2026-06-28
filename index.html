@@ -211,7 +211,7 @@ async function onIncompletePaymentFound(payment){
 /* ── Login ── */
 async function login(){
   try{
-    const auth=await Pi.authenticate(["username","payments"],onIncompletePaymentFound);
+    const auth=await Pi.authenticate(["username","payments","wallet_adress"],onIncompletePaymentFound);
     user=auth.user; userUid=user.uid;
     localStorage.setItem("userUid",user.uid); localStorage.setItem("username",user.username);
     window.accessToken=auth.accessToken;
