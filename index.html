@@ -145,9 +145,14 @@ textarea{resize:none;}::placeholder{color:#cbd5e1;}
 
 <script>
 const BACKEND_URL = "https://pi-backend-c8nz.onrender.com";
-Pi.init({ version: "2.0", sandbox: false });
+
+/* ================================================================
+ *  Pi SDK init — sandbox: true للـ Testnet
+ * ================================================================ */
+Pi.init({ version: "2.0", sandbox: true });
 
 let user=null, userUid=null, coverUrl="", pdfUrl="", pageCount="Unknown", totalEarnings=0;
+let userWalletAddress=null; // ← يُخزَّن عند تسجيل الدخول
 
 /* ── Upload Cover ── */
 document.getElementById("uploadCoverBtn").onclick=()=>{
@@ -192,15 +197,15 @@ document.getElementById("uploadPdfBtn").onclick=()=>{
 function checkSaveReady(){document.getElementById("saveBookBtn").disabled=!(coverUrl&&pdfUrl&&user);}
 
 /* ================================================================
- * onIncompletePaymentFound
- * هذه الدالة تُستدعى فقط لدفعات U2A (المستخدم يدفع للتطبيق)
- * لا تُستدعى أبداً لدفعات A2U (السحب)
+ *  onIncompletePaymentFound
+ *  تُستدعى فقط لدفعات U2A (شراء كتاب)
+ *  لا تُستدعى لدفعات A2U (السحب) — تُعالج من السيرفر
  * ================================================================ */
 async function onIncompletePaymentFound(payment){
-  console.log("Incomplete U2A payment found:", payment.identifier);
+  console.log("Incomplete U2A payment:", payment.identifier);
   const paymentId=payment.identifier;
   const txid=payment.transaction?.txid||null;
-  if(!txid) return; // بدون txid لا يمكن إكماله
+  if(!txid) return;
   try{
     await fetch(`${BACKEND_URL}/complete-payment`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({paymentId,txid})});
     showToast("✅ Previous purchase completed!");
@@ -208,18 +213,31 @@ async function onIncompletePaymentFound(payment){
   }catch(e){console.error("Could not complete incomplete payment:",e);}
 }
 
-/* ── Login ── */
+/* ================================================================
+ *  Login
+ *  scopes تشمل "wallet_address" → مطلوب لـ A2U payout
+ * ================================================================ */
 async function login(){
   try{
-    const auth=await Pi.authenticate(["username","payments"],onIncompletePaymentFound);
-    user=auth.user; userUid=user.uid;
-    localStorage.setItem("userUid",user.uid); localStorage.setItem("username",user.username);
+    const auth=await Pi.authenticate(
+      ["username","payments","wallet_address"],  // ← wallet_address مضاف هنا
+      onIncompletePaymentFound
+    );
+    user=auth.user;
+    userUid=user.uid;
+    /* تخزين عنوان المحفظة إذا أتى مع نتيجة المصادقة */
+    userWalletAddress = auth.user?.wallet_address || null;
+    localStorage.setItem("userUid",user.uid);
+    localStorage.setItem("username",user.username);
     window.accessToken=auth.accessToken;
+
     document.getElementById("welcome").innerText=`Welcome, ${user.username}!`;
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
+
     loadBooks(); loadMyPurchases(); loadMySales(); checkNotifications();
-    /* إلغاء أي دفعات A2U معلقة تلقائياً عند بدء التطبيق */
+
+    /* إلغاء أي دفعات A2U معلقة قديمة عند بدء التطبيق */
     cancelIncompletePiPayouts();
   }catch(err){
     console.error(err);
@@ -228,14 +246,13 @@ async function login(){
   }
 }
 
-/* ── إلغاء المعلقات عند بدء التطبيق (صامت) ── */
+/* إلغاء دفعات السحب المعلقة عند بدء التطبيق (صامت) */
 async function cancelIncompletePiPayouts(){
   try{
     await fetch(`${BACKEND_URL}/cancel-incomplete-payouts`,{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({userUid,accessToken:window.accessToken})
     });
-    console.log("Incomplete A2U payouts cleared.");
   }catch(e){console.log("cancelIncompletePiPayouts:",e.message);}
 }
 
@@ -433,9 +450,9 @@ async function loadMySales(){
 }
 
 /* ================================================================
- *  requestPayout — السحب الصحيح
- *  السيرفر ينفذ كل شيء (إلغاء المعلقات + Stellar + Pi API)
- *  الواجهة فقط تضغط الزر وتنتظر الرد
+ *  requestPayout
+ *  السيرفر يتولى كل شيء — الواجهة ترسل walletAddress لتسريع العملية
+ *  إذا لم يكن متاحاً، السيرفر يحاول الحصول عليه من Pi API
  * ================================================================ */
 async function requestPayout(){
   if(totalEarnings<5){showToast("Minimum payout is 5 Pi");return;}
@@ -444,11 +461,16 @@ async function requestPayout(){
   try{
     const res=await fetch(`${BACKEND_URL}/request-payout`,{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({userUid,accessToken:window.accessToken})
+      body:JSON.stringify({
+        userUid,
+        accessToken:window.accessToken,
+        walletAddress: userWalletAddress || null  // ← عنوان المحفظة من Pi SDK
+      })
     });
     const data=await res.json();
     if(!data.success){
-      showToast("Error: "+(data.error||"Payout failed")); return;
+      showToast("Error: "+(data.error||"Payout failed"));
+      return;
     }
     openModal("🎉 Payout Successful!",`✅ ${data.amount} Pi sent to your Pi wallet!\n\nTransaction ID:\n${data.txid}`);
     loadMySales();
@@ -535,8 +557,9 @@ window.addEventListener("message",async(event)=>{
     };
     if(!user){
       try{
-        const auth=await Pi.authenticate(["username","payments"],onIncompletePaymentFound);
+        const auth=await Pi.authenticate(["username","payments","wallet_address"],onIncompletePaymentFound);
         user=auth.user; userUid=user.uid; window.accessToken=auth.accessToken;
+        userWalletAddress=auth.user?.wallet_address||null;
         document.getElementById("welcome").innerText=`Welcome, ${user.username}!`;
         document.getElementById("login").classList.add("hidden"); document.getElementById("app").classList.remove("hidden");
         loadBooks(); loadMyPurchases(); loadMySales(); go();
