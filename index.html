@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>📚 Spicy Library</title>
-<script src="https://sdk.minepi.com/pi2-sdk.js"></script>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Segoe UI',sans-serif;background:radial-gradient(circle at top left,#172554 0%,#0f172a 35%,#020617 100%);color:white;text-align:center;min-height:100vh;padding:20px;overflow-x:hidden;}
@@ -211,7 +211,7 @@ async function onIncompletePaymentFound(payment){
 /* ── Login ── */
 async function login(){
   try{
-    const auth=await Pi.authenticate(["username","payments","wallet_adress"],onIncompletePaymentFound);
+    const auth=await Pi.authenticate(["username","payments"],onIncompletePaymentFound);
     user=auth.user; userUid=user.uid;
     localStorage.setItem("userUid",user.uid); localStorage.setItem("username",user.username);
     window.accessToken=auth.accessToken;
