@@ -453,7 +453,19 @@ const loginBtn=document.getElementById("loginBtn");
 loginBtn.onclick=async function(){
   loginBtn.disabled=true; const old=loginBtn.innerHTML;
   loginBtn.innerHTML=`Logging in <span class="spinner"></span>`;
-  try{await login();}finally{loginBtn.disabled=false;loginBtn.innerHTML=old;}
+  let timeoutId;
+  const timeout=new Promise((_,reject)=>{ timeoutId=setTimeout(()=>reject(new Error("login_timeout")),15000); });
+  try{
+    await Promise.race([login(),timeout]);
+  }catch(e){
+    if(e&&e.message==="login_timeout"){
+      window.modalType="login";
+      openModal(translations[currentLang].loginRequiredTitle,translations[currentLang].loginRequiredText);
+    }
+  }finally{
+    clearTimeout(timeoutId);
+    loginBtn.disabled=false;loginBtn.innerHTML=old;
+  }
 };
 
 function logout(){location.reload();}
@@ -568,6 +580,7 @@ let isRenderingBooks=false;
 async function renderBooks(booksArray,page){
   const lang=localStorage.getItem("appLanguage")||"en",t=translations[lang];
   if(isRenderingBooks) return; isRenderingBooks=true;
+  booksArray=[...booksArray].sort((a,b)=>(b.featured?1:0)-(a.featured?1:0));
   currentBooksList=booksArray;
   currentPage=page||1;
   const box=document.getElementById("books"); box.innerHTML="";
