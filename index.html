@@ -1497,7 +1497,7 @@ async function addComment(bookId){
   var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* 1) Status pills (pure additions) */
-  function pill(){var s=document.createElement("span");s.className="net-pill";s.innerHTML="<i></i>Pi testnet";return s;}
+  function pill(){var s=document.createElement("span");s.className="net-pill";s.innerHTML="<i></i>Pi Testnet";return s;}
   var bar = document.querySelector(".app-header-bar"); if(bar) bar.appendChild(pill());
   var loginH1 = document.querySelector("#login h1"); if(loginH1) loginH1.insertAdjacentElement("afterend", pill());
 
